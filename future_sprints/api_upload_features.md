@@ -2,7 +2,16 @@
 
 ## Overview
 
-The STUF platform will provide a comprehensive API for programmatic file uploads and system management. This feature will enable integration with existing systems and workflows, allowing for automated file uploads without requiring manual user interaction through the web interface.
+The STUF platform will provide an API for programmatic file uploads only. This feature will enable integration with existing systems and workflows, allowing for automated file uploads without requiring manual user interaction through the web interface.
+
+> **Note:** This feature is specifically for file uploads only, not for STUF administration or management tasks.
+
+## Purpose
+
+- Enable automated file uploads from other systems
+- Support batch processing scenarios
+- Allow integration with existing workflows and applications
+- Maintain security and auditability of uploads
 
 ## Challenges
 
@@ -14,53 +23,55 @@ The current Multi-Factor Authentication (MFA) system used for web uploads is not
 - API access requires persistent authentication with appropriate security controls
 - Need to maintain equivalent security posture across both interfaces
 
-### Proposed Solution
+### Required Metadata Support
 
-1. **API Key Management**
-   - Implement secure API key generation and management
-   - Support key rotation and revocation
-   - Provide granular permissions for API keys
+The API must support all the same metadata as the web interface:
 
-2. **Authentication Flow**
-   - Implement OAuth 2.0 or similar standard for API authentication
-   - Support service accounts for system-to-system integration
-   - Maintain audit trail of all API access
+- File type categorization
+- Collection assignment
+- Comments and descriptions
+- Any other required or optional metadata fields
 
-3. **Security Controls**
-   - Implement rate limiting to prevent abuse
-   - Require TLS for all API connections
-   - Support IP whitelisting for API access
+### Parameter Discovery
 
-## API Endpoints
+The API must provide endpoints to discover:
 
-### Upload API
+- Allowable file types
+- Available collections
+- Maximum file sizes
+- Required vs. optional metadata fields
+- Current validation rules
 
-- `POST /api/v1/uploads` - Upload new files
-- `GET /api/v1/uploads` - List uploads
-- `GET /api/v1/uploads/{id}` - Get upload details
-- `DELETE /api/v1/uploads/{id}` - Delete an upload
+## Implementation Considerations
 
-### Management API
+1. **Authentication**
+   - Secure API key or token-based authentication
+   - Limited-time access credentials
+   - Audit trail of all API access
 
-- `GET /api/v1/users` - List authorized users
-- `POST /api/v1/users` - Add new authorized users
-- `PUT /api/v1/users/{id}` - Update user details
-- `DELETE /api/v1/users/{id}` - Remove user access
-- `GET /api/v1/system/status` - Get system status
+2. **Security Controls**
+   - Rate limiting to prevent abuse
+   - TLS for all connections
+   - IP address restrictions option
+
+3. **Metadata Validation**
+   - Same validation rules as web interface
+   - Clear error messages for validation failures
+   - Support for all required metadata fields
 
 ## Implementation Timeline
 
 This feature is planned for a future sprint after the core web upload functionality is stable and well-tested. The estimated timeline is:
 
 1. **Design Phase** - 2-3 weeks
-   - API specification
+   - Requirements gathering
    - Security model design
    - Integration patterns
 
-2. **Implementation Phase** - 4-6 weeks
+2. **Implementation Phase** - 3-4 weeks
    - Authentication system
-   - Core API endpoints
-   - Testing and validation
+   - Upload endpoints
+   - Parameter discovery endpoints
 
 3. **Documentation and Release** - 2 weeks
    - API documentation
@@ -71,4 +82,4 @@ This feature is planned for a future sprint after the core web upload functional
 
 - Stable core upload functionality
 - Comprehensive logging system
-- User management system enhancements
+- Metadata validation framework
