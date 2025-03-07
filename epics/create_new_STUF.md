@@ -23,9 +23,14 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
   - Project name and description
   - Authorized users list (project participants who may not be Pyx platform users)
   - Zulip stream name and topic for notifications
+  - GitHub username for repository access (optional)
 
 ### 2. Infrastructure Provisioning
 - System automatically creates a new GitHub repository for the STUF instance with naming convention `stuf-{project-slug}`
+  - Repository is configured as private
+  - Repository has minimal features enabled (no wiki, issues, projects, etc.)
+  - Repository has branch protection rules for the main branch
+- If TA provided a GitHub username, system grants read-only access to the repository
 - System generates a unique S3-compatible storage bucket with appropriate permissions
 - System configures DNS for `{project-slug}.stuf.pyx.io`
 - System generates deployment configuration (Docker Compose) with appropriate environment variables
@@ -62,15 +67,18 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 3. TA selects "Create New STUF" option
 4. TA enters project details and configuration:
    - Project name and description
-   - Storage provider (AWS S3 or Azure Storage)
-   - Bucket credentials (created out-of-band)
    - List of authorized users (CSV upload or manual entry)
-   - Zulip channel for notifications
+   - Zulip stream and topic for notifications
+   - GitHub username for repository access (optional)
 5. TA submits the configuration
 6. System validates the configuration
 
 ### Phase 2: Infrastructure Setup
 1. System creates a new GitHub repository with naming convention `stuf-{project-slug}`
+   - Repository is configured as private
+   - Repository has minimal features enabled (no wiki, issues, projects, etc.)
+   - Repository has branch protection rules for the main branch
+   - If TA provided a GitHub username, system grants read-only access to the repository
 2. System generates a unique S3-compatible storage bucket for the STUF
 3. System configures DNS entry for `{project-slug}.stuf.pyx.io`
 4. System generates Docker Compose configuration with environment variables for:
