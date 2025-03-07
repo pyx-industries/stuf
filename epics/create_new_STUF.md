@@ -95,13 +95,12 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
    - Storage bucket details (for monitoring)
 6. System notifies the TA that the STUF is ready via Zulip
 
-### Phase 4: Verification and Handover
-1. TA accesses the STUF Admin tool to verify configuration
-2. TA performs a test upload to verify functionality
-3. TA verifies Zulip notifications are working
-4. System confirms proper integration with administration tools
-5. TA receives documentation for the STUF instance
-6. STUF is now ready for production use
+### Phase 4: Verification and Readiness
+1. TA accesses the newly created STUF to verify basic configuration
+2. TA performs a test upload to verify core functionality
+3. TA verifies Zulip notifications are working correctly
+4. System provides documentation for the STUF instance
+5. STUF is marked as ready for production use
 
 ## Technical Implementation Details
 
