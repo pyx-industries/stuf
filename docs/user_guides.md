@@ -7,13 +7,12 @@
 1. **Access the STUF Admin Tool**
    - Log in to your Zulip account
    - Navigate to the STUF Admin tool in the left sidebar
-   - Click "Create New STUF"
+   - Click "New STUF (upload facility)"
 
 2. **Configure Basic Settings**
    - Enter a project name and description
-   - Select storage provider (AWS S3 or Azure Storage)
-   - Enter or upload storage credentials
-   - Select Zulip stream for notifications
+   - Select a private stream you have access to for the STUF
+   - Enter a name for the STUF (will be used as the topic for upload announcements)
 
 3. **Configure Authorized Users**
    - Add users individually (email + phone pairs)
