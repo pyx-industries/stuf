@@ -34,8 +34,9 @@ As a Trust Architect (TA), I want to customize the branding elements of a Secure
 ## Technical Implementation Details
 
 ### Storage
-- Branding assets stored in the same storage bucket as the STUF configuration
+- Branding assets stored in the same S3-compatible storage bucket as the STUF configuration
 - Assets are versioned to allow rollback
+- Assets served through the same DNS endpoint as the STUF (`{project-slug}.stuf.pyx.io`)
 
 ### SPA Integration
 - SPA dynamically loads branding configuration at runtime

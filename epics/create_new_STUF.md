@@ -25,17 +25,25 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
   - Zulip stream name and topic for notifications
 
 ### 2. Infrastructure Provisioning
-- System automatically creates a new GitHub repository for the STUF instance
-- System pushes STUF API and SPA code to the repository
-- System generates Ansible scripts for infrastructure provisioning
-- Infrastructure is provisioned according to specifications
-- CI/CD workflows are configured in the GitHub repository
+- System automatically creates a new GitHub repository for the STUF instance with naming convention `stuf-{project-slug}`
+- System generates a unique S3-compatible storage bucket with appropriate permissions
+- System configures DNS for `{project-slug}.stuf.pyx.io`
+- System generates deployment configuration (Docker Compose) with appropriate environment variables
+- System configures GitHub repository with necessary secrets for deployment:
+  - Storage bucket credentials
+  - Zulip API credentials
+  - Deployment target credentials
 
 ### 3. Deployment
-- STUF API and SPA are deployed to the provisioned infrastructure
-- STUF Admin tool can connect to the storage bucket
-- API can read configuration from the bucket
-- API can write uploaded files to the bucket
+- System pushes initial code to the GitHub repository including:
+  - STUF API and SPA code
+  - Docker Compose configuration
+  - GitHub Actions workflow for CI/CD
+- GitHub Actions workflow automatically deploys the application to the target environment
+- System verifies deployment success with health checks
+- Django Admin tool is updated with STUF instance details (URL, repository link)
+- API can read configuration from the storage bucket
+- API can write uploaded files to the storage bucket
 - API posts notifications to the configured Zulip channel
 
 ### 4. Administration
@@ -64,25 +72,30 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 6. System validates the configuration
 
 ### Phase 2: Infrastructure Setup
-1. System creates a new GitHub repository with naming convention `stuf-{project-name}`
-2. System pushes base STUF code (API and SPA) to the repository
-3. System generates project-specific configuration files
-4. System creates Ansible scripts for infrastructure provisioning
-5. System triggers infrastructure provisioning workflow
-6. Infrastructure components are created:
-   - API hosting environment (Lambda/Functions/Container)
-   - SPA hosting environment (CDN/Static site)
-   - Networking and security configurations
-7. System configures CI/CD workflows in the GitHub repository
+1. System creates a new GitHub repository with naming convention `stuf-{project-slug}`
+2. System generates a unique S3-compatible storage bucket for the STUF
+3. System configures DNS entry for `{project-slug}.stuf.pyx.io`
+4. System generates Docker Compose configuration with environment variables for:
+   - Storage bucket credentials
+   - API configuration
+   - Zulip integration details
+5. System configures GitHub repository with secrets:
+   - `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY`
+   - `ZULIP_API_KEY` and `ZULIP_URL`
+   - `DEPLOYMENT_SSH_KEY` or other deployment credentials
+6. System pushes base STUF code (API and SPA) to the repository
+7. System configures GitHub Actions workflow for automated deployment
 
 ### Phase 3: Deployment
-1. System deploys the STUF API to the provisioned infrastructure
-2. System deploys the STUF SPA to the provisioned infrastructure
-3. System configures the API with bucket access credentials
-4. System configures the API with Zulip notification credentials
-5. System updates the STUF Admin tool with connection details
-6. System performs validation tests on the deployment
-7. System notifies the TA that the STUF is ready
+1. GitHub Actions workflow is triggered by the initial code push
+2. Workflow builds Docker images for API and SPA
+3. Workflow deploys the application using Docker Compose to the target environment
+4. System performs health checks to verify successful deployment
+5. System updates the Django Admin tool with:
+   - STUF URL (`{project-slug}.stuf.pyx.io`)
+   - GitHub repository URL
+   - Storage bucket details (for monitoring)
+6. System notifies the TA that the STUF is ready via Zulip
 
 ### Phase 4: Verification and Handover
 1. TA accesses the STUF Admin tool to verify configuration
@@ -96,17 +109,17 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 ### Repository Structure
 - API code (Python FastAPI/Flask)
 - SPA code (React/Vue)
-- Infrastructure as Code (Ansible/Terraform)
+- Docker Compose configuration
 - CI/CD workflows (GitHub Actions)
 - Configuration templates
 
 ### CI/CD Pipeline
 - When a PR is merged to the main branch:
   1. Code is tested
-  2. New versions of API/SPA are built
-  3. Deployment to production environment is triggered
-  4. Post-deployment tests are run
-  5. Notification is sent to the TA
+  2. Docker images for API/SPA are built
+  3. Docker Compose deployment to production environment is triggered
+  4. Health checks and post-deployment tests are run
+  5. Notification is sent to the TA via Zulip
 
 ### Security Considerations
 - All credentials are stored securely
