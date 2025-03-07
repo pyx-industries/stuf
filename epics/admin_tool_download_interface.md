@@ -68,6 +68,7 @@ As a Trust Architect (TA), I need to securely access and download files that hav
 4. System initiates a secure download stream through the Admin tool
 5. File is downloaded to the TA's local system
 6. System logs the download event with file details and timestamp
+7. System posts a notification to Zulip with basic information about the download (filename, downloader, timestamp)
 
 ### Managing Files
 1. TA can select files and organize them into folders/categories

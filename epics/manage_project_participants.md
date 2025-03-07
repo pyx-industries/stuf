@@ -64,7 +64,8 @@ As a Trust Architect (TA), I need to manage the list of project participants who
 4. System validates the information
 5. System adds the participant to the database
 6. System sends a welcome email with magic link to the new participant
-7. TA receives confirmation of successful addition
+7. System posts a notification to Zulip with information about the new participant
+8. TA receives confirmation of successful addition
 
 ### Bulk Adding Participants
 1. TA selects "Bulk Add Participants" option
@@ -102,7 +103,8 @@ As a Trust Architect (TA), I need to manage the list of project participants who
 5. System generates a new secure magic link
 6. System sends an email with the new magic link to the participant
 7. System logs the action
-8. TA receives confirmation when the email is sent successfully
+8. System posts a notification to Zulip that a magic link was resent
+9. TA receives confirmation when the email is sent successfully
 
 ## Technical Implementation Details
 

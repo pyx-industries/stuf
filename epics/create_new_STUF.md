@@ -44,7 +44,7 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 - Django Admin tool is updated with STUF instance details (URL, repository link)
 - API can read configuration from the storage bucket
 - API can write uploaded files to the storage bucket
-- API posts notifications to the configured Zulip channel
+- API posts notifications with verification links to the configured Zulip stream/topic
 
 ### 4. Integration with Administration Tools
 - STUF is properly registered with the Admin tool ecosystem
@@ -96,11 +96,15 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 6. System notifies the TA that the STUF is ready via Zulip
 
 ### Phase 4: Verification and Readiness
-1. TA accesses the newly created STUF to verify basic configuration
-2. TA performs a test upload to verify core functionality
-3. TA verifies Zulip notifications are working correctly
-4. System provides documentation for the STUF instance
-5. STUF is marked as ready for production use
+1. System posts a notification to Zulip with links to verify the new STUF:
+   - Link to access the STUF admin interface
+   - Link to perform a test upload
+   - Link to view the GitHub repository
+2. TA clicks the links to verify basic configuration and functionality
+3. TA performs a test upload to verify core functionality
+4. System posts a confirmation notification to Zulip when test upload succeeds
+5. System provides documentation for the STUF instance
+6. STUF is marked as ready for production use
 
 ## Technical Implementation Details
 
