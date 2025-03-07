@@ -18,7 +18,7 @@ For the MVP, the STUF Admin tool will be implemented as a pluggable Django app t
 - TA can configure a new STUF with:
   - Project name and description
   - Storage bucket details (AWS/Azure)
-  - Authorized users list (email + phone pairs)
+  - Authorized users list (project participants who may not be Pyx platform users)
   - Zulip channel for notifications
   - Custom branding elements (optional)
 
@@ -39,7 +39,11 @@ For the MVP, the STUF Admin tool will be implemented as a pluggable Django app t
 ### 4. Administration
 - TA can manage the STUF configuration through the Admin tool
 - TA can view and download files that have been uploaded
-- TA can modify the authorized users list
+- TA can manage the authorized users list through a web interface with fields for:
+  - Name
+  - Email address
+  - Mobile phone number
+  - Active status (toggle)
 - TA can monitor upload events via Zulip notifications
 
 ## Detailed Flow
