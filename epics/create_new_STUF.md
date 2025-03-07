@@ -46,15 +46,13 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 - API can write uploaded files to the storage bucket
 - API posts notifications to the configured Zulip channel
 
-### 4. Administration
-- TA can manage the STUF configuration through the Admin tool
-- TA can view and download files that have been uploaded
-- TA can manage the authorized users list through a web interface with fields for:
-  - Name
-  - Email address
-  - Mobile phone number
-  - Active status (toggle)
-- TA can monitor upload events via Zulip notifications
+### 4. Integration with Administration Tools
+- STUF is properly registered with the Admin tool ecosystem
+- STUF configuration is accessible through the Admin tool
+- System establishes proper connections to related administration features:
+  - Project participant management (see "Manage Project Participants" epic)
+  - File access and download capabilities (see "Admin Tool Download Interface" epic)
+- TA receives notification when STUF is ready for administration
 
 ## Detailed Flow
 
@@ -101,8 +99,9 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 1. TA accesses the STUF Admin tool to verify configuration
 2. TA performs a test upload to verify functionality
 3. TA verifies Zulip notifications are working
-4. TA receives documentation for the STUF instance
-5. STUF is now ready for production use
+4. System confirms proper integration with administration tools
+5. TA receives documentation for the STUF instance
+6. STUF is now ready for production use
 
 ## Technical Implementation Details
 
