@@ -21,10 +21,8 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 - TA can authenticate to the STUF Admin tool (standalone or via Zulip credentials if integrated)
 - TA can configure a new STUF with:
   - Project name and description
-  - Storage bucket details (AWS/Azure)
   - Authorized users list (project participants who may not be Pyx platform users)
-  - Zulip channel for notifications
-  - Custom branding elements (optional)
+  - Zulip stream name and topic for notifications
 
 ### 2. Infrastructure Provisioning
 - System automatically creates a new GitHub repository for the STUF instance
