@@ -189,6 +189,100 @@ The CD pipeline runs when changes are merged to main:
    - Automatic rollback on failed verification
    - Manual rollback option for Trust Architects
 
+## Metadata Configuration Implementation
+
+### Metadata Types and Optionality
+
+The STUF system is designed with flexibility in metadata collection. Trust Architects can:
+
+1. **Enable or Disable Entire Metadata Categories**
+   - Each metadata type (file types, collections, IP ownership, license conditions, comments) can be:
+     - Fully enabled and required
+     - Enabled but optional
+     - Completely disabled/not collected
+
+2. **Configuration Options for Each Metadata Type**
+   - For each enabled metadata type, configure:
+     - Predefined lists of values
+     - Whether free text entry is allowed
+     - Whether "Don't know" or "Other (specify)" options are allowed
+     - Help text and validation rules
+
+3. **Implementation Considerations**
+   - UI should dynamically adjust based on enabled metadata types
+   - Storage schema should support nullable fields for optional metadata
+   - API validation should enforce required fields based on configuration
+   - Reporting should handle missing metadata fields gracefully
+   - Configuration is stored in `<bucket>/config/metadata_config.json`
+   - API reads configuration at startup and periodically checks for updates
+
+4. **Default Configuration**
+   - By default, only basic description is required
+   - All other metadata types are optional until explicitly configured
+   - Initial configuration is created during STUF provisioning
+
+### Implementation Examples
+
+**Example 1: Minimal Metadata Configuration**
+```json
+{
+  "metadata_config": {
+    "description": {"required": true},
+    "file_type": {"enabled": false},
+    "collection": {"enabled": false},
+    "ip_ownership": {"enabled": false},
+    "license": {"enabled": false},
+    "comments": {"required": false}
+  }
+}
+```
+
+**Example 2: Full Metadata Configuration**
+```json
+{
+  "metadata_config": {
+    "description": {"required": true},
+    "file_type": {
+      "enabled": true,
+      "required": true,
+      "allow_other": true,
+      "allow_unknown": false,
+      "options": ["Document", "Spreadsheet", "Image", "Code"]
+    },
+    "collection": {
+      "enabled": true,
+      "required": false,
+      "allow_other": true,
+      "allow_unknown": true,
+      "options": ["Project A", "Project B", "Research", "Administrative"]
+    },
+    "ip_ownership": {
+      "enabled": true,
+      "required": true,
+      "allow_free_text": false,
+      "allow_unknown": false,
+      "legally_binding": true,
+      "options": ["My Organization", "Third Party", "Open Source"]
+    },
+    "license": {
+      "enabled": true,
+      "required": true,
+      "allow_free_text": true,
+      "allow_unknown": false,
+      "options": ["MIT", "GPL", "Proprietary", "CC-BY"]
+    },
+    "comments": {
+      "required": false,
+      "required_for": {
+        "file_type": ["Code"],
+        "ip_ownership": ["Third Party"],
+        "license": ["Proprietary"]
+      }
+    }
+  }
+}
+```
+
 ## Feature Implementation Process
 
 ### Feature Planning

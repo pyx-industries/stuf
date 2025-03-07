@@ -27,10 +27,13 @@ The current Multi-Factor Authentication (MFA) system used for web uploads is not
 
 The API must support all the same metadata as the web interface:
 
-- File type categorization
-- Collection assignment
-- Comments and descriptions
-- Any other required or optional metadata fields
+- File type categorization (from configured list)
+- Collection assignment (from configured list)
+- File ownership information (from configured list or free text)
+- License conditions (from configured list)
+- Comments and descriptions (including type/collection-specific required comments)
+- Support for "Other (specify)" options with additional text fields
+- Any other required or optional metadata fields configured by the Trust Architect
 
 ### Parameter Discovery
 

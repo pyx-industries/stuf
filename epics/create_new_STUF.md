@@ -24,6 +24,32 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
   - Authorized users list (project participants who may not be Pyx platform users)
   - Zulip stream name and topic for notifications
   - GitHub username for repository access (optional)
+  - Metadata configuration:
+    - Enable/disable each metadata type based on project requirements
+    - For each enabled metadata type:
+      - File type configuration (optional):
+        - Predefined file type options
+        - Whether "Don't know" or "Other (specify)" options are allowed
+        - Whether file type selection is required
+      - Collection configuration (optional):
+        - Predefined collection options
+        - Whether "Don't know" or "Other (specify)" options are allowed
+        - Whether collection selection is required
+      - IP ownership declaration configuration (optional):
+        - Predefined ownership options
+        - Whether free text entry is allowed
+        - Whether "Don't know" option is allowed
+        - Whether declaration is legally binding
+        - Whether IP ownership declaration is required
+      - License conditions configuration (optional):
+        - Predefined license options
+        - Whether free text entry is allowed
+        - Whether "Don't know" option is allowed
+        - Additional documentation requirements
+        - Whether license condition declaration is required
+      - Comment field configuration (optional):
+        - Whether comments are required for all uploads
+        - Whether comments are required for specific metadata selections
 
 ### 2. Infrastructure Provisioning
 - System automatically creates a new GitHub repository for the STUF instance with naming convention `stuf-{project-slug}`
@@ -80,6 +106,14 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
    - Repository has branch protection rules for the main branch
    - If TA provided a GitHub username, system grants read-only access to the repository
 2. System generates a unique S3-compatible storage bucket for the STUF
+   - Creates initial bucket structure:
+     - `<bucket>/uploads/` directory for uploaded files
+     - `<bucket>/users/` directory for user information
+     - `<bucket>/config/` directory for configuration
+     - `<bucket>/journal/` directory for audit logs
+   - Creates initial configuration files:
+     - `<bucket>/config/stuf_config.json` with basic STUF configuration
+     - `<bucket>/config/metadata_config.json` with metadata field configuration
 3. System configures DNS entry for `{project-slug}.stuf.pyx.io`
 4. System generates Docker Compose configuration with environment variables for:
    - Storage bucket credentials

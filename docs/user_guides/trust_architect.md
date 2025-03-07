@@ -3,29 +3,61 @@
 ## Creating a New STUF
 
 1. **Access the STUF Admin Tool**
-   - Log in to your Zulip account
-   - Navigate to the STUF Admin tool in the left sidebar
+   - Option 1: Standalone Admin Tool
+     - Navigate to the STUF Admin Tool URL in your browser
+     - Log in with your administrator credentials
+   - Option 2: Zulip Integration (if enabled)
+     - Log in to your Zulip account
+     - Navigate to the STUF Admin tool in the left sidebar
    - Click "New STUF (upload facility)"
 
 2. **Configure Basic Settings**
    - Enter a project name and description
    - Select a private stream you have access to for the STUF
    - Enter a name for the STUF (will be used as the topic for upload announcements)
+   - Configure metadata requirements for uploads:
+     - **Enable or disable** each type of metadata collection based on your project needs
+     - For each enabled metadata type, configure:
+       - File types (create a list of allowed types, optionally include "Don't know" or "Other (specify)")
+       - Collections (create a list of collections, optionally include "Don't know" or "Other (specify)")
+       - IP ownership options:
+         - Create a predefined list of ownership options (e.g., "My organization", "Third party", "Open source")
+         - Choose between predefined list only, free text entry, or combination
+         - Decide whether to allow "Don't know" option or require definitive selection
+         - Set whether ownership declaration is legally binding
+         - **Or choose not to collect IP ownership information at all**
+       - License conditions:
+         - Create a list of license options (e.g., specific open source licenses, proprietary licenses)
+         - Choose between predefined list only, free text entry, or combination
+         - Decide whether to allow "Don't know" option or require definitive selection
+         - Configure whether additional documentation is required for certain license types
+         - **Or choose not to collect license information at all**
+       - Comment fields (can be made required for specific file types, collections, ownership types, or license conditions)
+     - For each enabled metadata type, mark as required or optional
+     - Configure help text for each enabled field to guide users
+     - **Note: You can choose to collect minimal metadata or extensive metadata based on your governance requirements**
+
+5. **Review and Create**
+   - Review all settings
+   - Click "Create STUF"
+   - System will begin provisioning infrastructure
+   - You'll receive a notification in your selected Zulip stream when deployment is complete
+   - The notification will include links to:
+     - Verify the configuration
+     - Customize branding
+     - Configure authorized users
+
+4. **Configure Basic Branding**
+   - Upload organization logo
+   - Add custom welcome message
+
+   > Note: Additional custom branding elements are planned for future releases.
 
 3. **Configure Authorized Users**
    - Add users individually (email + phone pairs)
    - Or upload a CSV file with user information
    - Optionally set expiration dates for access
-
-4. **Configure Branding (Optional)**
-   - Upload organization logo
-   - Set custom colors and text
-   - Add custom welcome message
-
-5. **Review and Create**
-   - Review all settings
-   - Click "Create STUF"
-   - System will provision infrastructure and deploy
+   - Choose to send welcome emails immediately when adding users
 
 ## Managing an Existing STUF
 
@@ -37,22 +69,28 @@
 2. **Monitor Activity**
    - View recent uploads
    - Check system health
-   - Review audit logs
+   - Review basic logs
+
+   > Note: Advanced audit logging features are planned for future releases.
 
 3. **Manage Users**
    - Add or remove authorized users
    - Reset user access
    - View user activity
+   - See when welcome emails were last sent to each user
+   - Resend welcome emails to users as needed
 
 4. **Access Files**
    - Browse uploaded files
    - Download files
    - Manage file retention
 
+   > Note: Multi-cloud storage options and upload receipts are planned for future releases.
+
 5. **Update Configuration**
    - Modify notification settings
-   - Update storage configuration
-   - Change branding elements
+   - Update basic configuration
+   - Adjust basic branding elements
 
 ## Troubleshooting
 

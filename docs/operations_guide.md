@@ -63,36 +63,47 @@
    - Automated daily backup of system configuration
    - Version-controlled configuration in repository
    - Export functionality in Admin interface
+   - Regular snapshots of `<bucket>/config/` directory
 
 2. **Data Backup**
-   - Storage bucket replication
-   - Database backup schedule
+   - Storage bucket replication across regions
+   - Regular snapshots of key files:
+     - `<bucket>/uploads.json`
+     - `<bucket>/users.json`
+     - All files in `<bucket>/uploads/*/metadata.json`
+     - All files in `<bucket>/users/`
+   - Journal entries in `<bucket>/journal/` for point-in-time recovery
    - Encryption key backup (secure storage)
 
 3. **Backup Verification**
    - Automated restore testing
    - Backup integrity verification
    - Periodic recovery drills
+   - Validation of cache regeneration process
 
 ### Recovery Procedures
 
 1. **Service Recovery**
    - API service restart procedure
    - SPA redeployment process
-   - Database recovery steps
    - Complete system rebuild process
+   - Cache regeneration process:
+     - Rebuilding `<bucket>/uploads.json` from individual metadata files
+     - Rebuilding `<bucket>/users.json` from individual user files
 
 2. **Data Recovery**
    - File restoration from backups
-   - Point-in-time database recovery
-   - Configuration restoration
-   - User access recovery
+   - Point-in-time recovery using journal entries
+   - Configuration restoration from `<bucket>/config/` backups
+   - User access recovery from `<bucket>/users/` backups
+   - Handling of missing or corrupted cache files
 
 3. **Disaster Recovery**
    - Cross-region recovery procedure
    - Alternative provider failover (if configured)
    - Complete system rebuild from backups
    - Emergency access procedures
+   - Journal-based audit trail recovery
 
 ## Incident Response
 
@@ -165,12 +176,18 @@
    - Administrative actions logging
    - File access tracking
    - Configuration changes logging
+   - IP ownership declarations tracking
+   - License condition declarations tracking
+   - Metadata changes history
 
 2. **Compliance Reports**
    - Access report generation
    - Security controls documentation
    - Encryption verification
    - User authorization review
+   - IP ownership declaration reports
+   - License compliance reports
+   - Metadata audit trail reports
 
 3. **Automated Compliance Checks**
    - Configuration validation against policies

@@ -178,8 +178,12 @@ The STUF system consists of five main components that work together to provide a
 
 1. Trust Architect configures STUF through Zulip interface
 2. Django app stores configuration in database
-3. Django app pushes configuration to storage bucket
+3. Django app pushes configuration to storage bucket as JSON files:
+   - `<bucket>/config/stuf_config.json` for main configuration
+   - `<bucket>/config/metadata_config.json` for metadata field configuration
 4. API service reads configuration from bucket at runtime
+5. Changes to configuration are recorded in the journal (`<bucket>/journal/<timestamp>_<id>.json`)
+6. API periodically checks for configuration updates and reloads when changes are detected
 
 ### Upload Flow
 
@@ -187,7 +191,11 @@ The STUF system consists of five main components that work together to provide a
 2. User selects file(s) to upload
 3. SPA sends file(s) to API service
 4. API validates request and user permissions
-5. API stores file in bucket with appropriate metadata
+5. API stores file in bucket with appropriate structure:
+   - `<bucket>/uploads/<id>/data/<file-name>` for the file content
+   - `<bucket>/uploads/<id>/metadata.json` for upload metadata
+   - Deletes `<bucket>/uploads.json` to trigger regeneration
+   - Creates journal entry at `<bucket>/journal/<timestamp>_<id>.json`
 6. API sends notification to Zulip
 7. API returns success/failure to SPA
 
