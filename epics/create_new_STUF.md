@@ -8,10 +8,13 @@ As a Trust Architect (TA), I need to create a new Secure Trusted Upload Facility
 **I want to** set up a new Secure Trusted Upload Facility  
 **So that** I can securely receive confidential files from project participants
 
+## MVP Implementation Note
+For the MVP, the STUF Admin tool will be implemented as a pluggable Django app that requires authentication. While the long-term goal is to integrate with the Pyx platform (Zulip), the MVP may initially be deployed as a standalone application. If integrated with Zulip, it will use the same authentication system as Zulip. This integration pattern allows for flexibility in deployment while maintaining a path to full platform integration in future sprints.
+
 ## Acceptance Criteria
 
 ### 1. STUF Configuration
-- TA can authenticate to the STUF Admin tool using Zulip credentials
+- TA can authenticate to the STUF Admin tool (standalone or via Zulip credentials if integrated)
 - TA can configure a new STUF with:
   - Project name and description
   - Storage bucket details (AWS/Azure)
@@ -42,8 +45,8 @@ As a Trust Architect (TA), I need to create a new Secure Trusted Upload Facility
 ## Detailed Flow
 
 ### Phase 1: Initial Configuration
-1. TA logs into Zulip server
-2. TA accesses the STUF Admin tool
+1. TA logs into the STUF Admin tool (either standalone or via Zulip if integrated)
+2. TA accesses the STUF creation interface
 3. TA selects "Create New STUF" option
 4. TA enters project details and configuration:
    - Project name and description
@@ -107,7 +110,8 @@ As a Trust Architect (TA), I need to create a new Secure Trusted Upload Facility
 - Regular security audits are scheduled
 
 ## Dependencies
-- Existing Zulip server with STUF Admin tool installed
+- Authentication system (standalone or Zulip-integrated)
+- STUF Admin tool deployed as Django app
 - AWS or Azure account with appropriate permissions
 - GitHub organization with CI/CD capabilities
 - DNS management for custom domains (optional)
