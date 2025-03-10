@@ -99,8 +99,11 @@ There are two primary self-hosted deployment scenarios:
 ### Configuration
 
 1. **Access the Admin Tool**
-   - TA logs into their self-hosted Zulip
-   - TA accesses the STUF Admin tool (Django app)
+   - For Zulip-integrated deployment:
+     - TA logs into their self-hosted Zulip
+     - TA accesses the STUF Admin tool (Django app) within Zulip
+   - For standalone deployment:
+     - TA logs into the standalone STUF Admin tool
    - TA selects "Create New STUF" option
 
 2. **Configure the STUF Instance**

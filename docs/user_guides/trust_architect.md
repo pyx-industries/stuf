@@ -3,10 +3,10 @@
 ## Creating a New STUF
 
 1. **Access the STUF Admin Tool**
-   - Option 1: Standalone Admin Tool
+   - Option 1: Standalone Admin Tool (MVP)
      - Navigate to the STUF Admin Tool URL in your browser
      - Log in with your administrator credentials
-   - Option 2: Zulip Integration (if enabled)
+   - Option 2: Zulip Integration (future enhancement)
      - Log in to your Zulip account
      - Navigate to the STUF Admin tool in the left sidebar
    - Click "New STUF (upload facility)"
@@ -62,8 +62,11 @@
 ## Managing an Existing STUF
 
 1. **View STUF Dashboard**
-   - Log in to Zulip
-   - Navigate to STUF Admin tool
+   - For standalone deployment (MVP):
+     - Log in to the STUF Admin tool
+   - For Zulip-integrated deployment (future enhancement):
+     - Log in to Zulip
+     - Navigate to STUF Admin tool
    - Select the STUF from the list
 
 2. **Monitor Activity**

@@ -49,11 +49,11 @@ The STUF system consists of five main components that work together to provide a
    - Configured with appropriate access controls
 
 4. **Pluggable Django App**
-   - Integrated into Zulip server
+   - Can be deployed as standalone Django site (MVP) or integrated into Zulip server
    - Provides management interface for Trust Architects
    - Configures authorized users and system settings
    - Pushes configuration to the storage bucket
-   - Leverages Zulip's authentication system
+   - Uses its own authentication system when standalone, or leverages Zulip's authentication system when integrated
 
 5. **Database**
    - Stores configuration and user information
@@ -128,9 +128,10 @@ The STUF system consists of five main components that work together to provide a
 ### Zulip Integration
 
 1. **Authentication Integration**
-   - STUF leverages Zulip's authentication system
-   - Single sign-on for Trust Architects
-   - Shared user session management
+   - When integrated with Zulip, STUF leverages Zulip's authentication system
+   - Single sign-on for Trust Architects in integrated mode
+   - Shared user session management in integrated mode
+   - Standalone authentication system available for MVP and non-integrated deployments
 
 2. **Notification Integration**
    - File upload events posted to configured Zulip streams

@@ -9,11 +9,11 @@ As a Trust Architect (TA), I need to create a new Secure Trusted Upload Facility
 **So that** I can securely receive confidential files from project participants
 
 ## MVP Implementation Note
-For the MVP, the STUF Admin tool will be implemented as a standalone Django application with its own authentication system. This standalone approach provides immediate value while reducing initial complexity. The application will be designed with future Zulip integration in mind, but this integration will be implemented post-MVP.
+For the MVP, the STUF Admin tool will be implemented as a standalone Django application with its own authentication system. This standalone approach provides immediate value while reducing initial complexity. The application is designed as a pluggable Django app that can be deployed independently in a standalone Django site for the MVP, but with the architecture to be integrated into Zulip (which is also a Django site) in future iterations.
 
 The standalone MVP will focus on the core secure upload functionality, user management, and basic notification capabilities. It will implement the "code under glass" transparency approach from day one, providing Trust Architects with complete visibility into the deployed code and configuration.
 
-While the long-term roadmap includes multiple deployment scenarios and deep Zulip integration, the MVP will establish a solid foundation that can evolve toward these goals in future iterations.
+While the long-term roadmap includes multiple deployment scenarios and deep Zulip integration, the MVP will establish a solid foundation that can evolve toward these goals in future iterations. The pluggable nature of the Django app ensures a smooth transition path from standalone to Zulip-integrated deployment.
 
 ## Acceptance Criteria
 
