@@ -4,7 +4,7 @@
 
 The Secure Trusted Upload Facility (STUF) is designed to provide a trusted, secure mechanism for receiving confidential files from project participants. It addresses the critical need for organizations to collect sensitive information while maintaining the highest standards of security, privacy, and trust.
 
-The core concept is that a Trust Architect (TA) can create a STUF service that can be either Pyx-hosted or self-hosted (off the Pyx network). TAs can use the Pyx-hosted version as a reference implementation and then self-host their own instance if desired, or simply continue using the Pyx-hosted service.
+The core concept is that a Trust Architect (TA) can create a STUF service that can be either Pyx-hosted or self-hosted (off the Pyx network). TAs can use the Pyx-hosted version as a reference implementation and then self-host their own instance if desired, or simply continue using the Pyx-hosted service (as appropriate for the security requirements and posture of the project).
 
 ### Core Principles
 
@@ -12,7 +12,7 @@ The core concept is that a Trust Architect (TA) can create a STUF service that c
 
 2. **Trust Through Transparency**: The "code under glass" approach ensures complete visibility into the system's operation, building trust through transparency rather than obscurity.
 
-3. **Flexibility in Deployment**: Organizations can choose the deployment model that best fits their needs, from fully managed (Pyx-hosted) to completely self-hosted.
+3. **Flexibility in Deployment**: Organizations can choose the deployment model that best fits their security requirements and risk posture, from fully managed (Pyx-hosted) to completely self-hosted. Different projects have different security needs, and it's part of the TA's responsibility to select the appropriate deployment model.
 
 4. **Seamless Integration**: Deep integration with Zulip provides a familiar, powerful interface for managing uploads and notifications.
 
@@ -96,7 +96,7 @@ The core concept is that a Trust Architect (TA) can create a STUF service that c
 **STUF Benefits**:
 - Simple configuration through familiar Zulip interface
 - Complete transparency with "code under glass" approach
-- Flexible deployment options (Pyx-hosted or self-hosted)
+- Flexible deployment options to match varying project security requirements
 - Comprehensive admin tools for managing participants and uploads
 
 ### Project Participant
@@ -179,4 +179,4 @@ Behind the scenes, STUF is built on:
 
 The Secure Trusted Upload Facility represents a new approach to secure file transfers, combining robust security with unprecedented transparency and ease of use. By following this roadmap, we will deliver a solution that not only meets the immediate needs for secure file uploads but also establishes a foundation for future enhancements and integrations.
 
-The flexibility of deployment options—from fully Pyx-hosted to completely self-hosted—ensures that organizations can choose the approach that best fits their security requirements and operational constraints, while the intuitive user experience makes secure file uploads accessible to all project participants.
+The flexibility of deployment options—from fully Pyx-hosted to completely self-hosted—ensures that Trust Architects can select the approach that best fits each project's specific security requirements and risk posture. This flexibility is not merely for convenience but is essential for properly addressing the varying security needs across different projects. The intuitive user experience makes secure file uploads accessible to all project participants while maintaining appropriate security controls.
