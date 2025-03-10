@@ -21,8 +21,11 @@ There are two primary self-hosted deployment scenarios:
 ### Configuration
 
 1. **Access the Admin Tool**
-   - Trust Architect (TA) logs into Pyx-hosted Zulip
-   - TA accesses the STUF Admin tool (Django app)
+   - For Zulip-integrated deployment:
+     - Trust Architect (TA) logs into Pyx-hosted Zulip
+     - TA accesses the STUF Admin tool (Django app) within Zulip
+   - For standalone deployment (MVP):
+     - TA logs into the standalone STUF Admin tool
    - TA selects "Create New Self-hosted STUF" option
 
 2. **Configure the STUF Instance**
