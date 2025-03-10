@@ -75,7 +75,7 @@ While the long-term roadmap includes multiple deployment scenarios and deep Zuli
 - Django Admin tool is updated with STUF instance details (URL, repository link)
 - API can read configuration from the storage bucket
 - API can write uploaded files to the storage bucket
-- API posts notifications with verification links to the configured Zulip stream/topic
+- API posts notifications about system events to the configured Zulip stream/topic
 
 ### 4. Integration with Administration Tools
 - STUF is properly registered with the Admin tool ecosystem

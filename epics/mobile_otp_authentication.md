@@ -57,26 +57,31 @@ As a Trust Architect (TA), I need to implement a secure authentication system us
 
 ## Detailed Flow
 
-### Email Authentication Flow
+### First-time Email Verification Flow
+1. Trust Architect adds user to authorized users list
+2. Trust Architect triggers sending of verification email with magic link
+3. User receives email with magic link
+4. User clicks the magic link
+5. System validates the magic link token
+6. System marks the user's email as verified
+7. System redirects user to the login page or begins the OTP authentication flow
+
+### Authentication Flow
 1. User navigates to the STUF URL
 2. User enters their email address in the authentication form
 3. System validates the email format
-4. System checks if the email is authorized for the STUF
-5. If authorized, system generates a secure magic link
-6. System sends the magic link to the user's email
-7. System displays a confirmation message with instructions
-8. User receives the email and clicks the magic link
-9. System validates the magic link token
-10. If valid, system proceeds to the OTP authentication step
+4. System checks if the email is authorized and verified for the STUF
+5. If authorized and verified, system proceeds to the OTP authentication step
+6. If authorized but not verified, system displays a message that email verification is required
 
 ### OTP Authentication Flow
-1. After validating the magic link, system checks if user has a verified phone number
+1. For users with verified email, system checks if user has a verified phone number
 2. If no verified phone, system prompts user to enter their mobile number
 3. System validates the phone number format
 4. System sends a verification code to the mobile number
 5. User enters the verification code to confirm ownership
 6. System stores the verified phone number for future use
-7. For subsequent or existing users, system generates an OTP
+7. For all authentication attempts (first-time or returning users), system generates an OTP
 8. System sends the OTP via SMS to the user's verified mobile number
 9. User enters the OTP in the authentication form
 10. System validates the OTP

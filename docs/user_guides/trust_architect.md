@@ -57,7 +57,8 @@
    - Add users individually (email + phone pairs)
    - Or upload a CSV file with user information
    - Optionally set expiration dates for access
-   - Choose to send welcome emails immediately when adding users
+   - Send verification emails with magic links to users when they need to access the system
+   - Users must click these verification links before they can authenticate with SMS OTP
 
 ## Managing an Existing STUF
 
@@ -80,8 +81,9 @@
    - Add or remove authorized users
    - Reset user access
    - View user activity
-   - See when welcome emails were last sent to each user
-   - Resend welcome emails to users as needed
+   - See when verification emails were last sent to each user
+   - Resend verification emails with magic links to users as needed
+   - Monitor which users have completed email verification
 
 4. **Access Files**
    - Browse uploaded files
@@ -99,7 +101,9 @@
 
 1. **User Access Issues**
    - Verify user email and phone in authorized users list
+   - Check if user has clicked the verification magic link
    - Check notification logs for delivery issues
+   - Resend verification email if needed
    - Reset user access if necessary
 
 2. **Upload Failures**

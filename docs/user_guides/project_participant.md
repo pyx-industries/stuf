@@ -13,8 +13,9 @@
 2. **Authentication**
    - Enter your email address
    - If first time:
-     - Use the magic link in the invitation email or request a new verification link
-   - Enter the verification code sent to your phone
+     - You must have previously clicked the magic link in the invitation email sent by the Trust Architect
+     - This verification step is required before you can proceed
+   - Enter the verification code (OTP) sent to your phone
 
 3. **Select Files**
    - Click "Select Files" or drag files to the upload area

@@ -70,10 +70,10 @@ The STUF system consists of five main components that work together to provide a
    - User enters email in the SPA
    - API verifies email against authorized users list
    - For first-time users:
-     - API sends a "magic link" email
-     - User clicks the link to verify email ownership
+     - User must have previously received a "magic link" email from the Trust Architect
+     - User must have clicked the link to verify email ownership before proceeding
 
-2. **Two-Factor Authentication**
+2. **SMS Authentication**
    - API sends SMS with OTP to user's registered phone
    - User enters OTP in the SPA
    - API validates OTP and grants access token
