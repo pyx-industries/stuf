@@ -7,6 +7,7 @@ The Secure Trusted Upload Facility (STUF) is designed to solve a critical challe
 ### Core Problem
 
 Organizations frequently need to collect sensitive information from external collaborators, including:
+
 - Intellectual property
 - Confidential documents
 - Research data
@@ -19,34 +20,39 @@ Traditional file sharing methods often fall short in security, auditability, or 
 
 STUF provides a trusted, secure mechanism for receiving confidential files with:
 
-1. **Strong Security by Design**
-   - Two-factor authentication (email + SMS verification)
-   - Encrypted storage with strict access controls
-   - Comprehensive audit logging
-   - Secure file validation and scanning
+**Strong Security by Design**
 
-2. **Trust Through Transparency**
-   - "Code under glass" approach provides complete visibility
-   - All deployed code and configuration is preserved in a private git repository
-   - Trust Architects have read access to verify security implementations
-   - No hidden processes or black-box operations
+- Two-factor authentication (email + SMS verification)
+- Encrypted storage with strict access controls
+- Comprehensive audit logging
+- Secure file validation and scanning
 
-3. **Flexible Deployment Options**
-   - Fully managed (Pyx-hosted Zulip + Pyx-hosted STUF)
-   - Hybrid (Pyx-hosted Zulip + Self-hosted STUF)
-   - Fully self-hosted (Self-hosted Zulip + Self-hosted STUF)
-   - Clear migration paths between deployment models
+**Trust Through Transparency**
 
-4. **Seamless Integration**
-   - Deep integration with Zulip for notifications and management
-   - Pluggable Django app for Trust Architect administration
-   - API-based architecture for future integrations
+- "Code under glass" approach provides complete visibility
+- All deployed code and configuration is preserved in a private git repository
+- Trust Architects have read access to verify security implementations
+- No hidden processes or black-box operations
 
-5. **Governance-Focused Metadata**
-   - Configurable metadata collection for uploads
-   - IP ownership declarations
-   - License condition tracking
-   - Customizable fields based on project requirements
+**Flexible Deployment Options**
+
+- Fully managed (Pyx-hosted Zulip + Pyx-hosted STUF)
+- Hybrid (Pyx-hosted Zulip + Self-hosted STUF)
+- Fully self-hosted (Self-hosted Zulip + Self-hosted STUF)
+- Clear migration paths between deployment models
+
+**Seamless Integration**
+
+- Deep integration with Zulip for notifications and management
+- Pluggable Django app for Trust Architect administration
+- API-based architecture for future integrations
+
+**Governance-Focused Metadata**
+
+- Configurable metadata collection for uploads
+- IP ownership declarations
+- License condition tracking
+- Customizable fields based on project requirements
 
 ## Key Differentiators
 

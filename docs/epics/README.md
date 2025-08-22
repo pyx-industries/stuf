@@ -6,6 +6,7 @@
 
 ### Trust Architects (TA)
 Trust Architects are the primary administrators of the Secure Trusted Upload Facility (STUF). They need to:
+
 - Create and configure new STUF instances for projects ([Create New STUF](create_new_STUF.md))
 - Manage project participants and their access ([Manage Project Participants](manage_project_participants.md))
 - Configure metadata requirements for uploads ([Metadata Configuration](metadata_configuration.md))
@@ -15,6 +16,7 @@ Trust Architects are the primary administrators of the Secure Trusted Upload Fac
 
 ### Project Participants
 Project Participants are users who need to share confidential information with the project. They need to:
+
 - Securely authenticate to the system ([Mobile OTP Authentication](mobile_otp_authentication.md))
 - Upload files with appropriate metadata ([File Upload Interface](file_upload_interface.md))
 - View their upload history and status ([Upload History](upload_history.md))
