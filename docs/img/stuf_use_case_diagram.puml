@@ -20,93 +20,51 @@ package "Storage Bucket" as StorageBucket {
 package "Database" as Database {
 }
 
-' Use case packages
-rectangle "Create New STUF" as CreateSTUF {
-  usecase "Configure new STUF instance" as UC1
-  usecase "Set up infrastructure" as UC2
-  usecase "Deploy STUF" as UC3
-}
-
-rectangle "Mobile OTP Authentication" as MobileOTP {
-  usecase "Verify email with magic link" as UC4
-  usecase "Verify phone with SMS" as UC5
-  usecase "Authenticate with OTP" as UC6
-}
-
-rectangle "Metadata Configuration" as MetadataConfig {
-  usecase "Define metadata fields" as UC7
-  usecase "Configure field options" as UC8
-  usecase "Set validation rules" as UC9
-}
-
-rectangle "File Upload Interface" as FileUpload {
-  usecase "Select files" as UC10
-  usecase "Enter metadata" as UC11
-  usecase "Submit upload" as UC12
-}
-
-rectangle "Manage Project Participants" as ManageParticipants {
-  usecase "Add participants" as UC13
-  usecase "Edit participant details" as UC14
-  usecase "Activate/deactivate participants" as UC15
-}
-
-rectangle "Admin Tool Download Interface" as AdminDownload {
-  usecase "Browse uploaded files" as UC16
-  usecase "Preview files" as UC17
-  usecase "Download files" as UC18
-}
-
-rectangle "Upload History" as UploadHistory {
-  usecase "View all uploads" as UC19
-  usecase "Filter uploads" as UC20
-  usecase "View upload details" as UC21
-}
-
-rectangle "Zulip Notifications" as ZulipNotifications {
-  usecase "Configure notifications" as UC22
-  usecase "Send upload notifications" as UC23
-  usecase "Send batch notifications" as UC24
-}
+' Use cases - one per epic
+usecase "Create New STUF" as UC1
+usecase "Mobile OTP Authentication" as UC2
+usecase "Metadata Configuration" as UC3
+usecase "File Upload Interface" as UC4
+usecase "Manage Project Participants" as UC5
+usecase "Admin Tool Download Interface" as UC6
+usecase "Upload History" as UC7
+usecase "Zulip Notifications" as UC8
 
 ' Relationships between actors and use cases
-TA --> CreateSTUF
-TA --> MetadataConfig
-TA --> ManageParticipants
-TA --> AdminDownload
-TA --> ZulipNotifications
+TA --> UC1
+TA --> UC3
+TA --> UC5
+TA --> UC6
+TA --> UC8
 
-PP --> MobileOTP
-PP --> FileUpload
-PP --> UploadHistory
+PP --> UC2
+PP --> UC4
+PP --> UC7
 
 ' Component interactions
-CreateSTUF ..> DjangoApp
-CreateSTUF ..> Database
-CreateSTUF ..> StorageBucket
+UC1 ..> DjangoApp
+UC1 ..> Database
+UC1 ..> StorageBucket
 
-MobileOTP ..> SPA
-MobileOTP ..> APIService
-MobileOTP ..> StorageBucket
+UC2 ..> SPA
+UC2 ..> APIService
 
-MetadataConfig ..> DjangoApp
-MetadataConfig ..> StorageBucket
+UC3 ..> DjangoApp
+UC3 ..> Database
 
-FileUpload ..> SPA
-FileUpload ..> APIService
-FileUpload ..> StorageBucket
+UC4 ..> SPA
+UC4 ..> APIService
+UC4 ..> StorageBucket
 
-ManageParticipants ..> DjangoApp
-ManageParticipants ..> Database
-ManageParticipants ..> StorageBucket
+UC5 ..> DjangoApp
+UC5 ..> Database
 
-AdminDownload ..> DjangoApp
-AdminDownload ..> StorageBucket
+UC6 ..> DjangoApp
+UC6 ..> StorageBucket
 
-UploadHistory ..> SPA
-UploadHistory ..> APIService
-UploadHistory ..> StorageBucket
+UC7 ..> SPA
+UC7 ..> APIService
 
-ZulipNotifications ..> APIService
+UC8 ..> APIService
 
 @enduml
