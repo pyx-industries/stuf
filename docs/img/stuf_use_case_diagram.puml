@@ -59,10 +59,10 @@ DjangoApp ..> StorageBucket
 package "Zulip" as Zulip {
 }
 
-UC8 ..> Zulip
 DjangoApp ..> Zulip
 
 SPA ..> APIService
+APIService ..> DjangoApp
 APIService ..> StorageBucket
 
 @enduml
