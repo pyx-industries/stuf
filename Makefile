@@ -6,8 +6,8 @@
 docs:
 	@echo "Generating diagrams from PlantUML files..."
 	@which plantuml > /dev/null || (echo "Error: PlantUML not found. Please install it first." && exit 1)
-	@plantuml img/*.puml
-	@echo "Diagrams generated successfully in img/ directory."
+	@plantuml docs/img/*.puml
+	@echo "Diagrams generated successfully in docs/img/ directory."
 	@echo "Building documentation website..."
 	@which mkdocs > /dev/null || (echo "Error: MkDocs not found. Please install it with 'pip install mkdocs mkdocs-material'" && exit 1)
 	@mkdocs build

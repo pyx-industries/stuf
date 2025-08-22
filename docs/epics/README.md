@@ -1,6 +1,6 @@
 # STUF Epics Overview
 
-![STUF Use Case Diagram](../img/stuf_use_case_diagram.png)
+![STUF Use Case Diagram](img/stuf_use_case_diagram.png)
 
 ## Stakeholders and Their Needs
 

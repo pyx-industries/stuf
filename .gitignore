@@ -1,7 +1,7 @@
 .aider*
 
 # Ignore generated PNG files from PlantUML
-img/*.png
+docs/img/*.png
 
 # Ignore generated MkDocs site
 site/

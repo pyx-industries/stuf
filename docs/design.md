@@ -1,6 +1,6 @@
 # Secure Trusted Upload Facility (STUF) - System Design
 
-![STUF C4 Context Diagram](../img/stuf_c4_context_diagram.png)
+![STUF C4 Context Diagram](img/stuf_c4_context_diagram.png)
 
 ## Architecture Overview
 
