@@ -7,6 +7,7 @@ The Secure Trusted Upload Facility (STUF) is designed to solve a critical challe
 ### Core Problem
 
 Organizations frequently need to collect sensitive information from external collaborators, including:
+
 - Intellectual property
 - Confidential documents
 - Research data
