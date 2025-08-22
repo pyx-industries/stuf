@@ -1,0 +1,112 @@
+@startuml stuf_use_case_diagram
+
+' Actors
+actor "Trust Architect" as TA
+actor "Project Participant" as PP
+
+' Components as subsystems
+package "Django App" as DjangoApp {
+}
+
+package "API Service" as APIService {
+}
+
+package "SPA" as SPA {
+}
+
+package "Storage Bucket" as StorageBucket {
+}
+
+package "Database" as Database {
+}
+
+' Use case packages
+rectangle "Create New STUF" as CreateSTUF {
+  usecase "Configure new STUF instance" as UC1
+  usecase "Set up infrastructure" as UC2
+  usecase "Deploy STUF" as UC3
+}
+
+rectangle "Mobile OTP Authentication" as MobileOTP {
+  usecase "Verify email with magic link" as UC4
+  usecase "Verify phone with SMS" as UC5
+  usecase "Authenticate with OTP" as UC6
+}
+
+rectangle "Metadata Configuration" as MetadataConfig {
+  usecase "Define metadata fields" as UC7
+  usecase "Configure field options" as UC8
+  usecase "Set validation rules" as UC9
+}
+
+rectangle "File Upload Interface" as FileUpload {
+  usecase "Select files" as UC10
+  usecase "Enter metadata" as UC11
+  usecase "Submit upload" as UC12
+}
+
+rectangle "Manage Project Participants" as ManageParticipants {
+  usecase "Add participants" as UC13
+  usecase "Edit participant details" as UC14
+  usecase "Activate/deactivate participants" as UC15
+}
+
+rectangle "Admin Tool Download Interface" as AdminDownload {
+  usecase "Browse uploaded files" as UC16
+  usecase "Preview files" as UC17
+  usecase "Download files" as UC18
+}
+
+rectangle "Upload History" as UploadHistory {
+  usecase "View all uploads" as UC19
+  usecase "Filter uploads" as UC20
+  usecase "View upload details" as UC21
+}
+
+rectangle "Zulip Notifications" as ZulipNotifications {
+  usecase "Configure notifications" as UC22
+  usecase "Send upload notifications" as UC23
+  usecase "Send batch notifications" as UC24
+}
+
+' Relationships between actors and use cases
+TA --> CreateSTUF
+TA --> MetadataConfig
+TA --> ManageParticipants
+TA --> AdminDownload
+TA --> ZulipNotifications
+
+PP --> MobileOTP
+PP --> FileUpload
+PP --> UploadHistory
+
+' Component interactions
+CreateSTUF ..> DjangoApp
+CreateSTUF ..> Database
+CreateSTUF ..> StorageBucket
+
+MobileOTP ..> SPA
+MobileOTP ..> APIService
+MobileOTP ..> StorageBucket
+
+MetadataConfig ..> DjangoApp
+MetadataConfig ..> StorageBucket
+
+FileUpload ..> SPA
+FileUpload ..> APIService
+FileUpload ..> StorageBucket
+
+ManageParticipants ..> DjangoApp
+ManageParticipants ..> Database
+ManageParticipants ..> StorageBucket
+
+AdminDownload ..> DjangoApp
+AdminDownload ..> StorageBucket
+
+UploadHistory ..> SPA
+UploadHistory ..> APIService
+UploadHistory ..> StorageBucket
+
+ZulipNotifications ..> APIService
+
+@enduml
