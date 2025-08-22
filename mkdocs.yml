@@ -12,25 +12,25 @@ theme:
     - content.code.copy
 
 nav:
-  - Home: README.md
+  - Home: index.md
   - Design: design.md
-  - Technical Architecture: docs/technical_architecture.md
+  - Technical Architecture: technical_architecture.md
   - User Guides:
-    - Overview: docs/user_guides/index.md
-    - Administrator: docs/user_guides/administrator.md
-    - Trust Architect: docs/user_guides/trust_architect.md
-    - Project Participant: docs/user_guides/project_participant.md
-    - Integration: docs/user_guides/integration.md
+    - Overview: user_guides/index.md
+    - Administrator: user_guides/administrator.md
+    - Trust Architect: user_guides/trust_architect.md
+    - Project Participant: user_guides/project_participant.md
+    - Integration: user_guides/integration.md
   - Deployment:
-    - Overview: docs/deployment/index.md
-    - Self-Hosted: docs/deployment/self-hosted.md
-    - Pyx-Hosted: docs/deployment/pyx-hosted.md
-    - Migration: docs/deployment/migration.md
-  - Implementation Guide: docs/implementation_guide.md
-  - Operations Guide: docs/operations_guide.md
+    - Overview: deployment/index.md
+    - Self-Hosted: deployment/self-hosted.md
+    - Pyx-Hosted: deployment/pyx-hosted.md
+    - Migration: deployment/migration.md
+  - Implementation Guide: implementation_guide.md
+  - Operations Guide: operations_guide.md
   - Technical Details:
-    - Configuration Persistence: docs/technical/configuration_persistence.md
-  - Vision and Roadmap: docs/vision_and_roadmap.md
+    - Configuration Persistence: technical/configuration_persistence.md
+  - Vision and Roadmap: vision_and_roadmap.md
   - Epics:
     - Overview: epics/README.md
     - Create New STUF: epics/create_new_STUF.md
