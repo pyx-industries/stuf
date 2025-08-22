@@ -1,1 +1,4 @@
 .aider*
+
+# Ignore generated PNG files from PlantUML
+img/*.png
