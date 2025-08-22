@@ -1,5 +1,7 @@
 # Secure Trusted Upload Facility (STUF) - System Design
 
+![STUF C4 Context Diagram](img/stuf_c4_context_diagram.png)
+
 ## Architecture Overview
 
 The STUF system consists of five main components:
