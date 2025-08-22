@@ -64,6 +64,5 @@ DjangoApp ..> Zulip
 
 SPA ..> APIService
 APIService ..> StorageBucket
-APIService ..> Database
 
 @enduml
