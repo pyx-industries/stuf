@@ -2,3 +2,6 @@
 
 # Ignore generated PNG files from PlantUML
 img/*.png
+
+# Ignore generated MkDocs site
+site/
