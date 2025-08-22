@@ -1,4 +1,4 @@
-@startuml STUF Use Case Diagram
+@startuml stuf_use_case_diagram
 
 ' Actors
 actor "Trust Architect" as TA
