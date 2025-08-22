@@ -13,6 +13,7 @@ theme:
 
 nav:
   - Home: README.md
+  - Design: design.md
   - Technical Architecture: docs/technical_architecture.md
   - User Guides:
     - Overview: docs/user_guides/index.md
@@ -32,6 +33,27 @@ nav:
   - Vision and Roadmap: docs/vision_and_roadmap.md
   - Epics:
     - Overview: epics/README.md
+    - Create New STUF: epics/create_new_STUF.md
+    - Mobile OTP Authentication: epics/mobile_otp_authentication.md
+    - Metadata Configuration: epics/metadata_configuration.md
+    - File Upload Interface: epics/file_upload_interface.md
+    - Manage Project Participants: epics/manage_project_participants.md
+    - Admin Tool Download Interface: epics/admin_tool_download_interface.md
+    - Upload History: epics/upload_history.md
+    - Zulip Notifications: epics/zulip_notifications.md
+  - Future Sprints:
+    - Advanced Audit Logging: future_sprints/advanced_audit_logging.md
+    - API Upload Features: future_sprints/api_upload_features.md
+    - BYOB Storage: future_sprints/byob_storage.md
+    - Combined User Management: future_sprints/combined_user_management.md
+    - Comprehensive Logging: future_sprints/comprehensive_logging.md
+    - CSV User Management: future_sprints/csv_user_management.md
+    - Custom Branding Elements: future_sprints/custom_branding_elements.md
+    - Dedicated AWS Subaccount: future_sprints/dedicated_aws_subaccount.md
+    - Multi-Cloud Storage: future_sprints/multi_cloud_storage.md
+    - Pyx Platform Integration: future_sprints/pyx_platform_integration.md
+    - Upload Receipts: future_sprints/upload_receipts.md
+  - Todo: todo/index.md
 
 markdown_extensions:
   - pymdownx.highlight
@@ -44,3 +66,8 @@ markdown_extensions:
 
 plugins:
   - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/
