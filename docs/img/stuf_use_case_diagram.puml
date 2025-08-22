@@ -43,28 +43,22 @@ PP --> UC7
 
 ' Component interactions
 UC1 ..> DjangoApp
-UC1 ..> Database
-UC1 ..> StorageBucket
+UC3 ..> DjangoApp
+UC5 ..> DjangoApp
+UC6 ..> DjangoApp
 
 UC2 ..> SPA
-UC2 ..> APIService
-
-UC3 ..> DjangoApp
-UC3 ..> Database
-
 UC4 ..> SPA
-UC4 ..> APIService
-UC4 ..> StorageBucket
-
-UC5 ..> DjangoApp
-UC5 ..> Database
-
-UC6 ..> DjangoApp
-UC6 ..> StorageBucket
-
 UC7 ..> SPA
-UC7 ..> APIService
-
 UC8 ..> APIService
+
+' Component dependencies
+DjangoApp ..> Database
+DjangoApp ..> StorageBucket
+DjangoApp ..> APIService
+
+SPA ..> APIService
+APIService ..> StorageBucket
+APIService ..> Database
 
 @enduml
