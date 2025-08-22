@@ -55,7 +55,12 @@ UC8 ..> APIService
 ' Component dependencies
 DjangoApp ..> Database
 DjangoApp ..> StorageBucket
-DjangoApp ..> APIService
+
+package "Zulip" as Zulip {
+}
+
+UC8 ..> Zulip
+DjangoApp ..> Zulip
 
 SPA ..> APIService
 APIService ..> StorageBucket
