@@ -50,7 +50,7 @@ UC6 ..> DjangoApp
 UC2 ..> SPA
 UC4 ..> SPA
 UC7 ..> SPA
-UC8 ..> APIService
+UC8 ..> Zulip
 
 ' Component dependencies
 DjangoApp ..> Database
