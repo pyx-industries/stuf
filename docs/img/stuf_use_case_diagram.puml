@@ -1,0 +1,68 @@
+@startuml stuf_use_case_diagram
+
+' Actors
+actor "Trust Architect" as TA
+actor "Project Participant" as PP
+
+' Components as subsystems
+package "Django App" as DjangoApp {
+}
+
+package "API Service" as APIService {
+}
+
+package "SPA" as SPA {
+}
+
+package "Storage Bucket" as StorageBucket {
+}
+
+package "Database" as Database {
+}
+
+' Use cases - one per epic
+usecase "Create New STUF" as UC1
+usecase "Mobile OTP Authentication" as UC2
+usecase "Metadata Configuration" as UC3
+usecase "File Upload Interface" as UC4
+usecase "Manage Project Participants" as UC5
+usecase "Admin Tool Download Interface" as UC6
+usecase "Upload History" as UC7
+usecase "Zulip Notifications" as UC8
+
+' Relationships between actors and use cases
+TA --> UC1
+TA --> UC3
+TA --> UC5
+TA --> UC6
+TA --> UC8
+
+PP --> UC2
+PP --> UC4
+PP --> UC7
+
+' Component interactions
+UC1 ..> DjangoApp
+UC3 ..> DjangoApp
+UC5 ..> DjangoApp
+UC6 ..> DjangoApp
+
+UC2 ..> SPA
+UC4 ..> SPA
+UC7 ..> SPA
+UC8 ..> Zulip
+
+' Component dependencies
+DjangoApp ..> Database
+DjangoApp ..> StorageBucket
+
+package "Zulip" as Zulip {
+}
+
+DjangoApp ..> Zulip
+
+SPA ..> APIService
+APIService ..> DjangoApp
+APIService ..> StorageBucket
+
+@enduml

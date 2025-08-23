@@ -1,0 +1,73 @@
+site_name: Secure Trusted Upload Facility (STUF)
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - navigation.indexes
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Design: design.md
+  - Technical Architecture: technical_architecture.md
+  - User Guides:
+    - Overview: user_guides/index.md
+    - Administrator: user_guides/administrator.md
+    - Trust Architect: user_guides/trust_architect.md
+    - Project Participant: user_guides/project_participant.md
+    - Integration: user_guides/integration.md
+  - Deployment:
+    - Overview: deployment/index.md
+    - Self-Hosted: deployment/self-hosted.md
+    - Pyx-Hosted: deployment/pyx-hosted.md
+    - Migration: deployment/migration.md
+  - Implementation Guide: implementation_guide.md
+  - Operations Guide: operations_guide.md
+  - Technical Details:
+    - Configuration Persistence: technical/configuration_persistence.md
+  - Vision and Roadmap: vision_and_roadmap.md
+  - Epics:
+    - Overview: epics/README.md
+    - Create New STUF: epics/create_new_STUF.md
+    - Mobile OTP Authentication: epics/mobile_otp_authentication.md
+    - Metadata Configuration: epics/metadata_configuration.md
+    - File Upload Interface: epics/file_upload_interface.md
+    - Manage Project Participants: epics/manage_project_participants.md
+    - Admin Tool Download Interface: epics/admin_tool_download_interface.md
+    - Upload History: epics/upload_history.md
+    - Zulip Notifications: epics/zulip_notifications.md
+  - Future Sprints:
+    - Advanced Audit Logging: future_sprints/advanced_audit_logging.md
+    - API Upload Features: future_sprints/api_upload_features.md
+    - BYOB Storage: future_sprints/byob_storage.md
+    - Combined User Management: future_sprints/combined_user_management.md
+    - Comprehensive Logging: future_sprints/comprehensive_logging.md
+    - CSV User Management: future_sprints/csv_user_management.md
+    - Custom Branding Elements: future_sprints/custom_branding_elements.md
+    - Dedicated AWS Subaccount: future_sprints/dedicated_aws_subaccount.md
+    - Multi-Cloud Storage: future_sprints/multi_cloud_storage.md
+    - Pyx Platform Integration: future_sprints/pyx_platform_integration.md
+    - Upload Receipts: future_sprints/upload_receipts.md
+  - Todo: todo/index.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.emoji
+  - admonition
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/

@@ -1,0 +1,33 @@
+@startuml stuf_c4_context_diagram
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Define actors
+Person(trust_architect, "Trust Architect", "Administers the STUF system and manages access")
+Person(project_participant, "Project Participant", "Uploads confidential files to the project")
+
+' Define STUF system
+System(stuf_system, "Secure Trusted Upload Facility (STUF)", "Provides secure file upload capabilities with strong authentication and governance")
+
+' Define external systems
+System_Ext(email_service, "Email Service", "Sends magic links and notifications")
+System_Ext(sms_service, "SMS Service", "Sends OTP codes for authentication")
+System_Ext(zulip, "Zulip", "Chat platform for notifications and collaboration")
+System_Ext(storage_provider, "Cloud Storage Provider", "AWS S3 or Azure Storage for file storage")
+System_Ext(github, "GitHub", "Hosts code repositories for STUF instances")
+
+' Relationships from actors to system
+Rel(trust_architect, stuf_system, "Creates and manages STUF instances, configures metadata, manages participants, downloads files")
+Rel(project_participant, stuf_system, "Authenticates, uploads files with metadata, views upload history")
+
+' Relationships from system to external systems
+Rel(stuf_system, email_service, "Sends magic links and notifications")
+Rel(stuf_system, sms_service, "Sends OTP codes")
+Rel(stuf_system, zulip, "Sends notifications about uploads")
+Rel(stuf_system, storage_provider, "Stores files and configuration")
+Rel(stuf_system, github, "Stores code and configuration as 'code under glass'")
+
+' Add legend
+SHOW_LEGEND()
+
+@enduml

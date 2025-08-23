@@ -20,34 +20,39 @@ Traditional file sharing methods often fall short in security, auditability, or 
 
 STUF provides a trusted, secure mechanism for receiving confidential files with:
 
-1. **Strong Security by Design**
-   - Two-factor authentication (email + SMS verification)
-   - Encrypted storage with strict access controls
-   - Comprehensive audit logging
-   - Secure file validation and scanning
+**Strong Security by Design**
 
-2. **Trust Through Transparency**
-   - "Code under glass" approach provides complete visibility
-   - All deployed code and configuration is preserved in a private git repository
-   - Trust Architects have read access to verify security implementations
-   - No hidden processes or black-box operations
+- Two-factor authentication (email + SMS verification)
+- Encrypted storage with strict access controls
+- Comprehensive audit logging
+- Secure file validation and scanning
 
-3. **Flexible Deployment Options**
-   - Fully managed (Pyx-hosted Zulip + Pyx-hosted STUF)
-   - Hybrid (Pyx-hosted Zulip + Self-hosted STUF)
-   - Fully self-hosted (Self-hosted Zulip + Self-hosted STUF)
-   - Clear migration paths between deployment models
+**Trust Through Transparency**
 
-4. **Seamless Integration**
-   - Deep integration with Zulip for notifications and management
-   - Pluggable Django app for Trust Architect administration
-   - API-based architecture for future integrations
+- "Code under glass" approach provides complete visibility
+- All deployed code and configuration is preserved in a private git repository
+- Trust Architects have read access to verify security implementations
+- No hidden processes or black-box operations
 
-5. **Governance-Focused Metadata**
-   - Configurable metadata collection for uploads
-   - IP ownership declarations
-   - License condition tracking
-   - Customizable fields based on project requirements
+**Flexible Deployment Options**
+
+- Fully managed (Pyx-hosted Zulip + Pyx-hosted STUF)
+- Hybrid (Pyx-hosted Zulip + Self-hosted STUF)
+- Fully self-hosted (Self-hosted Zulip + Self-hosted STUF)
+- Clear migration paths between deployment models
+
+**Seamless Integration**
+
+- Deep integration with Zulip for notifications and management
+- Pluggable Django app for Trust Architect administration
+- API-based architecture for future integrations
+
+**Governance-Focused Metadata**
+
+- Configurable metadata collection for uploads
+- IP ownership declarations
+- License condition tracking
+- Customizable fields based on project requirements
 
 ## Key Differentiators
 
@@ -73,12 +78,12 @@ STUF consists of five main components:
 
 For detailed information on deploying and using STUF, please refer to:
 
-- [Technical Architecture](docs/technical_architecture.md)
-- [User Guides](docs/user_guides/index.md)
-- [Deployment Documentation](docs/deployment/index.md)
-- [Implementation Guide](docs/implementation_guide.md)
-- [Operations Guide](docs/operations_guide.md)
+- [Technical Architecture](technical_architecture.md)
+- [User Guides](user_guides/index.md)
+- [Deployment Documentation](deployment/index.md)
+- [Implementation Guide](implementation_guide.md)
+- [Operations Guide](operations_guide.md)
 
 ## Vision and Roadmap
 
-STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](docs/vision_and_roadmap.md).
+STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](vision_and_roadmap.md).
