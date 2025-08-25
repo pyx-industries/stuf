@@ -19,6 +19,7 @@ def api_uses_keycloak():
     # This is a documentation step, no implementation needed
     pass
 
+@pytest.fixture
 @given('a JWT token from Keycloak')
 def jwt_token():
     return "fake-jwt-token"
@@ -30,7 +31,7 @@ def oauth2_scheme_check():
     assert isinstance(oauth2_scheme, OAuth2AuthorizationCodeBearer)
 
 @given(parsers.parse('I am authenticated as "{username}" with roles "{roles}"'))
-def mock_authentication(username, roles):
+def mock_authentication(request, username, roles):
     # This is a mock for the authentication
     # In a real test, you would set up the authentication properly
     roles_list = [role.strip() for role in roles.split(',')]
@@ -50,14 +51,13 @@ def mock_authentication(username, roles):
     mock_validate_token.return_value = mock_token_info
     
     # Add the patch to the request finalizer to stop it after the test
-    request = pytest.request
     request.addfinalizer(patch_validate_token.stop)
     
     return mock_validate_token
 
 # When steps
 @when('the API validates the token')
-def validate_token_call(jwt_token):
+def validate_token_call(request, jwt_token):
     # Create a patch for requests.post
     patch_post = patch('api.auth.middleware.requests.post')
     mock_post = patch_post.start()
@@ -77,7 +77,6 @@ def validate_token_call(jwt_token):
     result = validate_token(jwt_token)
     
     # Add the patch to the request finalizer to stop it after the test
-    request = pytest.request
     request.addfinalizer(patch_post.stop)
     
     return mock_post, result
@@ -92,7 +91,7 @@ def make_get_request(endpoint, mock_authentication):
     return response
 
 # Then steps
-@then('the authentication flow should follow these steps:')
+@then(parsers.parse('the authentication flow should follow these steps:'))
 def check_auth_flow_steps(request):
     # This is a documentation step, no implementation needed
     pass
@@ -114,15 +113,15 @@ def check_user_info_extraction(validate_token_call):
 
 @then('the authorizationUrl should point to Keycloak\'s auth endpoint')
 def check_authorization_url():
-    assert "protocol/openid-connect/auth" in oauth2_scheme.authorizationUrl
+    assert "protocol/openid-connect/auth" in oauth2_scheme.authorization_url
 
 @then('the tokenUrl should point to Keycloak\'s token endpoint')
 def check_token_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.tokenUrl
+    assert "protocol/openid-connect/token" in oauth2_scheme.token_url
 
 @then('the refreshUrl should point to Keycloak\'s token endpoint')
 def check_refresh_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.refreshUrl
+    assert "protocol/openid-connect/token" in oauth2_scheme.refresh_url
 
 @then(parsers.parse('I should receive a {status_code:d} status code'))
 def check_status_code(status_code, request):

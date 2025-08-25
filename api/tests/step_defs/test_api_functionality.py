@@ -24,7 +24,7 @@ def response():
 
 # Given steps
 @given(parsers.parse('I am authenticated as "{username}" with roles "{roles}"'))
-def mock_authentication(username, roles):
+def mock_authentication(request, username, roles):
     # This is a mock for the authentication
     # In a real test, you would set up the authentication properly
     roles_list = [role.strip() for role in roles.split(',')]
@@ -44,13 +44,12 @@ def mock_authentication(username, roles):
     mock_validate_token.return_value = mock_token_info
     
     # Add the patch to the request finalizer to stop it after the test
-    request = pytest.request
     request.addfinalizer(patch_validate_token.stop)
     
     return mock_validate_token
 
 @given('there are files in the "test" collection')
-def mock_files_in_collection():
+def mock_files_in_collection(request):
     # Mock the storage client's list_objects method
     patch_list_objects = patch('api.storage.minio.minio_client.list_objects')
     mock_list_objects = patch_list_objects.start()
@@ -61,7 +60,6 @@ def mock_files_in_collection():
     ]
     
     # Add the patch to the request finalizer to stop it after the test
-    request = pytest.request
     request.addfinalizer(patch_list_objects.stop)
     
     return mock_list_objects

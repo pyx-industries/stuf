@@ -24,9 +24,10 @@ class MinioClient:
             secret_key=MINIO_SECRET_KEY,
             secure=MINIO_SECURE
         )
-        # Only try to ensure bucket exists if not in test mode
-        if os.environ.get('PYTEST_CURRENT_TEST') is None:
+        try:
             self._ensure_bucket_exists(DEFAULT_BUCKET)
+        except Exception as e:
+            print(f"Warning: Could not ensure bucket exists: {e}")
     
     def _ensure_bucket_exists(self, bucket_name: str):
         """Ensure the bucket exists, create it if it doesn't"""
