@@ -36,8 +36,8 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/keycloak/Dockerfile
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
@@ -53,8 +53,8 @@ services:
 
   spa:
     build:
-      context: ./spa
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/minio/Dockerfile
     ports:
       - "${SPA_PORT:-3000}:3000"
     environment:
