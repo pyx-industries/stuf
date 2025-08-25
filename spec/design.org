@@ -1,0 +1,80 @@
+#+TITLE: STUF Authentication and Authorization Design
+#+AUTHOR: Pyx.io Team
+#+DATE: 2025-08-25
+
+* Authentication and Authorization Design
+
+** Realm and STUF Domain Relationship
+
+The STUF system implements a 1:1 mapping between Keycloak realms and STUF domains:
+
+- Each STUF domain (a distinct upload facility created by a Trust Architect) corresponds to exactly one Keycloak realm
+- Each JWT token is issued by exactly one realm and can only be used within that realm
+- The "iss" (issuer) claim in the JWT identifies the specific realm that issued the token
+
+This 1:1 mapping ensures proper isolation between different STUF instances and simplifies the authorization model.
+
+*** Technical Implementation
+
+When a Trust Architect creates a new STUF domain:
+
+1. A new Keycloak realm is automatically created with the same name
+2. Clients for the SPA and API are configured within this realm
+3. The realm's issuer URL becomes part of the token validation process
+4. All authentication and authorization for this STUF domain happens within this realm
+
+The API and SPA are configured to only accept tokens from their specific realm, ensuring that a token issued for one STUF domain cannot be used to access resources in another STUF domain.
+
+** Role Structure
+
+Each STUF domain (realm) has a specific role structure:
+
+*** Admin Role
+
+- One special role called "admin" is created for each realm
+- Trust Architects are assigned this role
+- The admin role grants:
+  - Full access to all collections within the domain
+  - Ability to configure metadata requirements
+  - User management capabilities
+  - Access to all uploaded files
+  - Configuration management for the domain
+
+*** Collection Roles
+
+- One additional role is created for each artifact collection in the STUF domain
+- These roles are named after the collections they represent (e.g., "collection-documents", "collection-code")
+- Project Participants are assigned one or more collection roles
+- Each collection role grants:
+  - Ability to upload files to that specific collection
+  - Ability to view upload history for that collection
+  - Access to collection-specific metadata requirements
+
+*** Role Assignment
+
+- Trust Architects (with admin role) can assign collection roles to Project Participants
+- A Project Participant can have multiple collection roles, allowing them to upload to multiple collections
+- Role assignments are stored in the Keycloak realm and included in the JWT token
+
+** Authorization Flow
+
+1. User authenticates to Keycloak within a specific realm
+2. Keycloak issues a JWT token containing:
+   - The realm's issuer URL
+   - The user's assigned roles (admin and/or collection roles)
+   - Other user attributes as needed
+3. The SPA receives and stores this token
+4. The SPA uses the token to make requests to the API
+5. The API validates the token, checking:
+   - The token was issued by the correct realm
+   - The token is not expired or revoked
+   - The user has the appropriate roles for the requested action
+6. The API grants or denies access based on the roles in the token
+
+** Benefits of This Design
+
+- Clear separation between different STUF domains
+- Simple, role-based authorization model
+- Flexible collection management
+- Secure isolation between domains
+- Straightforward token validation
