@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    build:
+      context: ./docker/keycloak
+      dockerfile: Dockerfile
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -18,13 +20,11 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./docker/keycloak/init-keycloak.sh:/opt/keycloak/bin/init-keycloak.sh
     healthcheck:
-      test: ["CMD", "/opt/keycloak/bin/kc.sh", "show-config"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/"]
       interval: 5s
       timeout: 2s
       retries: 15
-    entrypoint: ["/bin/sh", "-c", "/opt/keycloak/bin/init-keycloak.sh"]
 
   minio:
     image: minio/minio:latest

@@ -1,14 +1,10 @@
 FROM quay.io/keycloak/keycloak:latest
 
-# Install curl for healthcheck
 USER root
-RUN microdnf update -y && microdnf install -y curl && microdnf clean all
-USER keycloak
+RUN microdnf install -y curl
+USER 1000
 
-# Add any custom configuration here
-# COPY realm-export.json /opt/keycloak/data/import/
+COPY init-keycloak.sh /opt/keycloak/bin/init-keycloak.sh
+RUN chmod +x /opt/keycloak/bin/init-keycloak.sh
 
-# Expose the default port
-EXPOSE 8080
-
-# Health check will be handled by Docker Compose
+ENTRYPOINT ["/bin/sh", "-c", "/opt/keycloak/bin/init-keycloak.sh"]
