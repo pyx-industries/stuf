@@ -2,32 +2,57 @@
 #+AUTHOR: Pyx.io Team
 #+DATE: 2025-08-25
 
-* Tasks
+* STUF MVP Implementation
 
-This document outlines the first phase of  implementing the STUF MVP,
-focusing on creating a Docker Compose environment with the following components:
+This document outlines the first phase of implementing the STUF MVP,
+focusing on creating a Docker Compose environment with the following components.
+The implementation follows the architectural patterns defined in .tech/systemPatterns.org
+and aligns with the technology stack specified in .tech/techContext.org.
 
-- Keycloak for authentication
+** Architectural Overview
+
+The STUF MVP will establish a secure file upload system with:
+
+- Keycloak for authentication and authorization
 - MinIO for S3-compatible storage
-- FastAPI backend service
-- React SPA frontend
+- FastAPI backend service implementing the API layer
+- React SPA frontend for user interaction
 
-The goal is to establish the basic authentication flow where:
+This implementation satisfies the core requirements from spec/projectbrief.org
+by establishing a secure authentication flow where:
+
 1. The SPA delegates to Keycloak for login
 2. The SPA obtains a token from Keycloak
 3. The SPA passes the token to the API
 4. The API validates the token with Keycloak
 5. The API connects to MinIO for storage operations
 
-** NEXT  Docker Compose Environment
-   - [ ] Create docker-compose.yml file
-   - [ ] Configure Keycloak service
-   - [ ] Configure MinIO service
-   - [ ] Set up volumes for persistence
-   - [ ] Configure networking between services
+** Active Tasks
 
-This is an indicative exampe of what the docker composition might look like:
+*** NEXT Docker Compose Environment Setup
+This task establishes the foundational infrastructure for the STUF MVP.
 
+**** Files to create/modify
+- docker-compose.yml: Create the main composition file
+- docker/keycloak/Dockerfile: Create custom Keycloak image with health checks
+- docker/minio/Dockerfile: Create custom MinIO image with health checks
+- .env.example: Create environment variable template
+- README.md: Update with Docker Compose instructions
+
+**** Architectural Rationale
+This implementation follows the containerization patterns from .tech/systemPatterns.org,
+ensuring each component is isolated and independently scalable.
+The Docker Compose approach allows for local development while maintaining
+compatibility with the production deployment model.
+
+**** Completion Criteria
+- [ ] All specified files created with proper configurations
+- [ ] Docker Compose environment starts successfully
+- [ ] Services can communicate with each other
+- [ ] Volumes are properly configured for persistence
+- [ ] Health checks implemented for service dependencies
+
+**** Example Implementation
 #+BEGIN_SRC yaml
 version: '3.8'
 
@@ -40,6 +65,11 @@ services:
     ports:
       - "8080:8080"
     command: start-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
 
   minio:
     image: minio/minio
@@ -50,6 +80,11 @@ services:
       - "9000:9000"
       - "9001:9001"
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
 
   api:
     build: ./api
@@ -59,8 +94,10 @@ services:
       - KEYCLOAK_URL=http://keycloak:8080
       - MINIO_ENDPOINT=minio:9000
     depends_on:
-      - keycloak
-      - minio
+      keycloak:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   spa:
     build: ./spa
@@ -73,22 +110,31 @@ services:
       - api
 #+END_SRC
 
-minio and keycloak need some kind of healthcheck or readiness check
+*** TODO Keycloak Configuration Implementation
+This task establishes the authentication and authorization framework.
 
-the api should wait for both minio and keycloak to be available
+**** Files to create/modify
+- docker/keycloak/realm-export.json: Create Keycloak realm configuration
+- docker/keycloak/Dockerfile: Update to import realm configuration
+- api/auth/keycloak.py: Create Keycloak integration module
+- README.md: Update with Keycloak configuration details
 
-the spa should wait for the api to be available
+**** Architectural Rationale
+Following the security patterns in .tech/systemPatterns.org,
+this implementation establishes proper role-based access control
+and client separation for the SPA and API components.
 
-** TODO Keycloak Configuration
-   - [ ] Set up a realm for the application
-   - [ ] Create client for the SPA (public)
-   - [ ] Create client for the API (confidential)
-   - [ ] Configure roles and permissions
-   - [ ] Set up test users
+**** Completion Criteria
+- [ ] Realm configuration created with proper roles and clients
+- [ ] SPA client configured with correct redirect URIs
+- [ ] API client configured with service account
+- [ ] Test users created with appropriate roles
+- [ ] Configuration automatically loaded on container startup
 
-
-We need a realm called "STUF"
-2. Configure two clients:
+**** Implementation Details
+The realm configuration will include:
+1. A realm named "STUF"
+2. Two clients:
    - stuf-spa (public client for the React app)
      - Valid redirect URIs: http://localhost:3000/*
      - Web origins: http://localhost:3000
@@ -96,29 +142,39 @@ We need a realm called "STUF"
    - stuf-api (confidential client for the API)
      - Access type: confidential
      - Service accounts enabled: yes
-3. Set up roles: user, admin
-4. Create test users with appropriate roles
+3. Roles: user, admin
+4. Test users with appropriate roles
 
-Note: this configuration should be loaded/created when the keycloak starts,
-and form part of the definition of "ready" (for the docker-dependencies).
+The configuration will be loaded when Keycloak starts,
+forming part of the definition of "ready" for the docker dependencies.
+Future deployments will require configuration with different URLs,
+so this will be in a file mounted read-only by the docker container.
 
-In future, deployers will need to configure the clients with different URLS.
-So this should be in a file that is mounted read-only by the docker container.
+*** TODO FastAPI Backend Implementation
+This task creates the API layer for the STUF application.
 
-** TODO FastAPI Backend
-   - [ ] Set up basic FastAPI application
-   - [ ] Implement token validation middleware
-   - [ ] Create simple protected endpoints
-   - [ ] Configure MinIO client connection
-   - [ ] Implement basic file operations
-   - [ ] Create Dockerfile for the API
+**** Files to create/modify
+- api/main.py: Create FastAPI application entry point
+- api/auth/middleware.py: Implement token validation middleware
+- api/storage/minio.py: Create MinIO client connection
+- api/routers/files.py: Implement file operation endpoints
+- api/Dockerfile: Create Docker build configuration
+- api/requirements.txt: Define Python dependencies
 
-The fastapi should have a RESTFUL design,
-and should have docs/ endpoint that serves the API spec in html
-rendered dynamically.
+**** Architectural Rationale
+This implementation follows the API design patterns from .tech/systemPatterns.org,
+establishing clear separation of concerns between authentication,
+storage operations, and business logic.
 
-This is an indicative idea of what the FastAPI might look like:
+**** Completion Criteria
+- [ ] FastAPI application successfully starts
+- [ ] Token validation middleware correctly verifies Keycloak tokens
+- [ ] MinIO client successfully connects to storage
+- [ ] API endpoints properly protected by authentication
+- [ ] API documentation available at /docs endpoint
+- [ ] Docker build succeeds
 
+**** Example Implementation
 #+BEGIN_SRC python
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -126,24 +182,42 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 # MinIO client setup
 # Protected endpoints
 
-app = FastAPI()
+app = FastAPI(
+    title="STUF API",
+    description="Secure Trusted Upload Facility API",
+    version="0.1.0"
+)
 
 @app.get("/api/hello")
 async def hello_world(token_data: dict = Depends(validate_token)):
     return {"message": "Hello, your authentication worked!", "user": token_data}
 #+END_SRC
 
+*** TODO React SPA Implementation
+This task creates the user interface for the STUF application.
 
-** TODO React SPA
-   - [ ] Initialize React application
-   - [ ] Set up authentication flow with Keycloak
-   - [ ] Implement token management
-   - [ ] Create basic UI for authenticated users
-   - [ ] Implement API client for backend communication
-   - [ ] Create Dockerfile for the SPA
+**** Files to create/modify
+- spa/package.json: Define React application and dependencies
+- spa/src/App.js: Create main application component
+- spa/src/auth/keycloak.js: Implement Keycloak authentication
+- spa/src/components/FileUpload.js: Create file upload component
+- spa/src/api/client.js: Implement API client
+- spa/Dockerfile: Create Docker build configuration
 
-The SPA will use React and the keycloak-js library:
+**** Architectural Rationale
+Following the frontend patterns in .tech/systemPatterns.org,
+this implementation establishes a clean separation between
+authentication, UI components, and API communication.
 
+**** Completion Criteria
+- [ ] React application successfully builds and runs
+- [ ] Keycloak authentication flow works correctly
+- [ ] Token management handles refresh and expiry
+- [ ] File upload component successfully communicates with API
+- [ ] UI provides appropriate feedback for operations
+- [ ] Docker build succeeds
+
+**** Example Implementation
 #+BEGIN_SRC javascript
 import Keycloak from 'keycloak-js';
 
@@ -157,3 +231,7 @@ const keycloak = new Keycloak({
 // Handle authentication
 // Make authenticated API calls
 #+END_SRC
+
+** Completed Tasks
+
+** Pending Tasks
