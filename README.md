@@ -96,7 +96,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/stuf.git
+   git clone https://github.com/pyx-industries/stuf.git
    cd stuf
    ```
 
