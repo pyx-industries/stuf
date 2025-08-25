@@ -111,10 +111,14 @@ STUF can be run locally using Docker Compose for development and testing purpose
    ```
 
 4. Access the components:
-   - SPA: http://localhost:3000
+   - SPA (Frontend): http://localhost:3000
    - API: http://localhost:8000
+     - Health check: http://localhost:8000/api/health
+     - API info: http://localhost:8000/api/info
    - Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
-   - MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
+   - MinIO:
+     - API endpoint: http://localhost:9000
+     - Web console: http://localhost:9001 (minioadmin/minioadmin)
 
 ### Environment Components
 
