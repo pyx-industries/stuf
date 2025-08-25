@@ -11,7 +11,7 @@ services:
       - KEYCLOAK_API_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
       - KEYCLOAK_API_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
       - KEYCLOAK_ADMIN_ROLE=${KEYCLOAK_ADMIN_ROLE:-admin}
-      - KEYCLOAK_COLLECTION_ROLES=${KEYCLOAK_COLLECTION_ROLES:-collection-documents,collection-code,collection-images}
+      - KEYCLOAK_COLLECTION_ROLES=${KEYCLOAK_COLLECTION_ROLES:-collection-1-docs,collection-2-contracts,collection-3-cat-pics}
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     command: start-dev
