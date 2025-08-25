@@ -8,10 +8,8 @@ echo "Starting Keycloak initialization script..."
 
 # Wait for Keycloak to be ready
 echo "Waiting for Keycloak to be ready..."
-until curl -s http://localhost:8080 > /dev/null; do
-  sleep 2
-done
-echo "Keycloak is up and running!"
+sleep 30
+echo "Proceeding with configuration..."
 
 # Log in to admin console
 echo "Logging in to Keycloak admin console..."
