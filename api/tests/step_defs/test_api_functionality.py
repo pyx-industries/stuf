@@ -1,0 +1,100 @@
+import pytest
+from pytest_bdd import scenarios, given, when, then, parsers
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
+
+from api.main import app
+
+# Import scenarios from feature files
+scenarios('../features/api_functionality.feature')
+
+# Fixtures
+@pytest.fixture
+def client():
+    return TestClient(app)
+
+@pytest.fixture
+def response():
+    return {}
+
+# Given steps
+@given(parsers.parse('I am authenticated as "{username}" with roles "{roles}"'))
+def mock_authentication(username, roles):
+    # This is a mock for the authentication
+    # In a real test, you would set up the authentication properly
+    roles_list = [role.strip() for role in roles.split(',')]
+    
+    # Create a patch for the validate_token function
+    patch_validate_token = patch('api.auth.middleware.validate_token')
+    mock_validate_token = patch_validate_token.start()
+    
+    # Configure the mock
+    mock_token_info = {
+        "preferred_username": username,
+        "email": f"{username}@example.com",
+        "name": f"{username.capitalize()} User",
+        "realm_access": {"roles": roles_list},
+        "active": True
+    }
+    mock_validate_token.return_value = mock_token_info
+    
+    # Add the patch to the request finalizer to stop it after the test
+    request = pytest.request
+    request.addfinalizer(patch_validate_token.stop)
+    
+    return mock_validate_token
+
+@given('there are files in the "test" collection')
+def mock_files_in_collection():
+    # Mock the storage client's list_objects method
+    patch_list_objects = patch('api.storage.minio.minio_client.list_objects')
+    mock_list_objects = patch_list_objects.start()
+    
+    # Configure the mock
+    mock_list_objects.return_value = [
+        {"name": "test/file1.txt", "size": 1024, "last_modified": "2023-01-01T00:00:00Z"}
+    ]
+    
+    # Add the patch to the request finalizer to stop it after the test
+    request = pytest.request
+    request.addfinalizer(patch_list_objects.stop)
+    
+    return mock_list_objects
+
+# When steps
+@when(parsers.parse('I make a GET request to "{endpoint}"'))
+def make_get_request(client, response, endpoint, mock_authentication=None):
+    headers = {"Authorization": "Bearer fake-token"} if mock_authentication else {}
+    response['response'] = client.get(endpoint, headers=headers)
+
+@when(parsers.parse('I make a GET request to "{endpoint}" without authentication'))
+def make_get_request_without_auth(client, response, endpoint):
+    response['response'] = client.get(endpoint)
+
+@when(parsers.parse('I make a POST request to "{endpoint}" without authentication'))
+def make_post_request_without_auth(client, response, endpoint):
+    response['response'] = client.post(endpoint)
+
+# Then steps
+@then(parsers.parse('I should receive a {status_code:d} status code'))
+def check_status_code(response, status_code):
+    assert response['response'].status_code == status_code
+
+@then(parsers.parse('the response should contain a "{field}" field with value "{value}"'))
+def check_response_field(response, field, value):
+    json_response = response['response'].json()
+    assert field in json_response
+    assert json_response[field] == value
+
+@then(parsers.parse('the response should contain a "{field}" field with values "{values}"'))
+def check_response_field_list(response, field, values):
+    json_response = response['response'].json()
+    assert field in json_response
+    expected_values = [value.strip() for value in values.split(',')]
+    assert set(json_response[field]) == set(expected_values)
+
+@then(parsers.parse('the response should contain a "{field}" array'))
+def check_response_array(response, field):
+    json_response = response['response'].json()
+    assert field in json_response
+    assert isinstance(json_response[field], list)
