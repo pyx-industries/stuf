@@ -53,8 +53,8 @@ services:
 
   spa:
     build:
-      context: .
-      dockerfile: spa/Dockerfile
+      context: ./spa
+      dockerfile: Dockerfile
     ports:
       - "${SPA_PORT:-3000}:3000"
     environment:
