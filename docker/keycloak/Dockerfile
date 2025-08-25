@@ -1,7 +1,7 @@
 FROM quay.io/keycloak/keycloak:latest
 
 USER root
-RUN apt-get update && apt-get install -y curl
+RUN yum install -y curl
 USER 1000
 
 COPY init-keycloak.sh /opt/keycloak/bin/init-keycloak.sh
