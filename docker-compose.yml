@@ -6,16 +6,25 @@ services:
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - KEYCLOAK_SPA_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
+      - KEYCLOAK_API_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
+      - KEYCLOAK_API_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
+      - KEYCLOAK_ADMIN_ROLE=${KEYCLOAK_ADMIN_ROLE:-admin}
+      - KEYCLOAK_COLLECTION_ROLES=${KEYCLOAK_COLLECTION_ROLES:-collection-documents,collection-code,collection-images}
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     command: start-dev
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./docker/keycloak/init-keycloak.sh:/opt/keycloak/bin/init-keycloak.sh
     healthcheck:
       test: ["CMD", "/opt/keycloak/bin/kc.sh", "show-config"]
       interval: 5s
       timeout: 2s
       retries: 15
+    entrypoint: ["/bin/sh", "-c", "chmod +x /opt/keycloak/bin/init-keycloak.sh && /opt/keycloak/bin/init-keycloak.sh"]
 
   minio:
     image: minio/minio:latest
@@ -42,6 +51,9 @@ services:
       - "${API_PORT:-8000}:8000"
     environment:
       - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -60,6 +72,8 @@ services:
     environment:
       - REACT_APP_API_URL=${API_URL:-http://localhost:8000}
       - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
+      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
     depends_on:
       - api
 

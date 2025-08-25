@@ -5,3 +5,6 @@ docs/img/*.png
 
 # Ignore generated MkDocs site
 site/
+
+# Environment variables
+.env

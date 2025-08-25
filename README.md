@@ -100,10 +100,13 @@ STUF can be run locally using Docker Compose for development and testing purpose
    cd stuf
    ```
 
-2. Create a `.env` file from the example:
+2. Create a `.env` file from the example and edit as needed:
    ```bash
    cp .env.example .env
    ```
+   
+   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs. 
+   Edit this file to customize your local development environment.
 
 3. Start the Docker Compose environment:
    ```bash
