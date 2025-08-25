@@ -6,7 +6,7 @@ from typing import List, Optional, BinaryIO
 from datetime import timedelta
 
 # MinIO configuration
-MINIO_ENDPOINT = os.environ.get('MINIO_ENDPOINT', 'minio:9000')
+MINIO_ENDPOINT = os.environ.get('MINIO_ENDPOINT', 'localhost:9000')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ROOT_USER', 'minioadmin')
 MINIO_SECRET_KEY = os.environ.get('MINIO_ROOT_PASSWORD', 'minioadmin')
 MINIO_SECURE = os.environ.get('MINIO_SECURE', 'false').lower() == 'true'
@@ -24,7 +24,9 @@ class MinioClient:
             secret_key=MINIO_SECRET_KEY,
             secure=MINIO_SECURE
         )
-        self._ensure_bucket_exists(DEFAULT_BUCKET)
+        # Only try to ensure bucket exists if not in test mode
+        if os.environ.get('PYTEST_CURRENT_TEST') is None:
+            self._ensure_bucket_exists(DEFAULT_BUCKET)
     
     def _ensure_bucket_exists(self, bucket_name: str):
         """Ensure the bucket exists, create it if it doesn't"""
