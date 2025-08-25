@@ -18,7 +18,7 @@ services:
       retries: 15
 
   minio:
-    build: ./docker/minio
+    image: minio/minio:latest
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
