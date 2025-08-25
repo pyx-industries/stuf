@@ -1,7 +1,12 @@
 import pytest
+import sys
+import os
 from pytest_bdd import scenarios, given, when, then, parsers
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+
+# Add the parent directory to sys.path to make the 'api' module importable
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from api.main import app
 
