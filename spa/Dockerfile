@@ -2,10 +2,10 @@ FROM node:16-alpine
 
 WORKDIR /app
 
-COPY ./spa/package*.json ./
+COPY package*.json ./
 RUN npm install
 
-COPY ./spa .
+COPY . .
 
 EXPOSE 3000
 
