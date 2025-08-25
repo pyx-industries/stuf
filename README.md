@@ -82,3 +82,55 @@ For detailed information on deploying and using STUF, please refer to:
 ## Vision and Roadmap
 
 STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](docs/vision_and_roadmap.md).
+
+## Local Development with Docker Compose
+
+STUF can be run locally using Docker Compose for development and testing purposes.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Git for cloning the repository
+
+### Setup Instructions
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-org/stuf.git
+   cd stuf
+   ```
+
+2. Create a `.env` file from the example:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Start the Docker Compose environment:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. Access the components:
+   - SPA: http://localhost:3000
+   - API: http://localhost:8000
+   - Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
+   - MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
+
+### Environment Components
+
+- **Keycloak**: Authentication and authorization server
+- **MinIO**: S3-compatible object storage
+- **API**: FastAPI backend service
+- **SPA**: React frontend application
+
+### Stopping the Environment
+
+To stop the Docker Compose environment:
+```bash
+docker-compose down
+```
+
+To stop and remove volumes (will delete all data):
+```bash
+docker-compose down -v
+```

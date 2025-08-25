@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  keycloak:
+    build: ./docker/keycloak
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+
+  minio:
+    build: ./docker/minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  spa:
+    build:
+      context: ./spa
+      dockerfile: Dockerfile
+    ports:
+      - "${SPA_PORT:-3000}:3000"
+    environment:
+      - REACT_APP_API_URL=${API_URL:-http://localhost:8000}
+      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
+    depends_on:
+      - api
+
+volumes:
+  keycloak_data:
+  minio_data:
