@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   keycloak:
-    build: ./docker/keycloak
+    image: quay.io/keycloak/keycloak:latest
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -12,7 +12,7 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      test: ["CMD", "/opt/keycloak/bin/kc.sh", "show-config"]
       interval: 5s
       timeout: 2s
       retries: 15
