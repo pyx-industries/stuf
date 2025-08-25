@@ -24,7 +24,7 @@ services:
       interval: 5s
       timeout: 2s
       retries: 15
-    entrypoint: ["/bin/sh", "-c", "chmod +x /opt/keycloak/bin/init-keycloak.sh && /opt/keycloak/bin/init-keycloak.sh"]
+    entrypoint: ["/bin/sh", "-c", "/opt/keycloak/bin/init-keycloak.sh"]
 
   minio:
     image: minio/minio:latest
