@@ -10,7 +10,7 @@ from api.main import app # Import app here for dependency override
 @pytest.fixture
 def integration_client(request):
     """TestClient for integration tests with mocked external services."""
-    minio_mock_for_assertions = MagicMock()
+    minio_mock_for_assertions = MagicMock(spec=MinioClient) # Use spec for type-consistent mocking
     
     # Configure default responses for the MinioClient mock instance
     minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
