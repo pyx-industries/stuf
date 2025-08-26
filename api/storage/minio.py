@@ -17,18 +17,37 @@ DEFAULT_BUCKET = 'stuf-uploads'
 class MinioClient:
     """MinIO client for S3 storage operations"""
     
+import logging
+# MinIO configuration
+MINIO_ENDPOINT = os.environ.get('MINIO_ENDPOINT', 'localhost:9000')
+MINIO_ACCESS_KEY = os.environ.get('MINIO_ROOT_USER', 'minioadmin')
+MINIO_SECRET_KEY = os.environ.get('MINIO_ROOT_PASSWORD', 'minioadmin')
+MINIO_SECURE = os.environ.get('MINIO_SECURE', 'false').lower() == 'true'
+
+# Default bucket name
+DEFAULT_BUCKET = 'stuf-uploads'
+
+logger = logging.getLogger(__name__)
+
+class MinioClient:
+    """MinIO client for S3 storage operations"""
+    
     def __init__(self, ensure_bucket: bool = True):
-        self.client = Minio(
-            MINIO_ENDPOINT,
-            access_key=MINIO_ACCESS_KEY,
-            secret_key=MINIO_SECRET_KEY,
-            secure=MINIO_SECURE
-        )
         if ensure_bucket:
+            self.client = Minio(
+                MINIO_ENDPOINT,
+                access_key=MINIO_ACCESS_KEY,
+                secret_key=MINIO_SECRET_KEY,
+                secure=MINIO_SECURE
+            )
             try:
                 self._ensure_bucket_exists(DEFAULT_BUCKET)
             except Exception as e:
-                print(f"Warning: Could not ensure bucket exists: {e}")
+                logger.warning(f"Could not ensure bucket exists: {e}")
+        else:
+            # For test environments or when direct connection is not desired,
+            # prevent the Minio client from being instantiated.
+            self.client = None
     
     def _ensure_bucket_exists(self, bucket_name: str):
         """Ensure the bucket exists, create it if it doesn't"""
