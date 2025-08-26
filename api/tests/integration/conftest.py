@@ -23,13 +23,13 @@ def integration_client():
     mock_keycloak_response.status_code = 200
     mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
     
-    # Patch the module-level minio_client instances where they are used/defined
-    # We need to patch api.routers.files.minio_client which is the one actually called by the router.
-    # We also patch api.storage.minio.minio_client as a good practice, though less critical for API calls.
-    with patch('api.routers.files.minio_client', minio_mock), \
-         patch('api.storage.minio.minio_client', minio_mock), \
+    # Patch the MinioClient *class* so that the module-level singleton `minio_client = MinioClient()`
+    # in api.storage.minio gets our mock instance when it's imported.
+    # This automatically propagates to api.routers.files which imports this singleton.
+    with patch('api.storage.minio.MinioClient', return_value=minio_mock), \
          patch('requests.post', return_value=mock_keycloak_response):
         
+        # Import app *after* mocks are set up to ensure they are active
         from api.main import app
         client = TestClient(app)
         
