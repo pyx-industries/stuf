@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 
 from api.main import app
+from api.tests.fixtures.test_data import SAMPLE_FILES
 
 @pytest.mark.integration
 class TestFilesAPIIntegration:
