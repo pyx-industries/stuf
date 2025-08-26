@@ -1,26 +1,15 @@
 import pytest
-import sys
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import requests # Import requests to patch it
 from api.auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
+from api.routers.files import get_minio_client
+from api.main import app # Import app here for dependency override
 
 @pytest.fixture
 def integration_client(request):
-    """TestClient for integration tests - external services are mocked.
-    
-    This fixture ensures that module-level singletons, like minio_client,
-    are correctly mocked by clearing relevant modules from sys.modules
-    before applying patches and re-importing.
-    """
-    # Store original modules to restore them after the test
-    modules_to_reload = ['api.main', 'api.routers.files', 'api.storage.minio']
-    original_modules = {}
-    for mod_name in modules_to_reload:
-        if mod_name in sys.modules:
-            original_modules[mod_name] = sys.modules.pop(mod_name)
-
+    """TestClient for integration tests with mocked external services."""
     minio_mock_for_assertions = MagicMock()
     
     # Configure default responses for the MinioClient mock instance
@@ -35,16 +24,15 @@ def integration_client(request):
     mock_keycloak_response.status_code = 200
     mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
     
-    # Patch the module-level 'minio_client' singletons with our assertion mock.
-    # Since modules are popped from sys.modules, these patches will be active
-    # when the modules are re-imported by 'from api.main import app'.
-    with patch('api.storage.minio.minio_client', new=minio_mock_for_assertions), \
-         patch('api.routers.files.minio_client', new=minio_mock_for_assertions), \
-         patch('requests.post', return_value=mock_keycloak_response):
-        
-        # Import app *after* mocks are set up. This re-imports the modules,
-        # ensuring they pick up the patched singletons.
-        from api.main import app
+    # Store original overrides to restore them after the test
+    original_minio_override = app.dependency_overrides.get(get_minio_client)
+    original_get_current_user_override = app.dependency_overrides.get(get_current_user)
+
+    # Set dependency overrides
+    app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
+    
+    # Patch requests.post for Keycloak token validation
+    with patch('requests.post', return_value=mock_keycloak_response):
         client = TestClient(app)
         
         # Attach our assertion mock to the client for easy access in tests
@@ -53,9 +41,16 @@ def integration_client(request):
         
         yield client
     
-    # Teardown: Restore original modules after the test run
-    for mod_name, mod in original_modules.items():
-        sys.modules[mod_name] = mod
+    # Teardown: Restore original dependency overrides
+    if original_minio_override:
+        app.dependency_overrides[get_minio_client] = original_minio_override
+    else:
+        app.dependency_overrides.pop(get_minio_client, None)
+    
+    if original_get_current_user_override:
+        app.dependency_overrides[get_current_user] = original_get_current_user_override
+    else:
+        app.dependency_overrides.pop(get_current_user, None)
 
 @pytest.fixture
 def mock_external_services(integration_client):
