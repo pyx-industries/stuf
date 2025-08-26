@@ -47,28 +47,40 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 401
 
-    def test_upload_file_wrong_collection(self, mock_external_services, integration_client):
+    def test_upload_file_wrong_collection(self, integration_client, authenticated_headers):
         """Test file upload to unauthorized collection"""
-        # Mock user with limited access
-        with patch('requests.post') as mock_requests:
-            mock_requests.return_value.status_code = 200
-            mock_requests.return_value.json.return_value = {
-                "active": True,
-                "preferred_username": "limiteduser",
-                "realm_access": {"roles": ["collection-other"]}  # No access to "test"
-            }
-            
+        from api.auth.middleware import get_current_user, User
+        
+        limited_user = User(
+            username="limiteduser",
+            email="limiteduser@example.com",
+            full_name="Limited User",
+            roles=["user", "collection-other"], # No access to "test"
+            active=True
+        )
+
+        # Temporarily override get_current_user for this specific test
+        original_override = app.dependency_overrides.get(get_current_user)
+        app.dependency_overrides[get_current_user] = lambda: limited_user
+        
+        try:
             test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
             
             response = integration_client.post(
                 "/api/files/upload",
                 files={"file": test_file},
                 data={"collection": "test", "metadata": "{}"},
-                headers={"Authorization": "Bearer valid-token"}
+                headers=authenticated_headers # Use the default authenticated headers
             )
             
             assert response.status_code == 403
             assert "don't have access to collection" in response.json()["detail"]
+        finally:
+            # Restore the original override
+            if original_override:
+                app.dependency_overrides[get_current_user] = original_override
+            else:
+                app.dependency_overrides.pop(get_current_user, None)
 
     def test_list_files_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
         """Test file listing with valid authentication"""
