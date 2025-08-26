@@ -16,10 +16,6 @@ scenarios('../features/api_functionality.feature')
 
 # Fixtures
 @pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
 def response():
     return {}
 
