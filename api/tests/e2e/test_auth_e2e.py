@@ -130,7 +130,7 @@ def validating_token():
     pass
 
 @when(parsers.parse('I make a GET request to "{endpoint}"'))
-def make_get_request(request, endpoint):
+def make_get_request(request, endpoint, client):
     from api.main import app
     from api.auth.middleware import User, get_current_user
     
@@ -148,15 +148,8 @@ def make_get_request(request, endpoint):
     app.dependency_overrides[get_current_user] = lambda: mock_user
     
     try:
-        # Use the client from conftest.py
-        import sys
-        import os
-        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-        from api.tests.conftest import client
-        
-        # Get a client instance
-        test_client = client()
-        response = test_client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+        # Use the client fixture directly
+        response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
         
         # Store the response on the request for later assertions
         request.node.response = response
