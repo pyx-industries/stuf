@@ -3,8 +3,6 @@
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
-  "privateKey": "",
-  "publicKey": "",
   "requiredCredentials": [ "password" ],
   "roles": {
     "realm": [
