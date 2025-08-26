@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import requests # Import requests to patch it
 from api.auth.middleware import get_current_user, User
-from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
+from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, SAMPLE_USERS
 from api.routers.files import get_minio_client
 from api.main import app # Import app here for dependency override
 from api.storage.minio import MinioClient # Import MinioClient for spec
