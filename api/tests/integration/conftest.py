@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+import requests # Import requests to patch it
 from api.main import app
 from api.auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
@@ -11,10 +12,13 @@ def mock_external_services():
     minio_mock = MagicMock()
     
     with patch('api.storage.minio.minio_client', minio_mock), \
-         patch('api.auth.middleware.validate_token') as keycloak_mock:
+         patch('requests.post') as mock_requests_post: # Patch requests.post directly
         
-        # Configure Keycloak token validation mock
-        keycloak_mock.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
+        # Configure Keycloak token validation mock by simulating a requests.Response
+        mock_keycloak_response = MagicMock()
+        mock_keycloak_response.status_code = 200
+        mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
+        mock_requests_post.return_value = mock_keycloak_response
         
         # Configure MinIO service mock
         minio_mock.upload_file.return_value = "test/user/file.txt"
@@ -24,7 +28,7 @@ def mock_external_services():
         
         yield {
             'minio': minio_mock,
-            'keycloak': keycloak_mock
+            'keycloak_requests_post': mock_requests_post # Yield the patched requests.post for potential further assertions
         }
 
 @pytest.fixture
