@@ -18,27 +18,20 @@ def integration_client():
     minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
     minio_mock_for_assertions.delete_object.return_value = True
 
-    # This mock prevents actual Minio connections when MinioClient.__init__ runs
-    # by replacing the external 'Minio' class it tries to instantiate.
-    minio_raw_class_mock = MagicMock()
-    # Ensure bucket_exists and make_bucket methods on the internal Minio client mock
-    # don't cause errors if called during MinioClient's init.
-    minio_raw_class_mock.return_value.bucket_exists.return_value = True
-    minio_raw_class_mock.return_value.make_bucket.return_value = None
-
     # Configure Keycloak token validation mock
     mock_keycloak_response = MagicMock()
     mock_keycloak_response.status_code = 200
     mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
     
-    # Patch the actual 'Minio' class used internally by MinioClient
-    # And then patch the module-level 'minio_client' singletons with our assertion mock.
-    with patch('api.storage.minio.Minio', minio_raw_class_mock), \
+    # Patch MinioClient.__init__ to do nothing, preventing any real Minio object creation or bucket checks.
+    # Then explicitly patch the module-level 'minio_client' singletons with our assertion mock.
+    with patch('api.storage.minio.MinioClient.__init__', return_value=None), \
          patch('api.storage.minio.minio_client', minio_mock_for_assertions), \
          patch('api.routers.files.minio_client', minio_mock_for_assertions), \
          patch('requests.post', return_value=mock_keycloak_response):
         
-        # Import app *after* mocks are set up to ensure they are active
+        # Import app *after* mocks are set up to ensure they are active.
+        # This will trigger the MinioClient() in api.storage.minio, but its __init__ is now mocked.
         from api.main import app
         client = TestClient(app)
         
