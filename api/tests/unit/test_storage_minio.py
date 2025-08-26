@@ -33,7 +33,14 @@ class TestMinioClient:
             mock_client = MagicMock()
             mock_minio_class.return_value = mock_client
             mock_client.bucket_exists.return_value = True
-            mock_client.put_object.side_effect = S3Error("Upload failed")
+            mock_client.put_object.side_effect = S3Error(
+                code="InternalError",
+                message="Upload failed",
+                resource="test/file.txt",
+                request_id="test-request-id",
+                host_id="test-host-id",
+                response=MagicMock()
+            )
             
             minio_client = MinioClient()
             
