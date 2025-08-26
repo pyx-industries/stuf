@@ -23,7 +23,7 @@ def integration_client():
     mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
     
     # Apply patches and create TestClient within the patched context
-    with patch('api.routers.files.minio_client', minio_mock), \
+    with patch('api.storage.minio.minio_client', minio_mock), \
          patch('requests.post', return_value=mock_keycloak_response):
         
         # Import app *after* mocks are set up to ensure they are active
