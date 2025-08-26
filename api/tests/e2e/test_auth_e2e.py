@@ -47,15 +47,18 @@ def make_get_request_without_auth(client, endpoint, request):
     return response
 
 @then(parsers.parse('the authentication flow should follow these steps:'))
-def check_auth_flow_steps():
-    # This is a documentation step, no implementation needed
-    pass
-
-@then(parsers.parse('| {step:d} | {description} |'))
-def check_auth_flow_step_details(step, description):
-    # This step handles the table rows
-    # We just need to parse them, no actual implementation needed for documentation steps
-    pass
+def check_auth_flow_steps(datatable):
+    # Process the table data
+    steps_data = datatable.as_list_of_dicts()
+    
+    # For documentation steps, we just need to verify the table structure
+    assert len(steps_data) == 7, f"Expected 7 steps, got {len(steps_data)}"
+    assert 'step' in steps_data[0], "Table missing 'step' column"
+    assert 'description' in steps_data[0], "Table missing 'description' column"
+    
+    # Verify specific steps if needed
+    assert steps_data[0]['step'] == '1', "First step should be step 1"
+    assert "SPA redirects" in steps_data[0]['description'], "First step description incorrect"
 
 # Then steps
 @then(parsers.parse('I should receive a {status_code:d} status code'))
