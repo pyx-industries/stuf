@@ -12,13 +12,10 @@ def mock_external_services():
     minio_mock = MagicMock()
     
     with patch('api.storage.minio.minio_client', minio_mock), \
-         patch('requests.post') as mock_requests_post: # Patch requests.post directly
+         patch('auth.middleware.validate_token') as keycloak_mock:
         
-        # Configure Keycloak token validation mock by simulating a requests.Response
-        mock_keycloak_response = MagicMock()
-        mock_keycloak_response.status_code = 200
-        mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
-        mock_requests_post.return_value = mock_keycloak_response
+        # Configure Keycloak token validation mock
+        keycloak_mock.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
         
         # Configure MinIO service mock
         minio_mock.upload_file.return_value = "test/user/file.txt"
@@ -28,7 +25,7 @@ def mock_external_services():
         
         yield {
             'minio': minio_mock,
-            'keycloak_requests_post': mock_requests_post # Yield the patched requests.post for potential further assertions
+            'keycloak': keycloak_mock
         }
 
 @pytest.fixture
