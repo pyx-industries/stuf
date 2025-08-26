@@ -111,6 +111,7 @@ def make_get_request(request, endpoint):
     from fastapi.testclient import TestClient
     from api.main import app
     from api.auth.middleware import User, get_current_user
+    from httpx import ASGITransport
     
     # Create a mock User object
     mock_user = User(
@@ -126,8 +127,8 @@ def make_get_request(request, endpoint):
     app.dependency_overrides[get_current_user] = lambda: mock_user
     
     try:
-        # Make the request
-        client = TestClient(app)
+        # Make the request with proper transport to avoid deprecation warning
+        client = TestClient(app, transport=ASGITransport(app=app))
         response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
         
         # Store the response on the request for later assertions
