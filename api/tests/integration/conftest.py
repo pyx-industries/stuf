@@ -7,11 +7,23 @@ from api.auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
 
 @pytest.fixture
-def integration_client():
-    """TestClient for integration tests - external services are mocked"""
+def integration_client(request):
+    """TestClient for integration tests - external services are mocked.
+    
+    This fixture ensures that module-level singletons, like minio_client,
+    are correctly mocked by clearing relevant modules from sys.modules
+    before applying patches and re-importing.
+    """
+    # Store original modules to restore them after the test
+    modules_to_reload = ['api.main', 'api.routers.files', 'api.storage.minio']
+    original_modules = {}
+    for mod_name in modules_to_reload:
+        if mod_name in sys.modules:
+            original_modules[mod_name] = sys.modules.pop(mod_name)
+
     minio_mock_for_assertions = MagicMock()
     
-    # Configure default responses for the MinioClient mock used for assertions
+    # Configure default responses for the MinioClient mock instance
     minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
     minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]  # Return only 2 files as expected
     minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
@@ -23,15 +35,15 @@ def integration_client():
     mock_keycloak_response.status_code = 200
     mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
     
-    # Patch MinioClient.__init__ to do nothing, preventing any real Minio object creation or bucket checks.
-    # Then explicitly patch the module-level 'minio_client' singletons with our assertion mock.
-    with patch('api.storage.minio.MinioClient.__init__', return_value=None), \
-         patch('api.storage.minio.minio_client', minio_mock_for_assertions), \
-         patch('api.routers.files.minio_client', minio_mock_for_assertions), \
+    # Patch the module-level 'minio_client' singletons with our assertion mock.
+    # Since modules are popped from sys.modules, these patches will be active
+    # when the modules are re-imported by 'from api.main import app'.
+    with patch('api.storage.minio.minio_client', new=minio_mock_for_assertions), \
+         patch('api.routers.files.minio_client', new=minio_mock_for_assertions), \
          patch('requests.post', return_value=mock_keycloak_response):
         
-        # Import app *after* mocks are set up to ensure they are active.
-        # This will trigger the MinioClient() in api.storage.minio, but its __init__ is now mocked.
+        # Import app *after* mocks are set up. This re-imports the modules,
+        # ensuring they pick up the patched singletons.
         from api.main import app
         client = TestClient(app)
         
@@ -40,6 +52,10 @@ def integration_client():
         client.keycloak_post_mock = mock_keycloak_response
         
         yield client
+    
+    # Teardown: Restore original modules after the test run
+    for mod_name, mod in original_modules.items():
+        sys.modules[mod_name] = mod
 
 @pytest.fixture
 def mock_external_services(integration_client):
