@@ -14,7 +14,7 @@ class TestMinioClient:
             mock_minio_class.return_value = mock_client
             mock_client.bucket_exists.return_value = True
             
-            minio_client = MinioClient()
+            minio_client = MinioClient(ensure_bucket=False)
             
             file_data = io.BytesIO(b"test content")
             result = minio_client.upload_file(
@@ -32,7 +32,7 @@ class TestMinioClient:
         with patch('api.storage.minio.Minio') as mock_minio_class:
             mock_client = MagicMock()
             mock_minio_class.return_value = mock_client
-            mock_client.bucket_exists.return_value = True
+            mock_client.bucket_exists.return_value = False # No need to create bucket if we're mocking operations
             mock_client.put_object.side_effect = S3Error(
                 code="InternalError",
                 message="Upload failed",
@@ -42,7 +42,7 @@ class TestMinioClient:
                 response=MagicMock()
             )
             
-            minio_client = MinioClient()
+            minio_client = MinioClient(ensure_bucket=False)
             
             file_data = io.BytesIO(b"test content")
             
@@ -54,7 +54,7 @@ class TestMinioClient:
         with patch('api.storage.minio.Minio') as mock_minio_class:
             mock_client = MagicMock()
             mock_minio_class.return_value = mock_client
-            mock_client.bucket_exists.return_value = True
+            mock_client.bucket_exists.return_value = False # No need to create bucket if we're mocking operations
             
             # Mock response object
             mock_response = MagicMock()
@@ -67,7 +67,7 @@ class TestMinioClient:
             mock_stats.content_type = "text/plain"
             mock_client.stat_object.return_value = mock_stats
             
-            minio_client = MinioClient()
+            minio_client = MinioClient(ensure_bucket=False)
             
             data, metadata, content_type = minio_client.download_file("test/file.txt")
             
@@ -80,7 +80,7 @@ class TestMinioClient:
         with patch('api.storage.minio.Minio') as mock_minio_class:
             mock_client = MagicMock()
             mock_minio_class.return_value = mock_client
-            mock_client.bucket_exists.return_value = True
+            mock_client.bucket_exists.return_value = False # No need to create bucket if we're mocking operations
             
             # Mock object
             mock_obj = MagicMock()
@@ -90,7 +90,7 @@ class TestMinioClient:
             
             mock_client.list_objects.return_value = [mock_obj]
             
-            minio_client = MinioClient()
+            minio_client = MinioClient(ensure_bucket=False)
             
             objects = minio_client.list_objects(prefix="test/")
             
@@ -103,9 +103,9 @@ class TestMinioClient:
         with patch('api.storage.minio.Minio') as mock_minio_class:
             mock_client = MagicMock()
             mock_minio_class.return_value = mock_client
-            mock_client.bucket_exists.return_value = True
+            mock_client.bucket_exists.return_value = False # No need to create bucket if we're mocking operations
             
-            minio_client = MinioClient()
+            minio_client = MinioClient(ensure_bucket=False)
             
             result = minio_client.delete_object("test/file.txt")
             
