@@ -28,6 +28,10 @@ def bdd_client(bdd_mock_minio_client, request):
     # Store original override to restore it after the test
     original_minio_override = app.dependency_overrides.get(get_minio_client)
     app.dependency_overrides[get_minio_client] = lambda: bdd_mock_minio_client
+
+    client = TestClient(app=app)
+    yield client
+
     
     client = TestClient(app)
     yield client
