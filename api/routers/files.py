@@ -13,7 +13,12 @@ router = APIRouter()
 
 def get_minio_client() -> MinioClient:
     """Dependency to provide a MinioClient instance."""
-    return MinioClient()
+    # In tests, this will be overridden. For actual usage where this function is called
+    # (e.g., by FastAPI during dependency resolution if not overridden),
+    # we ensure the bucket doesn't get created automatically to avoid connection issues
+    # when a real MinIO service might not be running or accessible.
+    # The actual bucket creation for local dev is handled in main.py's override.
+    return MinioClient(ensure_bucket=False)
 
 @router.post("/upload")
 async def upload_file(
