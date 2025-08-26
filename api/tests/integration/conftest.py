@@ -8,7 +8,7 @@ from api.routers.files import get_minio_client
 from api.main import app # Import app here for dependency override
 from api.storage.minio import MinioClient # Import MinioClient for spec
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mock_keycloak_requests():
     """Mocks requests.post for Keycloak token validation."""
     mock_keycloak_response = MagicMock()
