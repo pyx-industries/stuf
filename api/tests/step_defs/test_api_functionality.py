@@ -69,14 +69,17 @@ def mock_files_in_collection(request):
 def make_get_request(client, response, endpoint, mock_authentication=None):
     # Ensure the mock_authentication is applied to the request
     headers = {"Authorization": "Bearer fake-token"}
-    with patch('api.auth.middleware.validate_token') as mock_validate:
-        mock_validate.return_value = {
-            "preferred_username": "testuser",
-            "email": "testuser@example.com",
-            "name": "Test User",
-            "realm_access": {"roles": ["user", "collection-test"]},
-            "active": True
-        }
+    
+    # We need to patch the dependency directly in FastAPI
+    with patch('api.auth.middleware.get_current_user') as mock_get_user:
+        from api.auth.middleware import User
+        mock_get_user.return_value = User(
+            username="testuser",
+            email="testuser@example.com",
+            full_name="Test User",
+            roles=["user", "collection-test"],
+            active=True
+        )
         response['response'] = client.get(endpoint, headers=headers)
 
 @when(parsers.parse('I make a GET request to "{endpoint}" without authentication'))
