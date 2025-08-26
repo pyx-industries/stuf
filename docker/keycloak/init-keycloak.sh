@@ -60,5 +60,17 @@ else
   echo "Realm $KEYCLOAK_REALM already exists, skipping configuration."
 fi
 
+# Import test realm if it doesn't exist
+echo "Checking if test realm exists..."
+TESTREALM_EXISTS=$(/opt/keycloak/bin/kcadm.sh get realms/stuf-test > /dev/null 2>&1 && echo "true" || echo "false")
+
+if [ "$TESTREALM_EXISTS" = "false" ]; then
+  echo "Importing test realm..."
+  /opt/keycloak/bin/kcadm.sh create realms -f /opt/keycloak/test-realm-export.json
+  echo "Test realm setup complete!"
+else
+  echo "Test realm already exists, skipping configuration."
+fi
+
 # Keep the script running to keep the container running
 wait

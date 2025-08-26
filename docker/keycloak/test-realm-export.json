@@ -1,0 +1,171 @@
+{
+  "realm": "stuf-test",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "privateKey": "",
+  "publicKey": "",
+  "requiredCredentials": [ "password" ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role with full access to all collections and management functions"
+      },
+      {
+        "name": "trust-architect",
+        "description": "Trust architect role for managing collections and users"
+      },
+      {
+        "name": "collection-test",
+        "description": "Access to test collection"
+      },
+      {
+        "name": "collection-restricted",
+        "description": "Access to restricted collection"
+      },
+      {
+        "name": "collection-shared",
+        "description": "Access to shared collection"
+      },
+      {
+        "name": "project-participant",
+        "description": "Basic project participant role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "stuf-test-spa",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true
+    },
+    {
+      "clientId": "stuf-test-api",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "test-api-secret",
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "test-admin",
+      "enabled": true,
+      "email": "admin@test.example.com",
+      "firstName": "Test",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin",
+        "collection-test",
+        "collection-restricted",
+        "collection-shared"
+      ]
+    },
+    {
+      "username": "test-trust-architect",
+      "enabled": true,
+      "email": "ta@test.example.com",
+      "firstName": "Test",
+      "lastName": "Architect",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "trust-architect",
+        "collection-test",
+        "collection-restricted",
+        "collection-shared"
+      ]
+    },
+    {
+      "username": "test-user-full",
+      "enabled": true,
+      "email": "full@test.example.com",
+      "firstName": "Test",
+      "lastName": "FullUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant",
+        "collection-test",
+        "collection-restricted",
+        "collection-shared"
+      ]
+    },
+    {
+      "username": "test-user-limited",
+      "enabled": true,
+      "email": "limited@test.example.com",
+      "firstName": "Test",
+      "lastName": "LimitedUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant",
+        "collection-test"
+      ]
+    },
+    {
+      "username": "test-user-shared",
+      "enabled": true,
+      "email": "shared@test.example.com",
+      "firstName": "Test",
+      "lastName": "SharedUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant",
+        "collection-shared"
+      ]
+    },
+    {
+      "username": "test-user-inactive",
+      "enabled": false,
+      "email": "inactive@test.example.com",
+      "firstName": "Test",
+      "lastName": "InactiveUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant",
+        "collection-test"
+      ]
+    }
+  ]
+}
