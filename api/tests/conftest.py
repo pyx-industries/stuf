@@ -13,4 +13,5 @@ with patch('api.storage.minio.MinioClient'):
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    # Use the explicit transport style to avoid deprecation warning
+    return TestClient(app, raise_server_exceptions=False)

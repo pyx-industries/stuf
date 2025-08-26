@@ -54,6 +54,28 @@ def mock_authentication(request, username, roles):
     # Add the patch to the request finalizer to stop it after the test
     request.addfinalizer(patch_validate_token.stop)
     
+    # Override the dependency in FastAPI app
+    from api.main import app
+    from api.auth.middleware import get_current_user, User
+    
+    # Create a mock User object
+    mock_user = User(
+        username=username,
+        email=f"{username}@example.com",
+        full_name=f"{username.capitalize()} User",
+        roles=roles_list,
+        active=True
+    )
+    
+    # Override the dependency
+    original_dependency = app.dependency_overrides.copy()
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    
+    # Add cleanup to request finalizer
+    def cleanup():
+        app.dependency_overrides = original_dependency
+    request.addfinalizer(cleanup)
+    
     return mock_validate_token
 
 # When steps
