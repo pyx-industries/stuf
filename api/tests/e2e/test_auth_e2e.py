@@ -198,15 +198,15 @@ def api_returns_401():
 
 @then('the authorizationUrl should point to Keycloak\'s auth endpoint')
 def check_authorization_url():
-    assert "protocol/openid-connect/auth" in oauth2_scheme.authorization_url
+    assert "protocol/openid-connect/auth" in oauth2_scheme.authorizationUrl
 
 @then('the tokenUrl should point to Keycloak\'s token endpoint')
 def check_token_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.token_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.tokenUrl
 
 @then('the refreshUrl should point to Keycloak\'s token endpoint')
 def check_refresh_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.refresh_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.refreshUrl
 
 @then(parsers.parse('I should receive a {status_code:d} status code'))
 def check_status_code(status_code, request):
