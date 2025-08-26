@@ -37,6 +37,14 @@ def integration_client():
         yield client
 
 @pytest.fixture
+def mock_external_services(integration_client):
+    """Access to the mocked external services from integration_client"""
+    return {
+        'minio': integration_client.minio_mock,
+        'keycloak': integration_client.keycloak_post_mock
+    }
+
+@pytest.fixture
 def authenticated_headers():
     """Headers with valid authentication token for integration tests"""
     return {"Authorization": "Bearer valid-integration-test-token"}
