@@ -51,8 +51,8 @@ def check_auth_flow_steps():
     # This is a documentation step, no implementation needed
     pass
 
-@then(parsers.re(r'.*\|\s*(\d+)\s*\|\s*(.*?)\s*\|.*'))
-def check_auth_flow_step_details(step_number, description):
+@then(parsers.parse('| {step:d} | {description} |'))
+def check_auth_flow_step_details(step, description):
     # This step handles the table rows
     # We just need to parse them, no actual implementation needed for documentation steps
     pass
