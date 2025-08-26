@@ -11,7 +11,7 @@ from api.tests.fixtures.test_data import SAMPLE_FILES
 class TestFilesAPIIntegration:
     """Integration tests that test the full request flow with mocked external services"""
     
-    def test_upload_file_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
+    def test_upload_file_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file upload with valid authentication"""
         # Create test file
         test_content = b"This is integration test content"
@@ -51,17 +51,9 @@ class TestFilesAPIIntegration:
         """Test file upload to unauthorized collection"""
         from api.auth.middleware import get_current_user, User
         
-        limited_user = User(
-            username="limiteduser",
-            email="limiteduser@example.com",
-            full_name="Limited User",
-            roles=["user", "collection-other"], # No access to "test"
-            active=True
-        )
-
         # Temporarily override get_current_user for this specific test
         original_override = app.dependency_overrides.get(get_current_user)
-        app.dependency_overrides[get_current_user] = lambda: limited_user
+        app.dependency_overrides[get_current_user] = lambda: User(**SAMPLE_USERS["limited_user"])
         
         try:
             test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
@@ -82,7 +74,7 @@ class TestFilesAPIIntegration:
             else:
                 app.dependency_overrides.pop(get_current_user, None)
 
-    def test_list_files_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
+    def test_list_files_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file listing with valid authentication"""
         response = integration_client.get(
             "/api/files/list/test",
@@ -104,11 +96,11 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 401
 
-    def test_download_file_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
+    def test_download_file_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file download with valid authentication"""
         # Configure mock to return file data
         test_content = b"Downloaded file content"
-        mock_external_services['minio'].download_file.return_value = (
+        integration_client.minio_mock.download_file.return_value = (
             test_content, 
             {"original_filename": "test.txt"}, 
             "text/plain"
@@ -126,7 +118,7 @@ class TestFilesAPIIntegration:
         # Verify MinIO download was called
         integration_client.minio_mock.download_file.assert_called_once_with("test/user/test.txt")
 
-    def test_invalid_metadata_format(self, mock_external_services, integration_client, authenticated_headers):
+    def test_invalid_metadata_format(self, integration_client, authenticated_headers):
         """Test upload with invalid metadata JSON"""
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
         
