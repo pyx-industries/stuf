@@ -1,5 +1,5 @@
 import pytest
-from pytest_bdd import scenarios, given, when, then
+from pytest_bdd import scenarios, given, when, then, parsers
 from fastapi.testclient import TestClient
 
 # Load scenarios from the feature file
@@ -8,6 +8,7 @@ scenarios('../features/api_functionality.feature')
 @given('the API is running')
 def api_is_running(bdd_client):
     """API is running and accessible"""
+    # The bdd_client fixture provides a TestClient, so API is already "running"
     pass
 
 @when('I request the health endpoint')
