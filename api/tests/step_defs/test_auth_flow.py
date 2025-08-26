@@ -88,31 +88,33 @@ def validate_token_call(request, jwt_token):
 def make_get_request(request, endpoint):
     from fastapi.testclient import TestClient
     from api.main import app
+    from api.auth.middleware import User, get_current_user
     
-    # We need to patch the dependency directly in FastAPI
-    with patch('api.auth.middleware.get_current_user') as mock_get_user:
-        from api.auth.middleware import User
-        mock_get_user.return_value = User(
-            username="testuser",
-            email="testuser@example.com",
-            full_name="Test User",
-            roles=["user", "collection-test"],
-            active=True
-        )
-        
-        client = TestClient(app)
-        response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
-        
-        # Store the response on the request for later assertions
-        request.node.response = response
-        
-        return response
+    # Override the dependency in FastAPI app
+    app.dependency_overrides[get_current_user] = lambda: User(
+        username="testuser",
+        email="testuser@example.com",
+        full_name="Test User",
+        roles=["user", "collection-test"],
+        active=True
+    )
+    
+    # Make the request
+    client = TestClient(app)
+    response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+    
+    # Store the response on the request for later assertions
+    request.node.response = response
+    
+    # Clean up the override after the test
+    app.dependency_overrides = {}
+    
+    return response
 
 # Then steps
-@then(parsers.re(r'the authentication flow should follow these steps:\s*(?P<steps>(?:\s*\|\s*\d+\s*\|\s*.*\s*\|)+)'))
-def check_auth_flow_steps(steps):
+@then(parsers.parse('the authentication flow should follow these steps:'))
+def check_auth_flow_steps():
     # This is a documentation step, no implementation needed
-    # The regex captures the table content
     pass
 
 @then('it should make a request to the Keycloak introspection endpoint')
@@ -132,15 +134,15 @@ def check_user_info_extraction(validate_token_call):
 
 @then('the authorizationUrl should point to Keycloak\'s auth endpoint')
 def check_authorization_url():
-    assert "protocol/openid-connect/auth" in oauth2_scheme.authorization_url
+    assert "protocol/openid-connect/auth" in oauth2_scheme.authorizationUrl
 
 @then('the tokenUrl should point to Keycloak\'s token endpoint')
 def check_token_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.token_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.tokenUrl
 
 @then('the refreshUrl should point to Keycloak\'s token endpoint')
 def check_refresh_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.refresh_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.refreshUrl
 
 @then(parsers.parse('I should receive a {status_code:d} status code'))
 def check_status_code(status_code, request):

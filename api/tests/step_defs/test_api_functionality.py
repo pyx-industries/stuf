@@ -70,17 +70,20 @@ def make_get_request(client, response, endpoint, mock_authentication=None):
     # Ensure the mock_authentication is applied to the request
     headers = {"Authorization": "Bearer fake-token"}
     
-    # We need to patch the dependency directly in FastAPI
-    with patch('api.auth.middleware.get_current_user') as mock_get_user:
-        from api.auth.middleware import User
-        mock_get_user.return_value = User(
-            username="testuser",
-            email="testuser@example.com",
-            full_name="Test User",
-            roles=["user", "collection-test"],
-            active=True
-        )
-        response['response'] = client.get(endpoint, headers=headers)
+    # We need to override the dependency in FastAPI app
+    app.dependency_overrides[get_current_user] = lambda: User(
+        username="testuser",
+        email="testuser@example.com",
+        full_name="Test User",
+        roles=["user", "collection-test"],
+        active=True
+    )
+    
+    # Make the request
+    response['response'] = client.get(endpoint, headers=headers)
+    
+    # Clean up the override after the test
+    app.dependency_overrides = {}
 
 @when(parsers.parse('I make a GET request to "{endpoint}" without authentication'))
 def make_get_request_without_auth(client, response, endpoint):
