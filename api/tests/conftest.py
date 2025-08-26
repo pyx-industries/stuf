@@ -71,15 +71,25 @@ def client():
                 def json(self):
                     return self._json_data
             
+            # Check for authentication header
+            headers = kwargs.get('headers', {})
+            has_auth = 'Authorization' in headers and headers['Authorization'].startswith('Bearer ')
+            
             if "/api/files/list/test" in url:
+                if not has_auth:
+                    return MockResponse(401, {"detail": "Not authenticated"})
                 return MockResponse(200, {"status": "success", "collection": "test", "files": []})
             elif "/api/files/list/other-collection" in url:
+                if not has_auth:
+                    return MockResponse(401, {"detail": "Not authenticated"})
                 return MockResponse(403, {"detail": "You don't have access to collection: other-collection"})
             elif "/api/health" in url:
                 return MockResponse(200, {"status": "healthy", "service": "stuf-api"})
             elif "/api/info" in url:
                 return MockResponse(200, {"name": "STUF API", "version": "0.1.0", "description": "Secure Transfer Upload Facility API"})
             elif "/api/me" in url:
+                if not has_auth:
+                    return MockResponse(401, {"detail": "Not authenticated"})
                 return MockResponse(200, {"username": "testuser", "roles": ["user", "collection-test"]})
             else:
                 return MockResponse(404, {"detail": "Not found"})
