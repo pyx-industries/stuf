@@ -49,30 +49,24 @@ class TestFilesAPIIntegration:
 
     def test_upload_file_wrong_collection(self, integration_client, authenticated_headers):
         """Test file upload to unauthorized collection"""
-        from api.auth.middleware import get_current_user, User
+        # Configure the mock user for this specific test to have limited roles
+        integration_client.current_user_mock.roles = ["user", "collection-other"]
+        integration_client.current_user_mock.username = "limiteduser" # Also update username for consistent logging/object_name
         
-        # Temporarily override get_current_user for this specific test
-        original_override = app.dependency_overrides.get(get_current_user)
-        app.dependency_overrides[get_current_user] = lambda: User(**SAMPLE_USERS["limited_user"])
+        test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
         
-        try:
-            test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
-            
-            response = integration_client.post(
-                "/api/files/upload",
-                files={"file": test_file},
-                data={"collection": "test", "metadata": "{}"},
-                headers=authenticated_headers # Use the default authenticated headers
-            )
-            
-            assert response.status_code == 403
-            assert "don't have access to collection" in response.json()["detail"]
-        finally:
-            # Restore the original override
-            if original_override:
-                app.dependency_overrides[get_current_user] = original_override
-            else:
-                app.dependency_overrides.pop(get_current_user, None)
+        response = integration_client.post(
+            "/api/files/upload",
+            files={"file": test_file},
+            data={"collection": "test", "metadata": "{}"},
+            headers=authenticated_headers # Use the default authenticated headers
+        )
+        
+        assert response.status_code == 403
+        assert "don't have access to collection" in response.json()["detail"]
+        
+        # Ensure minio_mock.upload_file was *not* called because of permission error
+        integration_client.minio_mock.upload_file.assert_not_called()
 
     def test_list_files_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file listing with valid authentication"""
