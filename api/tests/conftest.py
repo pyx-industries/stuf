@@ -55,8 +55,25 @@ TEST_USERS = {
 @pytest.fixture
 def client():
     """Return a TestClient for the FastAPI app"""
-    with TestClient(app) as test_client:
-        yield test_client
+    # Use httpx directly to avoid TestClient version issues
+    import httpx
+    from fastapi.testclient import TestClient
+    
+    # Create a simple client that works with the current versions
+    class SimpleTestClient:
+        def __init__(self, app):
+            self.app = app
+            self.base_url = "http://testserver"
+            
+        def get(self, url, **kwargs):
+            with TestClient(self.app) as client:
+                return client.get(url, **kwargs)
+                
+        def post(self, url, **kwargs):
+            with TestClient(self.app) as client:
+                return client.post(url, **kwargs)
+    
+    return SimpleTestClient(app)
 
 @pytest.fixture
 def keycloak_token(request):
