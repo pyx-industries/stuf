@@ -10,7 +10,7 @@ from api.main import app
 class TestFilesAPIIntegration:
     """Integration tests that test the full request flow with mocked external services"""
     
-    def test_upload_file_with_valid_auth(self, mock_external_services, integration_client, authenticated_headers):
+    def test_upload_file_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
         """Test file upload with valid authentication"""
         # Create test file
         test_content = b"This is integration test content"
@@ -69,14 +69,8 @@ class TestFilesAPIIntegration:
             assert response.status_code == 403
             assert "don't have access to collection" in response.json()["detail"]
 
-    def test_list_files_with_valid_auth(self, mock_external_services, integration_client, authenticated_headers):
+    def test_list_files_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
         """Test file listing with valid authentication"""
-        # Configure mock to return some files
-        mock_external_services['minio'].list_objects.return_value = [
-            {"name": "test/user/file1.txt", "size": 1024, "last_modified": "2023-01-01"},
-            {"name": "test/user/file2.txt", "size": 2048, "last_modified": "2023-01-02"}
-        ]
-        
         response = integration_client.get(
             "/api/files/list/test",
             headers=authenticated_headers
@@ -97,7 +91,7 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 401
 
-    def test_download_file_with_valid_auth(self, mock_external_services, integration_client, authenticated_headers):
+    def test_download_file_with_valid_auth(self, integration_client, authenticated_headers, mock_external_services):
         """Test file download with valid authentication"""
         # Configure mock to return file data
         test_content = b"Downloaded file content"
