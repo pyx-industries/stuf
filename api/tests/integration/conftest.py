@@ -32,15 +32,45 @@ def integration_client(request):
     # Set dependency overrides
     app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
     
-    # Patch requests.post for Keycloak token validation
-    with patch('requests.post', return_value=mock_keycloak_response):
-        client = TestClient(app)
-        
-        # Attach our assertion mock to the client for easy access in tests
-        client.minio_mock = minio_mock_for_assertions
-        client.keycloak_post_mock = mock_keycloak_response
-        
-        yield client
+@pytest.fixture
+def mock_keycloak_requests():
+    """Mocks requests.post for Keycloak token validation."""
+    mock_keycloak_response = MagicMock()
+    mock_keycloak_response.status_code = 200
+    mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
+
+    with patch('requests.post', return_value=mock_keycloak_response) as mock_post:
+        yield mock_post
+
+@pytest.fixture
+def integration_client(request, mock_keycloak_requests): # Depend on the new fixture
+    """TestClient for integration tests with mocked external services."""
+    minio_mock_for_assertions = MagicMock(spec=MinioClient) # Use spec for type-consistent mocking
+    
+    # Configure default responses for the MinioClient mock instance
+    minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
+    minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]  # Return only 2 files as expected
+    minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
+    minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
+    minio_mock_for_assertions.delete_object.return_value = True
+
+    # Configure Keycloak token validation mock (now comes from mock_keycloak_requests fixture)
+    mock_keycloak_response = mock_keycloak_requests # Use the yielded mock directly
+
+    # Store original overrides to restore them after the test
+    original_minio_override = app.dependency_overrides.get(get_minio_client)
+    original_get_current_user_override = app.dependency_overrides.get(get_current_user)
+
+    # Set dependency overrides
+    app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
+    
+    client = TestClient(app)
+    
+    # Attach our assertion mock to the client for easy access in tests
+    client.minio_mock = minio_mock_for_assertions
+    client.keycloak_post_mock = mock_keycloak_response # Attach the mock from the fixture
+    
+    yield client
     
     # Teardown: Restore original dependency overrides
     if original_minio_override:
