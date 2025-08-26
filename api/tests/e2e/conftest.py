@@ -20,10 +20,13 @@ def check_keycloak_ready():
 def check_minio_ready():
     """Check if MinIO is ready."""
     try:
-        minio_url = "http://localhost:9000"
-        response = requests.get(f"{minio_url}/minio/health/ready", timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('localhost', 9000))
+        sock.close()
+        return result == 0
+    except:
         return False
 
 @pytest.fixture
