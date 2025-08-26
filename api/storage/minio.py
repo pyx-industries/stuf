@@ -119,5 +119,3 @@ class MinioClient:
             print(f"Error deleting object: {err}")
             raise
 
-# Create a singleton instance
-minio_client = MinioClient()
