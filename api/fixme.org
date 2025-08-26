@@ -1,0 +1,96 @@
+#+TITLE: Fixme: Test Suite Refactoring and Improvements
+#+STARTUP: overview
+
+This document outlines prioritized changes to improve the test suite's organization, maintainability, idiomatic adherence, and professionalism.
+
+**Prioritization Legend:**
+*   **Critical (P1)**: Immediate fix required; addresses dead code, severe inconsistencies, or potential for major bugs.
+*   **High (P2)**: Improves test reliability, robustness, and stability, especially for integration/E2E tests.
+*   **Medium (P3)**: Enhances organization, reduces clutter, and makes the test suite easier to navigate.
+*   **Low (P4)**: Improves code quality, maintainability, and adheres to best practices.
+
+* Active Tasks
+** NEXT Refactor E2E Test Setup using Pytest-Docker (P2)
+This task focuses on improving the reliability and maintainability of end-to-end tests by integrating `pytest-docker` for seamless Docker service management. This will replace the brittle manual `subprocess.run` and `time.sleep` calls with a more robust and idiomatic approach, ensuring services are properly started, healthy, and torn down.
+
+*** Files to create/modify
+- `requirements-dev.txt`: Add `pytest-docker==2.0.0` (or latest stable version).
+- `api/tests/e2e/conftest.py`: Refactor fixtures to use `pytest-docker` for Keycloak and MinIO service management.
+
+*** Completion Criteria
+- [ ] `pytest-docker` is added to `requirements-dev.txt`.
+- [ ] `api/tests/e2e/conftest.py` is refactored to use `pytest-docker` services.
+- [ ] E2E tests run successfully and reliably, automatically managing Docker services.
+- [ ] Manual `docker-compose up/down` and `sleep` commands are removed from test setup.
+
+** TODO Clean up Test Suite Organization (P3)
+This section addresses structural and organizational improvements across the test suite. It includes removing unused BDD-related files, standardizing `pytest` invocation via the `Makefile`, and correcting import paths for better maintainability.
+
+*** TODO Remove unused BDD-related files and directories
+This task removes unused BDD feature files, step definition files, and their containing directories to reduce clutter and streamline the test suite. The existing BDD framework setup appears incomplete or abandoned, and these files contribute to unnecessary complexity.
+
+**** Files to create/modify
+- `api/tests/step_defs/__init__.py`: Delete file.
+- `api/tests/step_defs/test_auth_flow.py`: Delete file.
+- `api/tests/features/auth_flow.feature`: Delete file.
+- `api/tests/features/api_functionality.feature`: Delete file.
+- `api/tests/step_defs/`: Delete directory.
+- `api/tests/features/`: Delete directory.
+
+**** Completion Criteria
+- [ ] All specified BDD feature files are deleted.
+- [ ] All specified BDD step definition files are deleted.
+- [ ] `api/tests/step_defs/` directory is removed.
+- [ ] `api/tests/features/` directory is removed.
+- [ ] The project structure is cleaner and less cluttered by unused BDD artifacts.
+
+*** TODO Refactor `Makefile` for consistent `pytest` invocation
+This task standardizes how `pytest` is invoked across all test targets in the `Makefile`. By running `pytest` from the project root and specifying the `api/tests` directory, import resolution is simplified, and integration with tools like `pytest-docker` becomes more seamless.
+
+**** Files to create/modify
+- `Makefile`: Update `test-unit`, `test-integration`, `test-e2e`, `test`, `test-all`, `test-cov` targets.
+
+**** Completion Criteria
+- [ ] All specified `Makefile` targets are updated to invoke `pytest` from the root, targeting `api/tests`.
+- [ ] `cd api` commands are removed from `pytest` invocations in the `Makefile`.
+- [ ] All test targets continue to execute correctly.
+
+*** TODO Remove `sys.path.insert` and adjust relative import in `api/tests/conftest.py`
+With `pytest` being run from the project root, the manual manipulation of `sys.path` in `api/tests/conftest.py` becomes redundant and can lead to issues. This task removes the unnecessary `sys.path.insert` and adjusts internal imports to be relative within the `api.tests` package.
+
+**** Files to create/modify
+- `api/tests/conftest.py`: Remove `sys.path.insert` and adjust a relative import.
+
+**** Completion Criteria
+- [ ] `sys.path.insert` lines are removed from `api/tests/conftest.py`.
+- [ ] The import for `SAMPLE_METADATA`, `SAMPLE_FILES`, `SAMPLE_USERS` is adjusted to a relative import.
+- [ ] All tests that rely on `api/tests/conftest.py` continue to pass.
+
+** TODO Improve Code Quality and Maintainability (P4)
+This section covers enhancements to code quality and maintainability in the `api` module, focusing on standard practices for logging and configuration.
+
+*** TODO Implement `logging` in `api/storage/minio.py`
+This task replaces `print` statements in `api/storage/minio.py` with calls to Python's standard `logging` module. This provides a more robust and configurable way to handle messages, crucial for debugging and monitoring in production environments.
+
+**** Files to create/modify
+- `api/storage/minio.py`: Add `import logging` and replace `print` calls with `logger.warning` or `logger.error`.
+
+**** Completion Criteria
+- [ ] `api/storage/minio.py` imports the `logging` module.
+- [ ] All `print` statements in `api/storage/minio.py` are replaced with appropriate `logger` calls (`info`, `warning`, `error`).
+- [ ] The application's MinIO operations continue to function as expected, with logs now being properly handled by the logging system.
+
+*** TODO Make `DEFAULT_BUCKET` configurable in `api/storage/minio.py`
+This task makes the default MinIO bucket name configurable via an environment variable. Hardcoding the bucket name limits flexibility for different deployment environments or test setups, making it harder to manage separate buckets for development, staging, and production.
+
+**** Files to create/modify
+- `api/storage/minio.py`: Update `DEFAULT_BUCKET` to use `os.environ.get('MINIO_BUCKET_NAME', 'stuf-uploads')`.
+
+**** Completion Criteria
+- [ ] `DEFAULT_BUCKET` in `api/storage/minio.py` is configured to read from the `MINIO_BUCKET_NAME` environment variable.
+- [ ] The MinIO client can successfully connect to and use a bucket specified by `MINIO_BUCKET_NAME`.
+- [ ] Existing functionality using the default bucket name remains operational if `MINIO_BUCKET_NAME` is not set.
+
+* Completed Tasks
+** DONE Remove `api/auth/keycloak.py` (P1)
+Removed the redundant and incompatible `api/auth/keycloak.py` file, which contained Flask-specific code and was not used by the FastAPI application. This eliminated dead code and reduced confusion in the codebase.
