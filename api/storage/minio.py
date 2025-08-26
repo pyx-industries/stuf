@@ -17,17 +17,18 @@ DEFAULT_BUCKET = 'stuf-uploads'
 class MinioClient:
     """MinIO client for S3 storage operations"""
     
-    def __init__(self):
+    def __init__(self, ensure_bucket: bool = True):
         self.client = Minio(
             MINIO_ENDPOINT,
             access_key=MINIO_ACCESS_KEY,
             secret_key=MINIO_SECRET_KEY,
             secure=MINIO_SECURE
         )
-        try:
-            self._ensure_bucket_exists(DEFAULT_BUCKET)
-        except Exception as e:
-            print(f"Warning: Could not ensure bucket exists: {e}")
+        if ensure_bucket:
+            try:
+                self._ensure_bucket_exists(DEFAULT_BUCKET)
+            except Exception as e:
+                print(f"Warning: Could not ensure bucket exists: {e}")
     
     def _ensure_bucket_exists(self, bucket_name: str):
         """Ensure the bucket exists, create it if it doesn't"""
