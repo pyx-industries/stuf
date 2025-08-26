@@ -129,10 +129,8 @@ def validating_token():
     # This is a documentation step
     pass
 
-@pytest.fixture
 @when(parsers.parse('I make a GET request to "{endpoint}"'))
 def make_get_request(request, endpoint):
-    from fastapi.testclient import TestClient
     from api.main import app
     from api.auth.middleware import User, get_current_user
     
@@ -150,14 +148,20 @@ def make_get_request(request, endpoint):
     app.dependency_overrides[get_current_user] = lambda: mock_user
     
     try:
-        # Use context manager to properly handle TestClient lifecycle
-        with TestClient(app) as client:
-            response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
-            
-            # Store the response on the request for later assertions
-            request.node.response = response
-            
-            return response
+        # Use the client from conftest.py
+        import sys
+        import os
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+        from api.tests.conftest import client
+        
+        # Get a client instance
+        test_client = client()
+        response = test_client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+        
+        # Store the response on the request for later assertions
+        request.node.response = response
+        
+        return response
     finally:
         # Clean up the override after the test
         app.dependency_overrides = original_dependency
