@@ -108,8 +108,6 @@ def make_get_request(client, response, endpoint, mock_authentication=None):
     
     try:
         # Make the request
-        from fastapi.testclient import TestClient
-        client = TestClient(app, raise_server_exceptions=False)
         response['response'] = client.get(endpoint, headers=headers)
     finally:
         # Clean up the override after the test
