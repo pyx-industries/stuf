@@ -13,3 +13,11 @@ def sample_file_content():
 @pytest.fixture
 def sample_metadata():
     return {"description": "Test file", "category": "testing"}
+
+# Add a client fixture for BDD tests that need it
+@pytest.fixture
+def client():
+    """TestClient for BDD tests"""
+    from fastapi.testclient import TestClient
+    from api.main import app
+    return TestClient(app)
