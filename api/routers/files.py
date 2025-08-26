@@ -20,7 +20,8 @@ async def upload_file(
     file: UploadFile = File(...),
     collection: str = Form(...),
     metadata: str = Form("{}"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    minio_client: MinioClient = Depends(get_minio_client)
 ):
     """
     Upload a file to a specific collection
@@ -87,7 +88,8 @@ async def upload_file(
 @router.get("/list/{collection}")
 async def list_files(
     collection: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    minio_client: MinioClient = Depends(get_minio_client)
 ):
     """
     List files in a specific collection
@@ -120,7 +122,8 @@ async def list_files(
 async def download_file(
     collection: str,
     object_name: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    minio_client: MinioClient = Depends(get_minio_client)
 ):
     """
     Download a file from a specific collection
@@ -162,7 +165,8 @@ async def get_presigned_url(
     collection: str,
     object_name: str,
     expires: int = 3600,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    minio_client: MinioClient = Depends(get_minio_client)
 ):
     """
     Get a presigned URL for downloading a file
@@ -201,7 +205,8 @@ async def get_presigned_url(
 async def delete_file(
     collection: str,
     object_name: str,
-    current_user: User = Depends(require_role("admin"))
+    current_user: User = Depends(require_role("admin")),
+    minio_client: MinioClient = Depends(get_minio_client)
 ):
     """
     Delete a file (admin only)
