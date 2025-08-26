@@ -9,6 +9,7 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from api.main import app
+from api.auth.middleware import User, get_current_user
 
 # Import scenarios from feature files
 scenarios('../features/api_functionality.feature')
