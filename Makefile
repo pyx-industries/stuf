@@ -1,6 +1,26 @@
 # Makefile for STUF project
 
-.PHONY: docs clean serve
+.PHONY: help docs clean serve
+
+# Default target - show help
+help:
+	@echo "STUF Project - Available Make Targets:"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  docs          Generate documentation from PlantUML and build MkDocs site"
+	@echo "  serve         Start local documentation server for development"
+	@echo "  clean         Remove generated PNG files and documentation site"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test          Run unit and integration tests (default, fast)"
+	@echo "  test-unit     Run only unit tests (fastest)"
+	@echo "  test-integration  Run only integration tests (medium speed)"
+	@echo "  test-e2e      Run end-to-end tests (slow, requires Docker services)"
+	@echo "  test-all      Run all tests including E2E"
+	@echo "  test-cov      Run tests with coverage report"
+	@echo ""
+	@echo "Usage: make <target>"
+	@echo "Example: make test-unit"
 
 # Generate documentation
 docs:
