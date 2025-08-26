@@ -11,7 +11,7 @@ def mock_external_services():
     """Mock external services for integration tests - mocks HTTP calls to external services"""
     minio_mock = MagicMock()
     
-    with patch('api.storage.minio.minio_client', minio_mock), \
+    with patch('api.routers.files.minio_client', minio_mock), \
          patch('auth.middleware.validate_token') as keycloak_mock:
         
         # Configure Keycloak token validation mock
