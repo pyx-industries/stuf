@@ -7,9 +7,13 @@ import json
 from datetime import datetime
 
 from auth.middleware import get_current_user, require_role, User
-from storage.minio import minio_client
+from storage.minio import MinioClient
 
 router = APIRouter()
+
+def get_minio_client() -> MinioClient:
+    """Dependency to provide a MinioClient instance."""
+    return MinioClient()
 
 @router.post("/upload")
 async def upload_file(
