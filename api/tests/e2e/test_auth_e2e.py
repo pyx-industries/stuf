@@ -150,14 +150,14 @@ def make_get_request(request, endpoint):
     app.dependency_overrides[get_current_user] = lambda: mock_user
     
     try:
-        # Make the request
-        client = TestClient(app)
-        response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
-        
-        # Store the response on the request for later assertions
-        request.node.response = response
-        
-        return response
+        # Use context manager to properly handle TestClient lifecycle
+        with TestClient(app) as client:
+            response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+            
+            # Store the response on the request for later assertions
+            request.node.response = response
+            
+            return response
     finally:
         # Clean up the override after the test
         app.dependency_overrides = original_dependency
