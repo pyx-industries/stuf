@@ -5,6 +5,8 @@ import os
 
 from auth.middleware import get_current_user, User
 from routers import files
+from storage.minio import MinioClient # Import MinioClient
+from routers.files import get_minio_client # Import the dependency function
 
 app = FastAPI(
     title="STUF API",
@@ -42,4 +44,10 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
+
+    # Set up a default MinioClient dependency for local development
+    # This ensures that when main.py is run directly, the get_minio_client
+    # dependency returns a functional MinioClient instance.
+    app.dependency_overrides[get_minio_client] = lambda: MinioClient()
+    
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
