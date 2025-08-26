@@ -32,7 +32,7 @@ class TestFilesAPIIntegration:
         assert "test" in result["object_name"]
         
         # Verify MinIO upload was called
-        mock_external_services['minio'].upload_file.assert_called_once()
+        integration_client.minio_mock.upload_file.assert_called_once()
 
     def test_upload_file_without_auth(self, integration_client):
         """Test file upload without authentication"""
@@ -80,10 +80,10 @@ class TestFilesAPIIntegration:
         result = response.json()
         assert result["status"] == "success"
         assert result["collection"] == "test"
-        assert len(result["files"]) == 2
+        assert len(result["files"]) == len(SAMPLE_FILES[:2])
         
         # Verify MinIO list was called with correct prefix
-        mock_external_services['minio'].list_objects.assert_called_once_with(prefix="test/")
+        integration_client.minio_mock.list_objects.assert_called_once_with(prefix="test/")
 
     def test_list_files_without_auth(self, integration_client):
         """Test file listing without authentication"""
@@ -111,7 +111,7 @@ class TestFilesAPIIntegration:
         assert response.headers["content-type"] == "text/plain"
         
         # Verify MinIO download was called
-        mock_external_services['minio'].download_file.assert_called_once_with("test/user/test.txt")
+        integration_client.minio_mock.download_file.assert_called_once_with("test/user/test.txt")
 
     def test_invalid_metadata_format(self, mock_external_services, integration_client, authenticated_headers):
         """Test upload with invalid metadata JSON"""

@@ -1,4 +1,5 @@
 import pytest
+import sys
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import requests # Import requests to patch it
@@ -6,8 +7,16 @@ from api.auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
 
 @pytest.fixture
-def integration_client():
+def integration_client(request):
     """TestClient for integration tests - external services are mocked and the client is setup within the mock context"""
+    # Temporarily remove modules from sys.modules to ensure they are re-imported
+    # within the patch context. This is crucial for module-level singletons.
+    modules_to_reload = ['api.main', 'api.routers.files', 'api.storage.minio']
+    original_modules = {}
+    for mod_name in modules_to_reload:
+        if mod_name in sys.modules:
+            original_modules[mod_name] = sys.modules.pop(mod_name)
+                                                                                                                                                              
     minio_mock = MagicMock()
     
     # Configure default responses for MinIO mock
@@ -36,6 +45,10 @@ def integration_client():
         client.keycloak_post_mock = mock_keycloak_response
         
         yield client
+                                                                                                                                                              
+    # Restore original modules after the test run
+    for mod_name, mod in original_modules.items():
+        sys.modules[mod_name] = mod
 
 @pytest.fixture
 def mock_external_services(integration_client):
@@ -44,11 +57,6 @@ def mock_external_services(integration_client):
         'minio': integration_client.minio_mock,
         'keycloak': integration_client.keycloak_post_mock
     }
-
-@pytest.fixture
-def authenticated_headers():
-    """Headers with valid authentication token for integration tests"""
-    return {"Authorization": "Bearer valid-integration-test-token"}
 
 @pytest.fixture
 def authenticated_headers():
