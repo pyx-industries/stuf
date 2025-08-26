@@ -18,10 +18,12 @@ def mock_keycloak_requests():
     with patch('requests.post', return_value=mock_keycloak_response) as mock_post:
         yield mock_post
 
-@pytest.fixture
-def integration_client(request, mock_keycloak_requests): # Depend only on mock_keycloak_requests
-    """TestClient for integration tests with mocked external services."""
-    # Create the mock MinioClient instance
+@pytest.fixture(scope="module")
+def integration_client_setup(mock_keycloak_requests):
+    """
+    Setup function for integration tests to configure dependency overrides.
+    This runs once per module.
+    """
     minio_mock_for_assertions = MagicMock(spec=MinioClient)
     minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
     minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
@@ -29,7 +31,6 @@ def integration_client(request, mock_keycloak_requests): # Depend only on mock_k
     minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
     minio_mock_for_assertions.delete_object.return_value = True
 
-    # Create a default mock user for get_current_user
     default_test_user = User(
         username="testuser",
         email="testuser@example.com",
@@ -38,32 +39,49 @@ def integration_client(request, mock_keycloak_requests): # Depend only on mock_k
         active=True
     )
 
-    # Create a dictionary of overrides to pass to TestClient
-    # Store original overrides to restore them after the test
-    original_dependency_overrides = app.dependency_overrides.copy()
+    # Store original overrides to restore them after the module's tests
+    original_minio_override = app.dependency_overrides.get(get_minio_client)
+    original_user_override = app.dependency_overrides.get(get_current_user)
 
-    # Apply new overrides directly to the app instance
     app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
     app.dependency_overrides[get_current_user] = lambda: default_test_user
 
-    client = TestClient(app)
-    
-    # Attach our assertion mocks to the client for easy access in tests
-    client.minio_mock = minio_mock_for_assertions
-    client.keycloak_post_mock = mock_keycloak_requests # Attach the mock from the fixture
-    client.current_user_mock = default_test_user # Attach the default mock user
-    
-    yield client
-    
+    yield {
+        "minio_mock": minio_mock_for_assertions,
+        "keycloak_post_mock": mock_keycloak_requests,
+        "current_user_mock": default_test_user
+    }
+
     # Teardown: Restore original dependency overrides
-    app.dependency_overrides = original_dependency_overrides
+    if original_minio_override:
+        app.dependency_overrides[get_minio_client] = original_minio_override
+    else:
+        app.dependency_overrides.pop(get_minio_client, None)
+    
+    if original_user_override:
+        app.dependency_overrides[get_current_user] = original_user_override
+    else:
+        app.dependency_overrides.pop(get_current_user, None)
 
 @pytest.fixture
-def mock_external_services(integration_client):
-    """Access to the mocked external services from integration_client"""
+def integration_client(integration_client_setup):
+    """
+    TestClient for integration tests. Uses app with overrides set by integration_client_setup.
+    This fixture ensures a fresh TestClient instance for each test function,
+    but the app-level overrides are shared per module.
+    """
+    client = TestClient(app)
+    client.minio_mock = integration_client_setup["minio_mock"]
+    client.keycloak_post_mock = integration_client_setup["keycloak_post_mock"]
+    client.current_user_mock = integration_client_setup["current_user_mock"]
+    return client
+
+@pytest.fixture
+def mock_external_services(integration_client_setup):
+    """Access to the mocked external services from integration_client_setup"""
     return {
-        'minio': integration_client.minio_mock,
-        'keycloak': integration_client.keycloak_post_mock
+        'minio': integration_client_setup["minio_mock"],
+        'keycloak': integration_client_setup["keycloak_post_mock"]
     }
 
 @pytest.fixture

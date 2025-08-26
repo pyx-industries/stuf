@@ -1,6 +1,4 @@
 import pytest
-import os
-import sys
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
@@ -8,11 +6,8 @@ from api.main import app
 from api.routers.files import get_minio_client
 from api.storage.minio import MinioClient # Import for type hinting
 
-# Add the parent directory to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 # Import shared test data
-from api.tests.fixtures.test_data import SAMPLE_METADATA, SAMPLE_FILES, SAMPLE_USERS
+from .fixtures.test_data import SAMPLE_METADATA, SAMPLE_FILES, SAMPLE_USERS
 
 # Shared test data fixtures
 @pytest.fixture
