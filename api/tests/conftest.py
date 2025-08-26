@@ -55,7 +55,8 @@ TEST_USERS = {
 @pytest.fixture
 def client():
     """Return a TestClient for the FastAPI app"""
-    return TestClient(app)
+    with TestClient(app) as test_client:
+        yield test_client
 
 @pytest.fixture
 def keycloak_token(request):
