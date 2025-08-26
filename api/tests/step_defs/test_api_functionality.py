@@ -106,14 +106,9 @@ def make_get_request(client, response, endpoint, mock_authentication=None):
     original_dependency = app.dependency_overrides.copy()
     app.dependency_overrides[get_current_user] = lambda: mock_user
     
-    # Create a new client with the dependency override
-    from httpx import ASGITransport
-    from fastapi.testclient import TestClient
-    test_client = TestClient(app, transport=ASGITransport(app=app))
-    
     try:
-        # Make the request with the test client
-        response['response'] = test_client.get(endpoint, headers=headers)
+        # Make the request with the client
+        response['response'] = client.get(endpoint, headers=headers)
     finally:
         # Clean up the override after the test
         app.dependency_overrides = original_dependency

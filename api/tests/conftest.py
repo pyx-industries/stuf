@@ -3,7 +3,7 @@ import sys
 import os
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from httpx import ASGITransport
+import httpx
 
 # Add the parent directory to sys.path to make the 'api' module importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -14,5 +14,5 @@ with patch('api.storage.minio.MinioClient'):
 
 @pytest.fixture
 def client():
-    # Use the explicit transport style to avoid deprecation warning
-    return TestClient(app, transport=ASGITransport(app=app))
+    # Create a client without deprecated warnings
+    return TestClient(app)
