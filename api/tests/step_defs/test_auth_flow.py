@@ -30,6 +30,7 @@ def oauth2_scheme_check():
     from fastapi.security import OAuth2AuthorizationCodeBearer
     assert isinstance(oauth2_scheme, OAuth2AuthorizationCodeBearer)
 
+@pytest.fixture
 @given(parsers.parse('I am authenticated as "{username}" with roles "{roles}"'))
 def mock_authentication(request, username, roles):
     # This is a mock for the authentication
@@ -56,6 +57,7 @@ def mock_authentication(request, username, roles):
     return mock_validate_token
 
 # When steps
+@pytest.fixture
 @when('the API validates the token')
 def validate_token_call(request, jwt_token):
     # Create a patch for requests.post
@@ -81,18 +83,33 @@ def validate_token_call(request, jwt_token):
     
     return mock_post, result
 
+@pytest.fixture
 @when(parsers.parse('I make a GET request to "{endpoint}"'))
-def make_get_request(endpoint, mock_authentication):
+def make_get_request(request, endpoint):
     from fastapi.testclient import TestClient
     from api.main import app
     
-    client = TestClient(app)
-    response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
-    return response
+    # Mock the validate_token function
+    with patch('api.auth.middleware.validate_token') as mock_validate:
+        mock_validate.return_value = {
+            "preferred_username": "testuser",
+            "email": "testuser@example.com",
+            "name": "Test User",
+            "realm_access": {"roles": ["user", "collection-test"]},
+            "active": True
+        }
+        
+        client = TestClient(app)
+        response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+        
+        # Store the response on the request for later assertions
+        request.node.response = response
+        
+        return response
 
 # Then steps
 @then(parsers.parse('the authentication flow should follow these steps:'))
-def check_auth_flow_steps(request):
+def check_auth_flow_steps():
     # This is a documentation step, no implementation needed
     pass
 
@@ -113,15 +130,15 @@ def check_user_info_extraction(validate_token_call):
 
 @then('the authorizationUrl should point to Keycloak\'s auth endpoint')
 def check_authorization_url():
-    assert "protocol/openid-connect/auth" in oauth2_scheme.authorization_url
+    assert "protocol/openid-connect/auth" in oauth2_scheme.authorizationUrl
 
 @then('the tokenUrl should point to Keycloak\'s token endpoint')
 def check_token_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.token_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.tokenUrl
 
 @then('the refreshUrl should point to Keycloak\'s token endpoint')
 def check_refresh_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.refresh_url
+    assert "protocol/openid-connect/token" in oauth2_scheme.refreshUrl
 
 @then(parsers.parse('I should receive a {status_code:d} status code'))
 def check_status_code(status_code, request):

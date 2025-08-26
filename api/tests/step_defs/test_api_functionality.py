@@ -67,8 +67,17 @@ def mock_files_in_collection(request):
 # When steps
 @when(parsers.parse('I make a GET request to "{endpoint}"'))
 def make_get_request(client, response, endpoint, mock_authentication=None):
-    headers = {"Authorization": "Bearer fake-token"} if mock_authentication else {}
-    response['response'] = client.get(endpoint, headers=headers)
+    # Ensure the mock_authentication is applied to the request
+    headers = {"Authorization": "Bearer fake-token"}
+    with patch('api.auth.middleware.validate_token') as mock_validate:
+        mock_validate.return_value = {
+            "preferred_username": "testuser",
+            "email": "testuser@example.com",
+            "name": "Test User",
+            "realm_access": {"roles": ["user", "collection-test"]},
+            "active": True
+        }
+        response['response'] = client.get(endpoint, headers=headers)
 
 @when(parsers.parse('I make a GET request to "{endpoint}" without authentication'))
 def make_get_request_without_auth(client, response, endpoint):
