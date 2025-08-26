@@ -90,8 +90,8 @@ def make_get_request(request, endpoint):
     from api.main import app
     from api.auth.middleware import User, get_current_user
     
-    # Override the dependency in FastAPI app
-    app.dependency_overrides[get_current_user] = lambda: User(
+    # Create a mock User object
+    mock_user = User(
         username="testuser",
         email="testuser@example.com",
         full_name="Test User",
@@ -99,22 +99,33 @@ def make_get_request(request, endpoint):
         active=True
     )
     
-    # Make the request
-    client = TestClient(app)
-    response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+    # Override the dependency in FastAPI app
+    original_dependency = app.dependency_overrides.copy()
+    app.dependency_overrides[get_current_user] = lambda: mock_user
     
-    # Store the response on the request for later assertions
-    request.node.response = response
-    
-    # Clean up the override after the test
-    app.dependency_overrides = {}
-    
-    return response
+    try:
+        # Make the request
+        client = TestClient(app)
+        response = client.get(endpoint, headers={"Authorization": "Bearer fake-token"})
+        
+        # Store the response on the request for later assertions
+        request.node.response = response
+        
+        return response
+    finally:
+        # Clean up the override after the test
+        app.dependency_overrides = original_dependency
 
 # Then steps
 @then(parsers.parse('the authentication flow should follow these steps:'))
 def check_auth_flow_steps():
     # This is a documentation step, no implementation needed
+    pass
+
+# Add a specific step for the table content
+@then(parsers.re(r'.*\|\s*(\d+)\s*\|\s*(.*?)\s*\|.*'))
+def check_auth_flow_step(request):
+    # This step handles the table rows
     pass
 
 @then('it should make a request to the Keycloak introspection endpoint')
@@ -134,15 +145,18 @@ def check_user_info_extraction(validate_token_call):
 
 @then('the authorizationUrl should point to Keycloak\'s auth endpoint')
 def check_authorization_url():
-    assert "protocol/openid-connect/auth" in oauth2_scheme.authorizationUrl
+    # FastAPI's OAuth2AuthorizationCodeBearer uses snake_case for attribute names
+    assert "protocol/openid-connect/auth" in oauth2_scheme.authorization_url
 
 @then('the tokenUrl should point to Keycloak\'s token endpoint')
 def check_token_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.tokenUrl
+    # FastAPI's OAuth2AuthorizationCodeBearer uses snake_case for attribute names
+    assert "protocol/openid-connect/token" in oauth2_scheme.token_url
 
 @then('the refreshUrl should point to Keycloak\'s token endpoint')
 def check_refresh_url():
-    assert "protocol/openid-connect/token" in oauth2_scheme.refreshUrl
+    # FastAPI's OAuth2AuthorizationCodeBearer uses snake_case for attribute names
+    assert "protocol/openid-connect/token" in oauth2_scheme.refresh_url
 
 @then(parsers.parse('I should receive a {status_code:d} status code'))
 def check_status_code(status_code, request):
