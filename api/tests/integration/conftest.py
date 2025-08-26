@@ -38,14 +38,13 @@ def integration_client(request, mock_keycloak_requests): # Depend only on mock_k
         active=True
     )
 
-    # Store original overrides to restore them after the test
-    original_overrides = app.dependency_overrides.copy()
+    # Create a dictionary of overrides to pass to TestClient
+    overrides = {
+        get_minio_client: lambda: minio_mock_for_assertions,
+        get_current_user: lambda: default_test_user
+    }
 
-    # Set dependency overrides for this test run
-    app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
-    app.dependency_overrides[get_current_user] = lambda: default_test_user
-
-    client = TestClient(app)
+    client = TestClient(app, dependency_overrides=overrides)
     
     # Attach our assertion mocks to the client for easy access in tests
     client.minio_mock = minio_mock_for_assertions
@@ -54,8 +53,8 @@ def integration_client(request, mock_keycloak_requests): # Depend only on mock_k
     
     yield client
     
-    # Teardown: Restore all original dependency overrides
-    app.dependency_overrides = original_overrides
+    # Teardown: No need to restore global overrides as they weren't directly modified by this fixture's setup.
+    # The TestClient instance is discarded, taking its overrides with it.
 
 @pytest.fixture
 def mock_external_services(integration_client):
