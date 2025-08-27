@@ -62,10 +62,7 @@ test-integration:
 # Run E2E tests (slow, requires services)
 test-e2e:
 	@echo "Running E2E tests..."
-	@docker-compose up -d keycloak minio
-	@sleep 10  # Wait for services to be ready
 	@python -m pytest api/tests -m "e2e" --tb=short
-	@docker-compose down
 
 # Run all tests except E2E (default)
 test:
@@ -75,10 +72,7 @@ test:
 # Run all tests including E2E
 test-all:
 	@echo "Running all tests..."
-	@docker-compose up -d keycloak minio
-	@sleep 10
 	@python -m pytest api/tests --tb=short
-	@docker-compose down
 
 # Run tests with coverage
 test-cov:
