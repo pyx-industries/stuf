@@ -1,14 +1,14 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from 'react-oidc-context';
 
 const AuthButton = () => {
-  const { authenticated, login, logout, userInfo } = useAuth();
+  const auth = useAuth();
 
-  if (authenticated) {
+  if (auth.isAuthenticated) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <span>Welcome, {userInfo?.name || userInfo?.username}!</span>
-        <button onClick={logout} style={buttonStyle}>
+        <span>Welcome, {auth.user?.profile?.name || auth.user?.profile?.preferred_username}!</span>
+        <button onClick={() => auth.signoutRedirect()} style={buttonStyle}>
           Logout
         </button>
       </div>
@@ -16,7 +16,7 @@ const AuthButton = () => {
   }
 
   return (
-    <button onClick={login} style={buttonStyle}>
+    <button onClick={() => auth.signinRedirect()} style={buttonStyle}>
       Login
     </button>
   );

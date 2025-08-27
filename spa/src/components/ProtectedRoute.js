@@ -1,14 +1,14 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from 'react-oidc-context';
 
 const ProtectedRoute = ({ children, fallback = null }) => {
-  const { authenticated, isLoading } = useAuth();
+  const auth = useAuth();
 
-  if (isLoading) {
+  if (auth.isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!authenticated) {
+  if (!auth.isAuthenticated) {
     return fallback || (
       <div style={{ textAlign: 'center', padding: '2rem' }}>
         <h2>Authentication Required</h2>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api';
+import { useAuth } from 'react-oidc-context';
+import { useApi } from '../hooks/useApi';
 
 const FileUpload = () => {
-  const { authenticated } = useAuth();
+  const auth = useAuth();
+  const apiService = useApi();
   const [file, setFile] = useState(null);
   const [collection, setCollection] = useState('test');
   const [metadata, setMetadata] = useState('');
@@ -44,7 +45,7 @@ const FileUpload = () => {
     }
   };
 
-  if (!authenticated) {
+  if (!auth.isAuthenticated) {
     return null;
   }
 

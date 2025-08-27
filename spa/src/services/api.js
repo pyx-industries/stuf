@@ -1,14 +1,18 @@
-import { getToken, updateToken } from './keycloak';
-
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 class ApiService {
+  constructor() {
+    this.auth = null;
+  }
+
+  setAuth(auth) {
+    this.auth = auth;
+  }
+
   async request(endpoint, options = {}) {
     try {
-      // Ensure token is fresh
-      await updateToken();
-      
-      const token = getToken();
+      // Get fresh token from auth context
+      const token = this.auth?.user?.access_token;
       const url = `${API_BASE_URL}${endpoint}`;
       
       const config = {
