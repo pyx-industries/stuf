@@ -10,6 +10,7 @@ const keycloakConfig = {
 // Keycloak instance - will be created lazily
 let keycloak = null;
 let initializationPromise = null;
+let isInitialized = false;
 
 // Initialize Keycloak
 export const initKeycloak = () => {
@@ -19,7 +20,7 @@ export const initKeycloak = () => {
   }
   
   // If already initialized, return the authentication status
-  if (keycloak && keycloak.didInitialize) {
+  if (isInitialized && keycloak) {
     return Promise.resolve(keycloak.authenticated);
   }
   
@@ -35,7 +36,7 @@ export const initKeycloak = () => {
     pkceMethod: 'S256'
   }).then((authenticated) => {
     // Mark as initialized
-    keycloak.didInitialize = true;
+    isInitialized = true;
     // Clear the initialization promise
     initializationPromise = null;
     return authenticated;
