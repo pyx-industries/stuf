@@ -35,22 +35,12 @@ def integration_client(mock_keycloak_requests):
         minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
         minio_mock_for_assertions.delete_object.return_value = True
 
-        mock_user_instance = User(
-            username="testuser",
-            email="testuser@example.com",
-            full_name="Test User",
-            roles=["user", "collection-test"],
-            active=True
-        )
-
-        # Override dependencies for MinioClient and get_current_user
+        # Override dependencies for MinioClient
         app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
-        app.dependency_overrides[get_current_user] = lambda: mock_user_instance
 
         with TestClient(app) as client:
             client.minio_mock = minio_mock_for_assertions
             client.keycloak_post_mock = mock_keycloak_requests
-            client.current_user_mock = mock_user_instance
             yield client
 
             

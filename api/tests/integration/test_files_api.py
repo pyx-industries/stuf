@@ -3,7 +3,7 @@ import pytest
 import io
 import json
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from api.main import app
 from api.tests.fixtures.test_data import SAMPLE_FILES
@@ -53,9 +53,16 @@ class TestFilesAPIIntegration:
 
     def test_upload_file_wrong_collection(self, integration_client, authenticated_headers):
         """Test file upload to unauthorized collection"""
-        # Configure the mock user for this specific test to have limited roles
-        integration_client.current_user_mock.roles = ["user", "collection-other"]
-        integration_client.current_user_mock.username = "limiteduser" # Also update username for consistent logging/object_name
+        # Configure the mock response from Keycloak for a user with limited roles
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "active": True,
+            "preferred_username": "limiteduser",
+            "name": "Limited User",
+            "realm_access": {"roles": ["user", "collection-other"]}
+        }
+        integration_client.keycloak_post_mock.return_value = mock_response
         
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
         
@@ -111,7 +118,7 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 200
         assert response.content == test_content
-        assert response.headers["content-type"] == "text/plain"
+        assert "text/plain" in response.headers["content-type"]
         
         # Verify MinIO download was called
         integration_client.minio_mock.download_file.assert_called_once_with("test/user/test.txt")
