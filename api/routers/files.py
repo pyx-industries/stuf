@@ -8,17 +8,7 @@ from datetime import datetime
 
 from auth.middleware import get_current_user, require_role, User
 from storage.minio import MinioClient
-
 router = APIRouter()
-
-def get_minio_client() -> MinioClient:
-    """Dependency to provide a MinioClient instance."""
-    # In tests, this will be overridden. For actual usage where this function is called
-    # (e.g., by FastAPI during dependency resolution if not overridden),
-    # we ensure the bucket doesn't get created automatically to avoid connection issues
-    # when a real MinIO service might not be running or accessible.
-    # The actual bucket creation for local dev is handled in main.py's override.
-    return MinioClient(ensure_bucket=False)
 
 @router.post("/upload")
 async def upload_file(
@@ -26,7 +16,7 @@ async def upload_file(
     collection: str = Form(...),
     metadata: str = Form("{}"),
     current_user: User = Depends(get_current_user),
-    minio_client: MinioClient = Depends(get_minio_client)
+    minio_client: MinioClient = Depends(MinioClient)
 ):
     """
     Upload a file to a specific collection
@@ -94,7 +84,7 @@ async def upload_file(
 async def list_files(
     collection: str,
     current_user: User = Depends(get_current_user),
-    minio_client: MinioClient = Depends(get_minio_client)
+    minio_client: MinioClient = Depends(MinioClient)
 ):
     """
     List files in a specific collection
@@ -128,7 +118,7 @@ async def download_file(
     collection: str,
     object_name: str,
     current_user: User = Depends(get_current_user),
-    minio_client: MinioClient = Depends(get_minio_client)
+    minio_client: MinioClient = Depends(MinioClient)
 ):
     """
     Download a file from a specific collection
@@ -171,7 +161,7 @@ async def get_presigned_url(
     object_name: str,
     expires: int = 3600,
     current_user: User = Depends(get_current_user),
-    minio_client: MinioClient = Depends(get_minio_client)
+    minio_client: MinioClient = Depends(MinioClient)
 ):
     """
     Get a presigned URL for downloading a file
@@ -211,7 +201,7 @@ async def delete_file(
     collection: str,
     object_name: str,
     current_user: User = Depends(require_role("admin")),
-    minio_client: MinioClient = Depends(get_minio_client)
+    minio_client: MinioClient = Depends(MinioClient)
 ):
     """
     Delete a file (admin only)

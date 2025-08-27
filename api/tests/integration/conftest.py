@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 import requests # Import requests to patch it
 from api.auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, SAMPLE_USERS
-from api.routers.files import get_minio_client
 from api.main import app # Import app here for dependency override
 from api.storage.minio import MinioClient # Import MinioClient for spec
 
@@ -44,7 +43,7 @@ def integration_client(mock_keycloak_requests):
         )
 
         mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
-        app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
+        app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
         app.dependency_overrides[get_current_user] = mock_get_current_user_dep
 
         with TestClient(app) as client:
