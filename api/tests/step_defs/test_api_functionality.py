@@ -3,7 +3,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 from fastapi.testclient import TestClient
 
 # Load scenarios from the feature file
-scenarios('../features/api_functionality.feature', strict_gherkin=False)
+scenarios('../features/api_functionality.feature')
 
 @given('the API is running')
 def api_is_running(bdd_client):
