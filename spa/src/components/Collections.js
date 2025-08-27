@@ -12,22 +12,38 @@ const Collections = () => {
       // Try to get roles from multiple possible locations
       let roles = [];
       
+      console.log('Full auth.user object:', auth.user);
+      
       // First try the access token (decoded)
       if (auth.user.access_token) {
         try {
           const payload = JSON.parse(atob(auth.user.access_token.split('.')[1]));
+          console.log('Decoded access token payload:', payload);
           roles = payload.realm_access?.roles || [];
+          console.log('Roles from access token:', roles);
         } catch (e) {
           console.warn('Could not decode access token:', e);
         }
       }
       
-      // Fallback to profile if access token parsing failed
-      if (roles.length === 0 && auth.user.profile?.realm_access?.roles) {
-        roles = auth.user.profile.realm_access.roles;
+      // Also try the ID token (profile)
+      if (auth.user.profile) {
+        console.log('Profile object:', auth.user.profile);
+        if (auth.user.profile.realm_access?.roles) {
+          console.log('Roles from profile:', auth.user.profile.realm_access.roles);
+          // Merge roles from profile if they exist
+          const profileRoles = auth.user.profile.realm_access.roles;
+          roles = [...new Set([...roles, ...profileRoles])]; // Remove duplicates
+        }
       }
       
-      console.log('User roles found:', roles);
+      // Also check if roles are directly in the profile
+      if (auth.user.profile?.roles) {
+        console.log('Direct roles in profile:', auth.user.profile.roles);
+        roles = [...new Set([...roles, ...auth.user.profile.roles])];
+      }
+      
+      console.log('All user roles found:', roles);
       
       const collections = roles
         .filter(role => role.startsWith('collection-'))
