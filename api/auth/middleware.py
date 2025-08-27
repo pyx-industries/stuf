@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # Keycloak configuration
-KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
+KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'stuf')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'stuf-api')
 KEYCLOAK_CLIENT_SECRET = os.environ.get('KEYCLOAK_CLIENT_SECRET', 'some-secret-value')
