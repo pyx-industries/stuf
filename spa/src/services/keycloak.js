@@ -9,24 +9,43 @@ const keycloakConfig = {
 
 // Keycloak instance - will be created lazily
 let keycloak = null;
+let initializationPromise = null;
 
 // Initialize Keycloak
 export const initKeycloak = () => {
+  // If already initializing, return the same promise
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+  
+  // If already initialized, return the authentication status
+  if (keycloak && keycloak.didInitialize) {
+    return Promise.resolve(keycloak.authenticated);
+  }
+  
+  // Create keycloak instance if it doesn't exist
   if (!keycloak) {
     keycloak = new Keycloak(keycloakConfig);
   }
   
-  // Only initialize if not already initialized
-  if (!keycloak.authenticated && !keycloak.loginRequired) {
-    return keycloak.init({
-      onLoad: 'check-sso',
-      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-      pkceMethod: 'S256'
-    });
-  }
+  // Start initialization and store the promise
+  initializationPromise = keycloak.init({
+    onLoad: 'check-sso',
+    silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+    pkceMethod: 'S256'
+  }).then((authenticated) => {
+    // Mark as initialized
+    keycloak.didInitialize = true;
+    // Clear the initialization promise
+    initializationPromise = null;
+    return authenticated;
+  }).catch((error) => {
+    // Clear the initialization promise on error
+    initializationPromise = null;
+    throw error;
+  });
   
-  // Return resolved promise if already initialized
-  return Promise.resolve(keycloak.authenticated);
+  return initializationPromise;
 };
 
 // Authentication functions
