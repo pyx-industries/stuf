@@ -54,13 +54,13 @@ def integration_client(mock_keycloak_requests):
     app.dependency_overrides[get_current_user] = mock_get_current_user_dep # Use the MagicMock directly
 
     # Create the TestClient *after* applying overrides
-    with TestClient(app) as client:
-        # Attach our assertion mocks to the client for easy access in tests
-        client.minio_mock = minio_mock_for_assertions
-        client.keycloak_post_mock = mock_keycloak_requests
-        client.current_user_mock = mock_user_instance # Attach the actual mock User object
+    client = TestClient(app)
+    # Attach our assertion mocks to the client for easy access in tests
+    client.minio_mock = minio_mock_for_assertions
+    client.keycloak_post_mock = mock_keycloak_requests
+    client.current_user_mock = mock_user_instance # Attach the actual mock User object
     
-        yield client
+    yield client
     
     # Teardown: Restore original dependency overrides
     if original_minio_override:
