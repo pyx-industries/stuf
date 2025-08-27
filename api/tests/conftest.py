@@ -49,8 +49,8 @@ def bdd_client():
     original_minio_override = app.dependency_overrides.get(get_minio_client)
     app.dependency_overrides[get_minio_client] = lambda: mock_minio
 
-    client = TestClient(app)
-    yield client
+    with TestClient(app) as client:
+        yield client
 
     # Teardown: Restore original dependency override
     if original_minio_override:

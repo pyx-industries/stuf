@@ -47,7 +47,8 @@ def unit_client(mock_minio_client, mock_keycloak_validation):
     # mock_minio_client and mock_keycloak_validation fixtures.
     # We directly import app here, which refers to the global app instance
     # in api.main.py that has been modified by the fixtures.
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 @pytest.fixture
 def mock_user():
