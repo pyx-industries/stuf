@@ -21,9 +21,9 @@ This is the highest priority task to get the test suite back to a green, stable 
 
 *** Completion Criteria
 - [X] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
-- [ ] All `ERROR`s during test teardown are resolved.
-- [ ] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
-- [ ] The test suite is stable and provides a reliable baseline for further refactoring.
+- [X] All `ERROR`s during test teardown are resolved.
+- [X] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
+- [X] The test suite is stable and provides a reliable baseline for further refactoring.
 
 ** TODO Refactor MinioClient for Dependency Injection (P1)
 This is a critical refactoring to address the fundamental design problem that makes testing so difficult. The root cause of our mocking issues is the line `app.dependency_overrides[MinioClient] = lambda: MinioClient()` in `api/main.py`. This sets a "default" dependency override when the `app` module is imported, which the test fixtures then have to fight to overwrite.

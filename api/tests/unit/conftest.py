@@ -9,6 +9,8 @@ from api.storage.minio import MinioClient # Import for type hinting
 @pytest.fixture
 def mock_minio_client():
     """Mock MinIO client for unit tests - uses dependency override"""
+    original_overrides = app.dependency_overrides.copy()
+
     mock = MagicMock(spec=MinioClient)
     # Configure default successful responses
     mock.upload_file.return_value = "test/user/file.txt"
@@ -17,16 +19,13 @@ def mock_minio_client():
     mock.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
     mock.delete_object.return_value = True
 
-    # Store original override to restore it after the test
-    original_minio_override = app.dependency_overrides.get(MinioClient)
     app.dependency_overrides[MinioClient] = lambda: mock
 
     yield mock
 
-    # Teardown: Restore original dependency override
-    app.dependency_overrides.pop(MinioClient, None)
-    if original_minio_override: # Only restore if it was present
-        app.dependency_overrides[MinioClient] = original_minio_override
+    # Teardown: Restore original dependency overrides
+    app.dependency_overrides.clear()
+    app.dependency_overrides.update(original_overrides)
 
 @pytest.fixture
 def mock_keycloak_validation():
