@@ -7,6 +7,10 @@ from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, S
 from api.main import app # Import app here for dependency override
 from api.storage.minio import MinioClient # Import MinioClient for spec
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @pytest.fixture
 def mock_keycloak_requests():
     """Mocks requests.post for Keycloak token validation (function-scoped)."""
@@ -28,6 +32,7 @@ def integration_client(mock_keycloak_requests):
 
     try:
         minio_mock_for_assertions = MagicMock(spec=MinioClient)
+        logger.debug(f"Fixture created minio_mock_for_assertions: {minio_mock_for_assertions} (ID: {id(minio_mock_for_assertions)})")
         minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
         minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
         minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
