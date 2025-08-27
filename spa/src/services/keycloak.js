@@ -37,10 +37,8 @@ class KeycloakService {
     
     // Start initialization and store the promise
     this.initializationPromise = this.keycloak.init({
-      onLoad: 'check-sso',
       checkLoginIframe: false,
-      enableLogging: true,
-      flow: 'implicit'
+      enableLogging: true
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
       this.isInitialized = true;
