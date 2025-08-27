@@ -37,7 +37,7 @@ if [ "$REALM_EXISTS" = "false" ]; then
   
   # Create SPA client
   echo "Creating SPA client: $KEYCLOAK_SPA_CLIENT_ID"
-  SPA_CLIENT_ID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_SPA_CLIENT_ID -s publicClient=true -s redirectUris='["http://localhost:3000/*"]' -s webOrigins='["http://localhost:3000"]' -s name="STUF Single Page Application" -o)
+  SPA_CLIENT_ID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_SPA_CLIENT_ID -s publicClient=true -s directAccessGrantsEnabled=true -s standardFlowEnabled=true -s redirectUris='["http://localhost:3000/*"]' -s webOrigins='["http://localhost:3000"]' -s name="STUF Single Page Application" -o)
   echo "SPA client created with ID: $SPA_CLIENT_ID"
   
   # Create API client
