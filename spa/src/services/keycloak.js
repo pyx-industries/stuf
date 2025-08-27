@@ -47,18 +47,31 @@ class KeycloakService {
       return authenticated;
     }).catch((error) => {
       console.error('Keycloak initialization failed:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
       console.error('Keycloak config:', keycloakConfig);
       
       // Test basic connectivity to Keycloak
+      console.log('Testing Keycloak connectivity...');
       fetch(`${keycloakConfig.url}/realms/${keycloakConfig.realm}`)
         .then(response => {
-          console.log('Keycloak realm connectivity test:', response.status);
-          if (!response.ok) {
-            console.error('Keycloak realm not accessible');
+          console.log('Keycloak realm connectivity test - Status:', response.status);
+          console.log('Keycloak realm connectivity test - OK:', response.ok);
+          if (response.ok) {
+            console.log('✓ Keycloak realm is accessible');
+            return response.text();
+          } else {
+            console.error('✗ Keycloak realm returned error status');
+            throw new Error(`HTTP ${response.status}`);
           }
         })
+        .then(text => {
+          console.log('Keycloak realm response preview:', text.substring(0, 200));
+        })
         .catch(fetchError => {
-          console.error('Cannot reach Keycloak server:', fetchError);
+          console.error('✗ Cannot reach Keycloak server:', fetchError);
+          console.error('This suggests a network connectivity issue');
         });
       
       // Reset state
@@ -66,7 +79,9 @@ class KeycloakService {
       this.isInitialized = false;
       this.initializationPromise = null;
       
-      throw new Error(`Keycloak initialization failed: ${error?.message || 'Connection or configuration error'}`);
+      // Create a more descriptive error
+      const errorMessage = error?.message || error?.toString() || 'Unknown initialization error';
+      throw new Error(`Keycloak initialization failed: ${errorMessage}`);
     });
     
     return this.initializationPromise;
