@@ -37,20 +37,25 @@ class KeycloakService {
     
     // Start initialization and store the promise
     this.initializationPromise = this.keycloak.init({
-      onLoad: 'check-sso',
-      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+      onLoad: 'login-required',
       pkceMethod: 'S256',
       checkLoginIframe: false, // Disable iframe check to avoid timeout issues
-      silentCheckSsoFallback: false // Disable fallback to avoid additional complexity
+      enableLogging: true // Enable Keycloak debug logging
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
+      console.log('Keycloak instance:', this.keycloak);
+      console.log('Keycloak token:', this.keycloak.token);
       // Mark as initialized
       this.isInitialized = true;
       // Clear the initialization promise
       this.initializationPromise = null;
       return authenticated;
     }).catch((error) => {
-      console.error('Keycloak initialization failed:', error);
+      console.error('Keycloak initialization failed with error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+      console.error('Keycloak config used:', keycloakConfig);
       // Reset everything on error to allow retry
       this.keycloak = null;
       this.isInitialized = false;
