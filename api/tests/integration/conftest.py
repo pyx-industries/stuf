@@ -51,8 +51,8 @@ def integration_client(mock_keycloak_requests):
             )
 
             mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
-            # Also patch validate_token to avoid real Keycloak calls
-            with patch.object(validate_token, '__wrapped__', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
+            # Patch validate_token function directly to avoid real Keycloak calls
+            with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
                 app.dependency_overrides[get_current_user] = mock_get_current_user_dep
 
                 with TestClient(app) as client:
