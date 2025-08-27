@@ -8,3 +8,5 @@ site/
 
 # Environment variables
 .env
+__pycache__/
+.coverage
