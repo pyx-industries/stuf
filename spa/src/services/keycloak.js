@@ -39,7 +39,9 @@ class KeycloakService {
     this.initializationPromise = this.keycloak.init({
       onLoad: 'check-sso',
       silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-      pkceMethod: 'S256'
+      pkceMethod: 'S256',
+      checkLoginIframe: false, // Disable iframe check to avoid timeout issues
+      silentCheckSsoFallback: false // Disable fallback to avoid additional complexity
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
       // Mark as initialized

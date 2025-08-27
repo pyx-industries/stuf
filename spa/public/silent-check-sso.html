@@ -5,7 +5,14 @@
 </head>
 <body>
     <script>
-        parent.postMessage(location.href, location.origin);
+        try {
+            // Send the current location to the parent window
+            if (parent && parent !== window) {
+                parent.postMessage(location.href, location.origin);
+            }
+        } catch (error) {
+            console.error('Silent SSO check failed:', error);
+        }
     </script>
 </body>
 </html>
