@@ -17,32 +17,55 @@ export const AuthProvider = ({ children }) => {
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+    
     const initAuth = async () => {
       try {
+        console.log('Initializing Keycloak...');
         const authenticated = await initKeycloak();
+        console.log('Keycloak initialized, authenticated:', authenticated);
+        
+        if (!mounted) return; // Component unmounted during async operation
+        
         setAuthenticated(authenticated);
         
         if (authenticated) {
-          setUserInfo(getUserInfo());
+          const userInfo = getUserInfo();
+          console.log('User info:', userInfo);
+          setUserInfo(userInfo);
           
           // Set up token refresh
-          setInterval(async () => {
+          const refreshInterval = setInterval(async () => {
             try {
               await updateToken();
             } catch (error) {
               console.error('Failed to refresh token:', error);
-              handleLogout();
+              if (mounted) {
+                handleLogout();
+              }
             }
           }, 60000); // Check every minute
+          
+          // Cleanup interval on unmount
+          return () => {
+            clearInterval(refreshInterval);
+          };
         }
       } catch (error) {
         console.error('Failed to initialize Keycloak:', error);
+        console.error('Error details:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initAuth();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleLogin = async () => {

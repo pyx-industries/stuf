@@ -7,37 +7,51 @@ const keycloakConfig = {
   clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'stuf-spa'
 };
 
-// Create Keycloak instance
-const keycloak = new Keycloak(keycloakConfig);
+// Keycloak instance - will be created lazily
+let keycloak = null;
 
 // Initialize Keycloak
 export const initKeycloak = () => {
-  return keycloak.init({
-    onLoad: 'check-sso',
-    silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-    pkceMethod: 'S256'
-  });
+  if (!keycloak) {
+    keycloak = new Keycloak(keycloakConfig);
+  }
+  
+  // Only initialize if not already initialized
+  if (!keycloak.authenticated && !keycloak.loginRequired) {
+    return keycloak.init({
+      onLoad: 'check-sso',
+      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+      pkceMethod: 'S256'
+    });
+  }
+  
+  // Return resolved promise if already initialized
+  return Promise.resolve(keycloak.authenticated);
 };
 
 // Authentication functions
 export const login = () => {
+  if (!keycloak) throw new Error('Keycloak not initialized');
   return keycloak.login();
 };
 
 export const logout = () => {
+  if (!keycloak) throw new Error('Keycloak not initialized');
   return keycloak.logout();
 };
 
 export const getToken = () => {
+  if (!keycloak) return null;
   return keycloak.token;
 };
 
 export const isAuthenticated = () => {
+  if (!keycloak) return false;
   return keycloak.authenticated;
 };
 
 export const getUserInfo = () => {
-  if (!keycloak.authenticated) return null;
+  if (!keycloak || !keycloak.authenticated) return null;
   
   return {
     username: keycloak.tokenParsed?.preferred_username,
@@ -48,7 +62,11 @@ export const getUserInfo = () => {
 };
 
 export const updateToken = () => {
+  if (!keycloak) return Promise.reject('Keycloak not initialized');
   return keycloak.updateToken(30);
 };
+
+// Export the keycloak instance getter for debugging
+export const getKeycloakInstance = () => keycloak;
 
 export default keycloak;
