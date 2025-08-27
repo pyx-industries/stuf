@@ -38,41 +38,35 @@ class KeycloakService {
     // Start initialization and store the promise
     this.initializationPromise = this.keycloak.init({
       onLoad: 'check-sso',
-      pkceMethod: 'S256',
-      checkLoginIframe: false, // Disable iframe check to avoid timeout issues
-      enableLogging: true // Enable Keycloak debug logging
+      checkLoginIframe: false,
+      enableLogging: true
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
-      console.log('Keycloak instance:', this.keycloak);
-      console.log('Keycloak token:', this.keycloak.token);
-      // Mark as initialized
       this.isInitialized = true;
-      // Clear the initialization promise
       this.initializationPromise = null;
       return authenticated;
     }).catch((error) => {
-      console.error('Keycloak initialization failed with error:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
-      console.error('Keycloak config used:', keycloakConfig);
+      console.error('Keycloak initialization failed:', error);
+      console.error('Keycloak config:', keycloakConfig);
       
-      // Log more details about the Keycloak instance state
-      console.error('Keycloak instance state:', {
-        authenticated: this.keycloak?.authenticated,
-        token: !!this.keycloak?.token,
-        refreshToken: !!this.keycloak?.refreshToken
-      });
+      // Test basic connectivity to Keycloak
+      fetch(`${keycloakConfig.url}/realms/${keycloakConfig.realm}`)
+        .then(response => {
+          console.log('Keycloak realm connectivity test:', response.status);
+          if (!response.ok) {
+            console.error('Keycloak realm not accessible');
+          }
+        })
+        .catch(fetchError => {
+          console.error('Cannot reach Keycloak server:', fetchError);
+        });
       
-      // Reset everything on error to allow retry
+      // Reset state
       this.keycloak = null;
       this.isInitialized = false;
       this.initializationPromise = null;
       
-      // Create a more descriptive error
-      const descriptiveError = new Error(`Keycloak initialization failed: ${error?.message || 'Unknown error'}`);
-      descriptiveError.originalError = error;
-      throw descriptiveError;
+      throw new Error(`Keycloak initialization failed: ${error?.message || 'Connection or configuration error'}`);
     });
     
     return this.initializationPromise;
