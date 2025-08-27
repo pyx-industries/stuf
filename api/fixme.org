@@ -10,22 +10,7 @@ This document outlines prioritized changes to improve the test suite's organizat
 *   **Low (P4)**: Improves code quality, maintainability, and adheres to best practices.
 
 * Active Tasks
-** NEXT Stabilize Integration Test Suite (P0)
-This is the highest priority task to get the test suite back to a green, stable state. Recent debugging has revealed significant issues in the test fixtures that prevent tests from running correctly, including syntax errors and flawed dependency mocking logic. This task must be completed before any refactoring of the application code.
-
-*** Files to create/modify
-- `api/tests/integration/conftest.py`: Fix the `integration_client` fixture by removing syntax errors (duplicate `yield`), correcting teardown logic, and ensuring the `MinioClient` dependency override works reliably for the `TestClient`.
-- `api/tests/unit/conftest.py`: Fix any copy-paste errors or inconsistencies found during the stabilization process.
-- `api/routers/files.py`: Remove any temporary debugging `logger` calls.
-- `api/tests/integration/test_files_api.py`: Clean up duplicated assertions and any other test code rot.
-
-*** Completion Criteria
-- [X] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
-- [X] All `ERROR`s during test teardown are resolved.
-- [X] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
-- [X] The test suite is stable and provides a reliable baseline for further refactoring.
-
-** TODO Refactor MinioClient for Dependency Injection (P1)
+** NEXT Refactor MinioClient for Dependency Injection (P1)
 This is a critical refactoring to address the fundamental design problem that makes testing so difficult. The root cause of our mocking issues is the line `app.dependency_overrides[MinioClient] = lambda: MinioClient()` in `api/main.py`. This sets a "default" dependency override when the `app` module is imported, which the test fixtures then have to fight to overwrite.
 
 The "holy grail" solution is to remove this line from `main.py` and let FastAPI handle the creation of the `MinioClient` dependency automatically. This will:
@@ -40,9 +25,9 @@ The "holy grail" solution is to remove this line from `main.py` and let FastAPI 
 - `api/tests/unit/conftest.py`: Adjust `mock_minio_client` fixture if necessary to align with the cleaner override pattern.
 
 *** Completion Criteria
-- [ ] The `app.dependency_overrides[MinioClient]` line in `api/main.py` is removed.
-- [ ] `api/routers/files.py` endpoints continue to correctly use `Depends(MinioClient)`.
-- [ ] Integration and unit test fixtures cleanly override the `MinioClient` dependency.
+- [X] The `app.dependency_overrides[MinioClient]` line in `api/main.py` is removed.
+- [X] `api/routers/files.py` endpoints continue to correctly use `Depends(MinioClient)`.
+- [X] Integration and unit test fixtures cleanly override the `MinioClient` dependency.
 - [ ] All unit and integration tests pass reliably.
 - [ ] The application remains functional when run normally (e.g., via `uvicorn` or `docker-compose`), with the real `MinioClient` being created by FastAPI's dependency injection system.
 
@@ -128,5 +113,19 @@ This task makes the default MinIO bucket name configurable via an environment va
 - [ ] Existing functionality using the default bucket name remains operational if `MINIO_BUCKET_NAME` is not set.
 
 * Completed Tasks
+** DONE Stabilize Integration Test Suite (P0)
+This is the highest priority task to get the test suite back to a green, stable state. Recent debugging has revealed significant issues in the test fixtures that prevent tests from running correctly, including syntax errors and flawed dependency mocking logic. This task must be completed before any refactoring of the application code.
+
+*** Files to create/modify
+- `api/tests/integration/conftest.py`: Fix the `integration_client` fixture by removing syntax errors (duplicate `yield`), correcting teardown logic, and ensuring the `MinioClient` dependency override works reliably for the `TestClient`.
+- `api/tests/unit/conftest.py`: Fix any copy-paste errors or inconsistencies found during the stabilization process.
+- `api/routers/files.py`: Remove any temporary debugging `logger` calls.
+- `api/tests/integration/test_files_api.py`: Clean up duplicated assertions and any other test code rot.
+
+*** Completion Criteria
+- [X] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
+- [X] All `ERROR`s during test teardown are resolved.
+- [X] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
+- [X] The test suite is stable and provides a reliable baseline for further refactoring.
 ** DONE Remove `api/auth/keycloak.py` (P1)
 Removed the redundant and incompatible `api/auth/keycloak.py` file, which contained Flask-specific code and was not used by the FastAPI application. This eliminated dead code and reduced confusion in the codebase.

@@ -7,10 +7,6 @@ from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, S
 from api.main import app # Import app here for dependency override
 from api.storage.minio import MinioClient # Import MinioClient for spec
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 @pytest.fixture
 def mock_keycloak_requests():
     """Mocks requests.post for Keycloak token validation (function-scoped)."""
@@ -29,11 +25,10 @@ def integration_client(mock_keycloak_requests):
     are set up for each test function.
     """
     # Store original overrides to restore them after the test
-    original_overrides = app.dependency_overrides.copy() 
+    original_overrides = app.dependency_overrides.copy()
 
     try:
-        minio_mock_for_assertions = MagicMock() 
-        logger.debug(f"Fixture created minio_mock_for_assertions: {minio_mock_for_assertions} (ID: {id(minio_mock_for_assertions)})")
+        minio_mock_for_assertions = MagicMock(spec=MinioClient)
         minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
         minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
         minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
@@ -48,21 +43,17 @@ def integration_client(mock_keycloak_requests):
             active=True
         )
 
-        mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
         # Patch validate_token function directly to avoid real Keycloak calls
         with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
             app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
-            app.dependency_overrides[get_current_user] = mock_get_current_user_dep
+            app.dependency_overrides[get_current_user] = lambda: mock_user_instance
 
             with TestClient(app) as client:
-                client.minio_mock = minio_mock_for_assertions                                                                                                                                                          
+                client.minio_mock = minio_mock_for_assertions
                 client.keycloak_post_mock = mock_keycloak_requests
                 client.current_user_mock = mock_user_instance
                 yield client
             
-    except Exception as e:
-        print(f"Error creating TestClient: {e}")
-        raise
     finally:
         # restore original dependency overrides
         app.dependency_overrides.clear()
