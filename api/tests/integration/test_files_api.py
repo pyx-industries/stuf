@@ -1,3 +1,4 @@
+import logging
 import pytest
 import io
 import json
@@ -7,30 +8,67 @@ from unittest.mock import patch
 from api.main import app
 from api.tests.fixtures.test_data import SAMPLE_FILES
 
+logger = logging.getLogger(__name__)
+
 @pytest.mark.integration
 class TestFilesAPIIntegration:
     """Integration tests that test the full request flow with mocked external services"""
     
     def test_upload_file_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file upload with valid authentication"""
+        from api.routers.files import get_minio_client
+
+        # DEBUG: Verify mock setup
+        logger.info(f"MinIO mock type: {type(integration_client.minio_mock)}")
+        logger.info(f"MinIO mock upload_file: {integration_client.minio_mock.upload_file}")
+        logger.info(f"Upload_file call count before: {integration_client.minio_mock.upload_file.call_count}")
+
+        # DEBUG: Check if dependency override is active
+        logger.info(f"App dependency overrides: {app.dependency_overrides}")
+        logger.info(f"get_minio_client in overrides: {get_minio_client in app.dependency_overrides}")
+
+        if get_minio_client in app.dependency_overrides:
+            actual_client = app.dependency_overrides[get_minio_client]()
+            logger.info(f"Overridden client type: {type(actual_client)}")
+            logger.info(f"Is it our mock? {actual_client is integration_client.minio_mock}")
+
         # Create test file
         test_content = b"This is integration test content"
         test_file = ("test.txt", io.BytesIO(test_content), "text/plain")
         
-        response = integration_client.post(
-            "/api/files/upload",
-            files={"file": test_file},
-            data={
-                "collection": "test",
-                "metadata": '{"description": "Integration test file"}'
-            },
-            headers=authenticated_headers
-        )
+
+        try:
+            response = integration_client.post(
+                "/api/files/upload",
+                files={"file": test_file},
+                data={
+                    "collection": "test",
+                    "metadata": '{"description": "Integration test file"}'
+                },
+                headers=authenticated_headers
+            )
+        except Exception as e:
+            logger.error(f"Exception during request: {e}")
+            raise
+
+        # DEBUG: Print response details
+        logger.info(f"Response status: {response.status_code}")
+        logger.info(f"Response content: {response.content}")
+        if response.status_code == 200:
+            logger.info(f"Response JSON: {response.json()}")
+        else:
+            logger.warning("Response was not 200, cannot parse JSON")
+
+        # DEBUG: Check call count after
+        logger.info(f"Upload_file call count after: {integration_client.minio_mock.upload_file.call_count}")
+        logger.info(f"All calls made: {integration_client.minio_mock.method_calls}")
+
         
         assert response.status_code == 200
         result = response.json()
         assert result["status"] == "success"
         assert "test" in result["object_name"]
+
         
         # Verify MinIO upload was called
         integration_client.minio_mock.upload_file.assert_called_once()
@@ -128,3 +166,21 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 400
         assert "Invalid metadata JSON format" in response.json()["detail"]
+    def test_mock_verification(self, integration_client):
+        """Verify the mock is properly set up"""
+        from api.routers.files import get_minio_client
+
+        # Get the mocked client directly
+        mocked_client = app.dependency_overrides[get_minio_client]()
+
+        # Call upload_file directly
+        result = mocked_client.upload_file(
+            io.BytesIO(b"test"), 
+            "test/file.txt", 
+            "text/plain"
+        )
+
+        logger.info(f"Direct mock call result: {result}")
+        logger.info(f"Call count: {mocked_client.upload_file.call_count}")
+
+        assert mocked_client.upload_file.call_count == 1
