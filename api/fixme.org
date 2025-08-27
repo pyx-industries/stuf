@@ -9,7 +9,6 @@ This document outlines prioritized changes to improve the test suite's organizat
 *   **Medium (P3)**: Enhances organization, reduces clutter, and makes the test suite easier to navigate.
 *   **Low (P4)**: Improves code quality, maintainability, and adheres to best practices.
 
-* Active Tasks
 **Strategy Note:** The test suite was in a broken state prior to this refactoring effort. The current strategy is to complete the planned structural and quality improvements first, and then perform a final stabilization pass to get all tests to a "green" state. Individual tasks may not result in a fully passing test suite.
 
 ** NEXT Refactor E2E Test Setup using Pytest-Docker (P2)
@@ -46,41 +45,41 @@ This task removes unused BDD feature files, step definition files, and their con
 - [ ] `api/tests/features/` directory is removed.
 - [ ] The project structure is cleaner and less cluttered by unused BDD artifacts.
 
-*** TODO Refactor `Makefile` for consistent `pytest` invocation
+*** DONE Refactor `Makefile` for consistent `pytest` invocation
 This task standardizes how `pytest` is invoked across all test targets in the `Makefile`. By running `pytest` from the project root and specifying the `api/tests` directory, import resolution is simplified, and integration with tools like `pytest-docker` becomes more seamless.
 
 **** Files to create/modify
 - `Makefile`: Update `test-unit`, `test-integration`, `test-e2e`, `test`, `test-all`, `test-cov` targets.
 
 **** Completion Criteria
-- [ ] All specified `Makefile` targets are updated to invoke `pytest` from the root, targeting `api/tests`.
-- [ ] `cd api` commands are removed from `pytest` invocations in the `Makefile`.
-- [ ] The invocation logic is standardized across all test targets.
+- [X] All specified `Makefile` targets are updated to invoke `pytest` from the root, targeting `api/tests`.
+- [X] `cd api` commands are removed from `pytest` invocations in the `Makefile`.
+- [X] The invocation logic is standardized across all test targets.
 
-*** TODO Remove `sys.path.insert` and adjust relative import in `api/tests/conftest.py`
+*** DONE Remove `sys.path.insert` and adjust relative import in `api/tests/conftest.py`
 With `pytest` being run from the project root, the manual manipulation of `sys.path` in `api/tests/conftest.py` becomes redundant and can lead to issues. This task removes the unnecessary `sys.path.insert` and adjusts internal imports to be relative within the `api.tests` package.
 
 **** Files to create/modify
 - `api/tests/conftest.py`: Remove `sys.path.insert` and adjust a relative import.
 
 **** Completion Criteria
-- [ ] `sys.path.insert` lines are removed from `api/tests/conftest.py`.
-- [ ] The import for `SAMPLE_METADATA`, `SAMPLE_FILES`, `SAMPLE_USERS` is adjusted to a relative import.
-- [ ] The `sys.path` manipulation is removed and imports are corrected.
+- [X] `sys.path.insert` lines are removed from `api/tests/conftest.py`.
+- [X] The import for `SAMPLE_METADATA`, `SAMPLE_FILES`, `SAMPLE_USERS` is adjusted to a relative import.
+- [X] The `sys.path` manipulation is removed and imports are corrected.
 
 ** TODO Improve Code Quality and Maintainability (P4)
 This section covers enhancements to code quality and maintainability in the `api` module, focusing on standard practices for logging and configuration.
 
-*** TODO Implement `logging` in `api/storage/minio.py`
+*** DONE Implement `logging` in `api/storage/minio.py`
 This task replaces `print` statements in `api/storage/minio.py` with calls to Python's standard `logging` module. This provides a more robust and configurable way to handle messages, crucial for debugging and monitoring in production environments.
 
 **** Files to create/modify
 - `api/storage/minio.py`: Add `import logging` and replace `print` calls with `logger.warning` or `logger.error`.
 
 **** Completion Criteria
-- [ ] `api/storage/minio.py` imports the `logging` module.
-- [ ] All `print` statements in `api/storage/minio.py` are replaced with appropriate `logger` calls (`info`, `warning`, `error`).
-- [ ] The application's MinIO operations continue to function as expected, with logs now being properly handled by the logging system.
+- [X] `api/storage/minio.py` imports the `logging` module.
+- [X] All `print` statements in `api/storage/minio.py` are replaced with appropriate `logger` calls (`info`, `warning`, `error`).
+- [X] The application's MinIO operations continue to function as expected, with logs now being properly handled by the logging system.
 
 *** TODO Make `DEFAULT_BUCKET` configurable in `api/storage/minio.py`
 This task makes the default MinIO bucket name configurable via an environment variable. Hardcoding the bucket name limits flexibility for different deployment environments or test setups, making it harder to manage separate buckets for development, staging, and production.
@@ -106,7 +105,6 @@ This is the final step after all other refactoring is complete. This task will a
 - [ ] All E2E tests pass.
 - [ ] The `make test-all` command completes successfully with no failures.
 
-* Completed Tasks
 ** DONE Refactor MinioClient for Dependency Injection (P1)
 This is a critical refactoring to address the fundamental design problem that makes testing so difficult. The root cause of our mocking issues is the line `app.dependency_overrides[MinioClient] = lambda: MinioClient()` in `api/main.py`. This sets a "default" dependency override when the `app` module is imported, which the test fixtures then have to fight to overwrite.
 
