@@ -2,10 +2,10 @@ import pytest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import requests # Import requests to patch it
-from api.auth.middleware import get_current_user, User, validate_token
+from auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, SAMPLE_USERS
 from api.main import app # Import app here for dependency override
-from api.storage.minio import MinioClient # Import MinioClient for spec
+from storage.minio import MinioClient # Import MinioClient for spec
 
 @pytest.fixture
 def mock_keycloak_requests():
@@ -43,16 +43,16 @@ def integration_client(mock_keycloak_requests):
             active=True
         )
 
-        # Patch validate_token function directly to avoid real Keycloak calls
-        with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
-            app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
-            app.dependency_overrides[get_current_user] = lambda: mock_user_instance
+        # Override dependencies for MinioClient and get_current_user
+        app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
+        app.dependency_overrides[get_current_user] = lambda: mock_user_instance
 
-            with TestClient(app) as client:
-                client.minio_mock = minio_mock_for_assertions
-                client.keycloak_post_mock = mock_keycloak_requests
-                client.current_user_mock = mock_user_instance
-                yield client
+        with TestClient(app) as client:
+            client.minio_mock = minio_mock_for_assertions
+            client.keycloak_post_mock = mock_keycloak_requests
+            client.current_user_mock = mock_user_instance
+            yield client
+
             
     finally:
         # restore original dependency overrides
