@@ -29,7 +29,9 @@ The "holy grail" solution is to remove this line from `main.py` and let FastAPI 
 - [X] `api/routers/files.py` endpoints continue to correctly use `Depends(MinioClient)`.
 - [X] Integration and unit test fixtures cleanly override the `MinioClient` dependency.
 - [ ] All unit and integration tests pass reliably.
-- [ ] The application remains functional when run normally (e.g., via `uvicorn` or `docker-compose`), with the real `MinioClient` being created by FastAPI's dependency injection system.
+- [ ] The application remains functional when run normally
+  (e.g., via `uvicorn` or `docker-compose`),
+   with the real `MinioClient` being created by FastAPI's dependency injection system.
 
 ** TODO Refactor E2E Test Setup using Pytest-Docker (P2)
 This task focuses on improving the reliability and maintainability of end-to-end tests by integrating `pytest-docker` for seamless Docker service management. This will replace the brittle manual `subprocess.run` and `time.sleep` calls with a more robust and idiomatic approach, ensuring services are properly started, healthy, and torn down.
