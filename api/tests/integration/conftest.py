@@ -32,7 +32,7 @@ def integration_client(mock_keycloak_requests):
     original_overrides = app.dependency_overrides.copy() 
 
     try:
-        minio_mock_for_assertions = MagicMock() # Removed spec=MinioClient to ensure direct mock behavior
+        minio_mock_for_assertions = MagicMock() 
         logger.debug(f"Fixture created minio_mock_for_assertions: {minio_mock_for_assertions} (ID: {id(minio_mock_for_assertions)})")
         minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
         minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
@@ -40,28 +40,28 @@ def integration_client(mock_keycloak_requests):
         minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
         minio_mock_for_assertions.delete_object.return_value = True
 
-        # Patch the MinioClient class directly to ensure all instantiations get the mock
-        with patch.object(MinioClient, '__new__', return_value=minio_mock_for_assertions):
-            mock_user_instance = User(
-                username="testuser",
-                email="testuser@example.com",
-                full_name="Test User",
-                roles=["user", "collection-test"],
-                active=True
-            )
+        mock_user_instance = User(
+            username="testuser",
+            email="testuser@example.com",
+            full_name="Test User",
+            roles=["user", "collection-test"],
+            active=True
+        )
 
-            mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
-            # Patch validate_token function directly to avoid real Keycloak calls
-            with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
-                app.dependency_overrides[get_current_user] = mock_get_current_user_dep
+        mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
+        # Patch validate_token function directly to avoid real Keycloak calls
+        with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
+            app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions 
+            app.dependency_overrides[get_current_user] = mock_get_current_user_dep
 
-                with TestClient(app) as client:
-                    client.minio_mock = minio_mock_for_assertions                                                                                                                                                          
-                    client.keycloak_post_mock = mock_keycloak_requests
-                    client.current_user_mock = mock_user_instance
+            with TestClient(app) as client:
+                client.minio_mock = minio_mock_for_assertions                                                                                                                                                          
+                client.keycloak_post_mock = mock_keycloak_requests
+                client.current_user_mock = mock_user_instance
+                yield client
 
-                    yield client
-
+    except Exception as e:
+        print(f"Error creating TestClient: {e}")
             
             yield client
             
