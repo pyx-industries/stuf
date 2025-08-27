@@ -39,7 +39,11 @@ class KeycloakService {
     this.initializationPromise = this.keycloak.init({
       onLoad: 'check-sso',
       checkLoginIframe: false,
-      enableLogging: true
+      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+      enableLogging: true,
+      pkceMethod: 'S256',
+      flow: 'standard',
+      responseMode: 'fragment'
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
       this.isInitialized = true;
@@ -51,6 +55,30 @@ class KeycloakService {
       console.error('Error message:', error?.message);
       console.error('Error stack:', error?.stack);
       console.error('Keycloak config:', keycloakConfig);
+      
+      // Check for specific nonce error
+      if (error && (error.toString().includes('nonce') || error.toString().includes('Invalid'))) {
+        console.warn('Detected nonce/validation error - this may be due to time sync or PKCE issues');
+        console.warn('Attempting to reinitialize without PKCE...');
+        
+        // Try again without PKCE
+        this.keycloak = new Keycloak(keycloakConfig);
+        return this.keycloak.init({
+          onLoad: 'check-sso',
+          checkLoginIframe: false,
+          enableLogging: true,
+          // No PKCE this time
+          flow: 'standard'
+        }).then((authenticated) => {
+          console.log('Keycloak re-initialization successful (without PKCE), authenticated:', authenticated);
+          this.isInitialized = true;
+          this.initializationPromise = null;
+          return authenticated;
+        }).catch((retryError) => {
+          console.error('Keycloak re-initialization also failed:', retryError);
+          throw retryError;
+        });
+      }
       
       // Test basic connectivity to Keycloak
       console.log('Testing Keycloak connectivity...');
