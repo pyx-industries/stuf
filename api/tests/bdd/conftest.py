@@ -29,10 +29,10 @@ def bdd_client(bdd_mock_minio_client, request):
     original_minio_override = app.dependency_overrides.get(get_minio_client)
     app.dependency_overrides[get_minio_client] = lambda: bdd_mock_minio_client
 
-    
+
     with TestClient(app) as client:
         yield client
-    
+
     # Teardown: Restore original dependency override
     if original_minio_override:
         app.dependency_overrides[get_minio_client] = original_minio_override
@@ -45,7 +45,7 @@ def bdd_mock_user():
     def _create_user(username="testuser", roles=None):
         if roles is None:
             roles = ["user", "collection-test"]
-        
+
         return User(
             username=username,
             email=f"{username}@example.com",
@@ -59,19 +59,19 @@ def bdd_mock_user():
 def bdd_authenticated_user(request, bdd_mock_user):
     """Set up authenticated user for BDD scenarios"""
     from api.auth.middleware import get_current_user
-    
+
     def _authenticate_as(username, roles):
         user = bdd_mock_user(username, roles)
-        
+
         # Override the FastAPI dependency
         original_overrides = app.dependency_overrides.copy()
         app.dependency_overrides[get_current_user] = lambda: user
-        
+
         # Clean up after test
         def cleanup():
             app.dependency_overrides = original_overrides
         request.addfinalizer(cleanup)
-        
+
         return user
-    
+
     return _authenticate_as
