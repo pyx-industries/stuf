@@ -20,7 +20,7 @@ This is the highest priority task to get the test suite back to a green, stable 
 - `api/tests/integration/test_files_api.py`: Clean up duplicated assertions and any other test code rot.
 
 *** Completion Criteria
-- [ ] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
+- [X] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
 - [ ] All `ERROR`s during test teardown are resolved.
 - [ ] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
 - [ ] The test suite is stable and provides a reliable baseline for further refactoring.
