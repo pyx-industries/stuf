@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useApi } from '../hooks/useApi';
 
-const FileUpload = () => {
+const FileUpload = ({ collection: propCollection }) => {
   const auth = useAuth();
   const apiService = useApi();
   const [file, setFile] = useState(null);
-  const [collection, setCollection] = useState('test');
+  const [collection, setCollection] = useState(propCollection || 'test');
   const [metadata, setMetadata] = useState('');
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
+
+  // If collection is provided as prop, don't show the collection input
+  const showCollectionInput = !propCollection;
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -65,18 +68,20 @@ const FileUpload = () => {
           </label>
         </div>
         
-        <div style={{ marginBottom: '1rem' }}>
-          <label>
-            Collection:
-            <input
-              type="text"
-              value={collection}
-              onChange={(e) => setCollection(e.target.value)}
-              style={{ marginLeft: '0.5rem', padding: '0.25rem' }}
-              required
-            />
-          </label>
-        </div>
+        {showCollectionInput && (
+          <div style={{ marginBottom: '1rem' }}>
+            <label>
+              Collection:
+              <input
+                type="text"
+                value={collection}
+                onChange={(e) => setCollection(e.target.value)}
+                style={{ marginLeft: '0.5rem', padding: '0.25rem' }}
+                required
+              />
+            </label>
+          </div>
+        )}
         
         <div style={{ marginBottom: '1rem' }}>
           <label>

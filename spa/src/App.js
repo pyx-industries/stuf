@@ -2,10 +2,14 @@ import React from 'react';
 import { useAuth } from 'react-oidc-context';
 import AuthButton from './components/AuthButton';
 import ProtectedRoute from './components/ProtectedRoute';
-import FileUpload from './components/FileUpload';
+import Collections from './components/Collections';
 
 function App() {
   const auth = useAuth();
+
+  // Add this temporarily to see what's in the token
+  console.log('Auth user:', auth.user);
+  console.log('User profile:', auth.user?.profile);
 
   // Show loading while auth is initializing
   if (auth.isLoading) {
@@ -50,7 +54,7 @@ function App() {
           <div>
             <h2>File Management</h2>
             <p>You are successfully authenticated and can now upload files.</p>
-            <FileUpload />
+            <Collections />
           </div>
         </ProtectedRoute>
       </main>
