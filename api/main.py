@@ -5,8 +5,7 @@ import os
 
 from auth.middleware import get_current_user, User
 from routers import files
-from storage.minio import MinioClient # Import MinioClient
-from routers.files import get_minio_client # Import the dependency function
+from storage.minio import MinioClient # Import MinioClient for dependency override
 
 app = FastAPI(
     title="STUF API",
@@ -47,7 +46,8 @@ if __name__ == "__main__":
 
     # Set up a default MinioClient dependency for local development
     # This ensures that when main.py is run directly, the get_minio_client
-    # dependency returns a functional MinioClient instance.
-    app.dependency_overrides[get_minio_client] = lambda: MinioClient()
+    # dependency returns a functional MinioClient instance. We override the class itself.
+    app.dependency_overrides[MinioClient] = lambda: MinioClient()
+
     
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

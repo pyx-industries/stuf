@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
 
 from api.main import app
-from api.routers.files import get_minio_client
 from api.storage.minio import MinioClient # Import for type hinting
 
 @pytest.fixture
@@ -19,16 +18,18 @@ def mock_minio_client():
     mock.delete_object.return_value = True
 
     # Store original override to restore it after the test
-    original_minio_override = app.dependency_overrides.get(get_minio_client)
-    app.dependency_overrides[get_minio_client] = lambda: mock
+    original_minio_override = app.dependency_overrides.get(MinioClient)
+    app.dependency_overrides[MinioClient] = lambda: mock
+
+    yield mock
+
     
     yield mock
     
     # Teardown: Restore original dependency override
-    if original_minio_override:
-        app.dependency_overrides[get_minio_client] = original_minio_override
-    else:
-        app.dependency_overrides.pop(get_minio_client, None)
+    app.dependency_overrides.pop(MinioClient, None)
+    if original_minio_override: # Only restore if it was present
+        app.dependency_overrides[MinioClient] = original_minio_override
 
 @pytest.fixture
 def mock_keycloak_validation():

@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from api.main import app
 from api.auth.middleware import User, get_current_user
-from api.routers.files import get_minio_client
 from api.storage.minio import MinioClient # Import for type hinting
 
 
@@ -25,19 +24,18 @@ def bdd_mock_minio_client():
 @pytest.fixture
 def bdd_client(bdd_mock_minio_client, request):
     """TestClient for BDD acceptance tests with mocked dependencies"""
-    # Store original override to restore it after the test
-    original_minio_override = app.dependency_overrides.get(get_minio_client)
-    app.dependency_overrides[get_minio_client] = lambda: bdd_mock_minio_client
+    # Store original override for MinioClient to restore it after the test
+    original_minio_override = app.dependency_overrides.get(MinioClient)
+    app.dependency_overrides[MinioClient] = lambda: bdd_mock_minio_client
 
 
     with TestClient(app) as client:
         yield client
 
     # Teardown: Restore original dependency override
-    if original_minio_override:
-        app.dependency_overrides[get_minio_client] = original_minio_override
-    else:
-        app.dependency_overrides.pop(get_minio_client, None)
+    app.dependency_overrides.pop(MinioClient, None)
+    if original_minio_override: # Only restore if it was present
+        app.dependency_overrides[MinioClient] = original_minio_override
 
 @pytest.fixture
 def bdd_mock_user():

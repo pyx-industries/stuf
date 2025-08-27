@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.routers.files import get_minio_client
 from api.storage.minio import MinioClient # Import for type hinting
 
 # Import shared test data
@@ -46,15 +45,14 @@ def bdd_client():
     mock_minio.delete_object.return_value = True
 
     # Store original override to restore it after the test
-    original_minio_override = app.dependency_overrides.get(get_minio_client)
-    app.dependency_overrides[get_minio_client] = lambda: mock_minio
+    original_minio_override = app.dependency_overrides.get(MinioClient)
+    app.dependency_overrides[MinioClient] = lambda: mock_minio
 
     with TestClient(app) as client:
         yield client
 
     # Teardown: Restore original dependency override
-    if original_minio_override:
-        app.dependency_overrides[get_minio_client] = original_minio_override
-    else:
-        app.dependency_overrides.pop(get_minio_client, None)
+    app.dependency_overrides.pop(MinioClient, None)
+    if original_minio_override: # Only restore if it was present
+        app.dependency_overrides[MinioClient] = original_minio_override
 
