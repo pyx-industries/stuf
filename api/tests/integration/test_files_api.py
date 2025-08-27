@@ -20,7 +20,6 @@ class TestFilesAPIIntegration:
         # Create test file
         test_content = b"This is integration test content"
         test_file = ("test.txt", io.BytesIO(test_content), "text/plain")
-        
 
         response = integration_client.post(
             "/api/files/upload",
@@ -35,13 +34,8 @@ class TestFilesAPIIntegration:
         assert response.status_code == 200
         result = response.json()
         assert result["status"] == "success"
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result["status"] == "success"
         assert "test" in result["object_name"]
 
-        
         # Verify MinIO upload was called
         integration_client.minio_mock.upload_file.assert_called_once()
 

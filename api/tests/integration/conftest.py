@@ -51,7 +51,7 @@ def integration_client(mock_keycloak_requests):
         mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
         # Patch validate_token function directly to avoid real Keycloak calls
         with patch('api.auth.middleware.validate_token', return_value=SAMPLE_TOKEN_RESPONSES["valid"]):
-            app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions 
+            app.dependency_overrides[MinioClient] = lambda: minio_mock_for_assertions
             app.dependency_overrides[get_current_user] = mock_get_current_user_dep
 
             with TestClient(app) as client:
@@ -59,9 +59,6 @@ def integration_client(mock_keycloak_requests):
                 client.keycloak_post_mock = mock_keycloak_requests
                 client.current_user_mock = mock_user_instance
                 yield client
-
-            
-            yield client
             
     except Exception as e:
         print(f"Error creating TestClient: {e}")
@@ -70,7 +67,6 @@ def integration_client(mock_keycloak_requests):
         # restore original dependency overrides
         app.dependency_overrides.clear()
         app.dependency_overrides.update(original_overrides)
-        app.dependency_overrides.update(original_overrides) 
 
 
 @pytest.fixture

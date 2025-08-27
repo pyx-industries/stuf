@@ -23,9 +23,6 @@ def mock_minio_client():
 
     yield mock
 
-    
-    yield mock
-    
     # Teardown: Restore original dependency override
     app.dependency_overrides.pop(MinioClient, None)
     if original_minio_override: # Only restore if it was present

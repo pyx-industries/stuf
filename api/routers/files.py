@@ -29,8 +29,6 @@ async def upload_file(
     - **collection**: The collection to upload to (must have access)
     - **metadata**: JSON string with additional metadata
     """
-    logger.debug(f"Router received minio_client: {minio_client}")
-    logger.debug(f"Type of minio_client in router: {type(minio_client)}")
     # Check if user has access to this collection
     collection_role = f"collection-{collection}"
     if collection_role not in current_user.roles and "admin" not in current_user.roles:
