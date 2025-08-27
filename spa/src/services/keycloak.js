@@ -37,10 +37,9 @@ class KeycloakService {
     
     // Start initialization and store the promise
     this.initializationPromise = this.keycloak.init({
-      onLoad: 'check-sso',
+      onLoad: 'login-required',
       checkLoginIframe: false,
-      enableLogging: true,
-      flow: 'standard'
+      enableLogging: true
     }).then((authenticated) => {
       console.log('Keycloak initialization successful, authenticated:', authenticated);
       this.isInitialized = true;
@@ -48,62 +47,14 @@ class KeycloakService {
       return authenticated;
     }).catch((error) => {
       console.error('Keycloak initialization failed:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
       console.error('Keycloak config:', keycloakConfig);
       
-      // For nonce errors, try a completely fresh approach
-      console.warn('Attempting to reinitialize with minimal configuration...');
-      
-      // Reset and try with absolute minimal config
-      this.keycloak = new Keycloak(keycloakConfig);
-      return this.keycloak.init({
-        onLoad: 'login-required'
-      }).then((authenticated) => {
-        console.log('Keycloak re-initialization successful (minimal config), authenticated:', authenticated);
-        this.isInitialized = true;
-        this.initializationPromise = null;
-        return authenticated;
-      }).catch((retryError) => {
-        console.error('Keycloak re-initialization also failed:', retryError);
-        // Reset state completely
-        this.keycloak = null;
-        this.isInitialized = false;
-        this.initializationPromise = null;
-        throw retryError;
-      });
-      
-      // Test basic connectivity to Keycloak
-      console.log('Testing Keycloak connectivity...');
-      fetch(`${keycloakConfig.url}/realms/${keycloakConfig.realm}`)
-        .then(response => {
-          console.log('Keycloak realm connectivity test - Status:', response.status);
-          console.log('Keycloak realm connectivity test - OK:', response.ok);
-          if (response.ok) {
-            console.log('✓ Keycloak realm is accessible');
-            return response.text();
-          } else {
-            console.error('✗ Keycloak realm returned error status');
-            throw new Error(`HTTP ${response.status}`);
-          }
-        })
-        .then(text => {
-          console.log('Keycloak realm response preview:', text.substring(0, 200));
-        })
-        .catch(fetchError => {
-          console.error('✗ Cannot reach Keycloak server:', fetchError);
-          console.error('This suggests a network connectivity issue');
-        });
-      
-      // Reset state
+      // Reset state completely
       this.keycloak = null;
       this.isInitialized = false;
       this.initializationPromise = null;
       
-      // Create a more descriptive error
-      const errorMessage = error?.message || error?.toString() || 'Unknown initialization error';
-      throw new Error(`Keycloak initialization failed: ${errorMessage}`);
+      throw new Error(`Keycloak initialization failed: ${error?.message || 'Configuration or client setup error'}`);
     });
     
     return this.initializationPromise;
