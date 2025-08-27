@@ -25,53 +25,43 @@ def integration_client(mock_keycloak_requests):
     meaning a fresh TestClient instance and its associated app.dependency_overrides
     are set up for each test function.
     """
-    # Create the mock MinioClient instance
-    minio_mock_for_assertions = MagicMock(spec=MinioClient)
-    minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
-    minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
-    minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
-    minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
-    minio_mock_for_assertions.delete_object.return_value = True
+    original_overrides = app.dependency_overrides.copy()
 
-    # Create a mock for get_current_user that returns a configurable User object
-    # This allows individual tests to modify the 'current_user' attributes (like roles)
-    mock_user_instance = User(
-        username="testuser",
-        email="testuser@example.com",
-        full_name="Test User",
-        roles=["user", "collection-test"],
-        active=True
-    )
-    mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
+    try:
+        minio_mock_for_assertions = MagicMock(spec=MinioClient)
+        minio_mock_for_assertions.upload_file.return_value = "test/user/file.txt"
+        minio_mock_for_assertions.list_objects.return_value = SAMPLE_FILES[:2]
+        minio_mock_for_assertions.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
+        minio_mock_for_assertions.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
+        minio_mock_for_assertions.delete_object.return_value = True
 
+        mock_user_instance = User(
+            username="testuser",
+            email="testuser@example.com",
+            full_name="Test User",
+            roles=["user", "collection-test"],
+            active=True
+        )
 
-    # Store original overrides to restore them after the test function
-    original_minio_override = app.dependency_overrides.get(get_minio_client)
-    original_user_override = app.dependency_overrides.get(get_current_user)
+        mock_get_current_user_dep = MagicMock(return_value=mock_user_instance)
+        app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
+        app.dependency_overrides[get_current_user] = mock_get_current_user_dep
 
-    # Apply new overrides directly to the app instance
-    app.dependency_overrides[get_minio_client] = lambda: minio_mock_for_assertions
-    app.dependency_overrides[get_current_user] = mock_get_current_user_dep # Use the MagicMock directly
+        with TestClient(app) as client:
+            client.minio_mock = minio_mock_for_assertions                                                                                                                                                          
+            client.keycloak_post_mock = mock_keycloak_requests
+            client.current_user_mock = mock_user_instance
+            
+            yield client
+            
+    except Exception as e:
+        print(f"Error creating TestClient: {e}")
+        raise
+    finally:
+        # restore original dependency overrides
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
 
-    # Create the TestClient *after* applying overrides
-    client = TestClient(app)
-    # Attach our assertion mocks to the client for easy access in tests
-    client.minio_mock = minio_mock_for_assertions
-    client.keycloak_post_mock = mock_keycloak_requests
-    client.current_user_mock = mock_user_instance # Attach the actual mock User object
-    
-    yield client
-    
-    # Teardown: Restore original dependency overrides
-    if original_minio_override:
-        app.dependency_overrides[get_minio_client] = original_minio_override
-    else:
-        app.dependency_overrides.pop(get_minio_client, None)
-    
-    if original_user_override:
-        app.dependency_overrides[get_current_user] = original_user_override
-    else:
-        app.dependency_overrides.pop(get_current_user, None)
 
 @pytest.fixture
 def authenticated_headers():
