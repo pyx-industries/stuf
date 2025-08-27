@@ -56,11 +56,23 @@ class KeycloakService {
       console.error('Error message:', error?.message);
       console.error('Error stack:', error?.stack);
       console.error('Keycloak config used:', keycloakConfig);
+      
+      // Log more details about the Keycloak instance state
+      console.error('Keycloak instance state:', {
+        authenticated: this.keycloak?.authenticated,
+        token: !!this.keycloak?.token,
+        refreshToken: !!this.keycloak?.refreshToken
+      });
+      
       // Reset everything on error to allow retry
       this.keycloak = null;
       this.isInitialized = false;
       this.initializationPromise = null;
-      throw error;
+      
+      // Create a more descriptive error
+      const descriptiveError = new Error(`Keycloak initialization failed: ${error?.message || 'Unknown error'}`);
+      descriptiveError.originalError = error;
+      throw descriptiveError;
     });
     
     return this.initializationPromise;

@@ -55,6 +55,12 @@ if [ "$REALM_EXISTS" = "false" ]; then
   /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username admin --new-password password --temporary false
   /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername admin --rolename $KEYCLOAK_ADMIN_ROLE
   
+  # Create testuser for SPA authentication
+  echo "Creating testuser..."
+  /opt/keycloak/bin/kcadm.sh create users -r $KEYCLOAK_REALM -s username=testuser -s enabled=true -s email=testuser@example.com -s firstName=Test -s lastName=User
+  /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username testuser --new-password password --temporary false
+  /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername testuser --rolename collection-test
+  
   echo "Realm setup complete!"
 else
   echo "Realm $KEYCLOAK_REALM already exists, skipping configuration."
