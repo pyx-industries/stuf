@@ -37,7 +37,7 @@ class KeycloakService {
     
     // Start initialization and store the promise
     this.initializationPromise = this.keycloak.init({
-      onLoad: 'login-required',
+      onLoad: 'check-sso',
       pkceMethod: 'S256',
       checkLoginIframe: false, // Disable iframe check to avoid timeout issues
       enableLogging: true // Enable Keycloak debug logging
@@ -69,6 +69,14 @@ class KeycloakService {
   getKeycloak() {
     return this.keycloak;
   }
+
+  getInitializationStatus() {
+    return {
+      isInitialized: this.isInitialized,
+      hasKeycloak: !!this.keycloak,
+      isInitializing: !!this.initializationPromise
+    };
+  }
 }
 
 // Create singleton instance
@@ -82,7 +90,13 @@ export const initKeycloak = () => {
 // Authentication functions
 export const login = () => {
   const keycloak = keycloakService.getKeycloak();
-  if (!keycloak) throw new Error('Keycloak not initialized');
+  if (!keycloak || !keycloakService.isInitialized) {
+    console.error('Keycloak not properly initialized. Current state:', {
+      keycloak: !!keycloak,
+      isInitialized: keycloakService.isInitialized
+    });
+    throw new Error('Keycloak not initialized');
+  }
   return keycloak.login();
 };
 
