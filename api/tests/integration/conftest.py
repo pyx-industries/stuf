@@ -60,8 +60,6 @@ def integration_client(mock_keycloak_requests):
                 client.current_user_mock = mock_user_instance
                 yield client
 
-    except Exception as e:
-        print(f"Error creating TestClient: {e}")
             
             yield client
             
@@ -71,6 +69,7 @@ def integration_client(mock_keycloak_requests):
     finally:
         # restore original dependency overrides
         app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)
         app.dependency_overrides.update(original_overrides) 
 
 
