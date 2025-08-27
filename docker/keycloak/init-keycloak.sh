@@ -59,7 +59,14 @@ if [ "$REALM_EXISTS" = "false" ]; then
   echo "Creating testuser..."
   /opt/keycloak/bin/kcadm.sh create users -r $KEYCLOAK_REALM -s username=testuser -s enabled=true -s email=testuser@example.com -s firstName=Test -s lastName=User
   /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username testuser --new-password password --temporary false
-  /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername testuser --rolename collection-test
+  
+  # Add collection roles to testuser
+  echo "Adding collection roles to testuser..."
+  IFS=',' read -ra ROLES <<< "$KEYCLOAK_COLLECTION_ROLES"
+  for role in "${ROLES[@]}"; do
+    echo "Adding role $role to testuser"
+    /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername testuser --rolename $role
+  done
   
   echo "Realm setup complete!"
 else

@@ -8,13 +8,32 @@ const Collections = () => {
   const [userCollections, setUserCollections] = useState([]);
 
   useEffect(() => {
-    if (auth.user?.profile) {
-      // Extract collection roles from the user's roles
-      const roles = auth.user.profile.realm_access?.roles || [];
+    if (auth.user) {
+      // Try to get roles from multiple possible locations
+      let roles = [];
+      
+      // First try the access token (decoded)
+      if (auth.user.access_token) {
+        try {
+          const payload = JSON.parse(atob(auth.user.access_token.split('.')[1]));
+          roles = payload.realm_access?.roles || [];
+        } catch (e) {
+          console.warn('Could not decode access token:', e);
+        }
+      }
+      
+      // Fallback to profile if access token parsing failed
+      if (roles.length === 0 && auth.user.profile?.realm_access?.roles) {
+        roles = auth.user.profile.realm_access.roles;
+      }
+      
+      console.log('User roles found:', roles);
+      
       const collections = roles
         .filter(role => role.startsWith('collection-'))
         .map(role => role.replace('collection-', ''));
       
+      console.log('Collections extracted:', collections);
       setUserCollections(collections);
     }
   }, [auth.user]);
