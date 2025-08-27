@@ -10,28 +10,41 @@ This document outlines prioritized changes to improve the test suite's organizat
 *   **Low (P4)**: Improves code quality, maintainability, and adheres to best practices.
 
 * Active Tasks
-** NEXT Refactor MinioClient for Dependency Injection (P1)
-This is a critical refactoring to address the fundamental design problem of the `MinioClient` singleton being instantiated at module import time in `api/storage/minio.py`. This current approach leads to network calls during test collection (causing "Connection refused" warnings) and makes reliable mocking in integration tests extremely difficult and brittle.
-
-The "holy grail" solution is to transition `MinioClient` from a global singleton to a dependency that can be injected, leveraging FastAPI's `Depends` mechanism. This will:
-- Prevent unwanted network calls during module import.
-- Enable straightforward and robust mocking for unit and integration tests.
-- Align the `MinioClient`'s usage with best practices for testability and maintainability.
+** NEXT Stabilize Integration Test Suite (P0)
+This is the highest priority task to get the test suite back to a green, stable state. Recent debugging has revealed significant issues in the test fixtures that prevent tests from running correctly, including syntax errors and flawed dependency mocking logic. This task must be completed before any refactoring of the application code.
 
 *** Files to create/modify
-- `api/storage/minio.py`: Modify the `MinioClient` class to remove its module-level instantiation. It should simply be a class. The `_ensure_bucket_exists` call in `__init__` should remain, but should only be executed when a *real* client is desired.
-- `api/routers/files.py`: Update API endpoints to receive an instance of `MinioClient` via `FastAPI.Depends()`.
-- `api/main.py`: Add an application-level dependency override for `MinioClient` when running the application directly, or for local development.
-- `api/tests/integration/conftest.py`: Simplify the MinIO mocking significantly by using FastAPI's `app.dependency_overrides` to inject a `MagicMock` of `MinioClient`. Remove the complex `sys.modules` manipulation and class/init patching.
-- `api/tests/unit/conftest.py`: Adjust `mock_minio_client` fixture to override the dependency in FastAPI instead of patching the singleton.
+- `api/tests/integration/conftest.py`: Fix the `integration_client` fixture by removing syntax errors (duplicate `yield`), correcting teardown logic, and ensuring the `MinioClient` dependency override works reliably for the `TestClient`.
+- `api/tests/unit/conftest.py`: Fix any copy-paste errors or inconsistencies found during the stabilization process.
+- `api/routers/files.py`: Remove any temporary debugging `logger` calls.
+- `api/tests/integration/test_files_api.py`: Clean up duplicated assertions and any other test code rot.
 
 *** Completion Criteria
-- [ ] The `minio_client = MinioClient()` line in `api/storage/minio.py` is removed, making `MinioClient` a regular class.
-- [ ] `api/routers/files.py` endpoints correctly use dependency injection for `MinioClient`.
-- [ ] `api/tests/integration/conftest.py` uses `app.dependency_overrides` for `MinioClient` mocking.
-- [ ] `api/tests/unit/conftest.py` uses `app.dependency_overrides` for `MinioClient` mocking.
-- [ ] All unit and integration tests pass reliably without "Connection refused" warnings.
-- [ ] The application remains functional when run normally (e.g., via `uvicorn` or `docker-compose`).
+- [ ] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
+- [ ] All `ERROR`s during test teardown are resolved.
+- [ ] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
+- [ ] The test suite is stable and provides a reliable baseline for further refactoring.
+
+** TODO Refactor MinioClient for Dependency Injection (P1)
+This is a critical refactoring to address the fundamental design problem that makes testing so difficult. The root cause of our mocking issues is the line `app.dependency_overrides[MinioClient] = lambda: MinioClient()` in `api/main.py`. This sets a "default" dependency override when the `app` module is imported, which the test fixtures then have to fight to overwrite.
+
+The "holy grail" solution is to remove this line from `main.py` and let FastAPI handle the creation of the `MinioClient` dependency automatically. This will:
+- Eliminate the module-level side-effect that complicates testing.
+- Allow test fixtures to cleanly and reliably override the `MinioClient` dependency without unexpected behavior.
+- Align the application's design with FastAPI best practices for testability.
+
+*** Files to create/modify
+- `api/main.py`: Remove the `app.dependency_overrides[MinioClient] = lambda: MinioClient()` line. The application should rely on standard `Depends(MinioClient)` resolution.
+- `api/storage/minio.py`: Ensure the `MinioClient` class is a standard, injectable class. The `ensure_bucket=True` default in its `__init__` is correct for production use.
+- `api/tests/integration/conftest.py`: Simplify the MinIO mocking. With the fix in `main.py`, the fixture will no longer need to fight the default override and can be made cleaner.
+- `api/tests/unit/conftest.py`: Adjust `mock_minio_client` fixture if necessary to align with the cleaner override pattern.
+
+*** Completion Criteria
+- [ ] The `app.dependency_overrides[MinioClient]` line in `api/main.py` is removed.
+- [ ] `api/routers/files.py` endpoints continue to correctly use `Depends(MinioClient)`.
+- [ ] Integration and unit test fixtures cleanly override the `MinioClient` dependency.
+- [ ] All unit and integration tests pass reliably.
+- [ ] The application remains functional when run normally (e.g., via `uvicorn` or `docker-compose`), with the real `MinioClient` being created by FastAPI's dependency injection system.
 
 ** TODO Refactor E2E Test Setup using Pytest-Docker (P2)
 This task focuses on improving the reliability and maintainability of end-to-end tests by integrating `pytest-docker` for seamless Docker service management. This will replace the brittle manual `subprocess.run` and `time.sleep` calls with a more robust and idiomatic approach, ensuring services are properly started, healthy, and torn down.
