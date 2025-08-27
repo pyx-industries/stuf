@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { initKeycloak, login, logout, isAuthenticated, getUserInfo, getToken, updateToken } from '../services/keycloak';
+import { initKeycloak, login, logout, getUserInfo, getToken, updateToken } from '../services/keycloak';
 
 const AuthContext = createContext();
 
