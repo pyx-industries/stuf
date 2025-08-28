@@ -1,5 +1,5 @@
 {
-  "realm": "${KEYCLOAK_REALM}",
+  "realm": "stuf",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
@@ -7,8 +7,16 @@
   "roles": {
     "realm": [
       {
-        "name": "${KEYCLOAK_ADMIN_ROLE}",
+        "name": "admin",
         "description": "Administrator role with full access to all collections"
+      },
+      {
+        "name": "trust-architect",
+        "description": "Trust architect role for managing collections and users"
+      },
+      {
+        "name": "project-participant",
+        "description": "Basic project participant role"
       }
     ]
   },
@@ -39,11 +47,15 @@
   ],
   "clients": [
     {
-      "clientId": "${KEYCLOAK_SPA_CLIENT_ID}",
+      "clientId": "stuf-spa",
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:3000/*"],
       "webOrigins": ["http://localhost:3000"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
       "defaultClientScopes": [
         "web-origins",
         "roles",
@@ -53,10 +65,10 @@
       ]
     },
     {
-      "clientId": "${KEYCLOAK_API_CLIENT_ID}",
+      "clientId": "stuf-api",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "${KEYCLOAK_API_CLIENT_SECRET}",
+      "secret": "some-secret-value",
       "serviceAccountsEnabled": true,
       "defaultClientScopes": [
         "web-origins",
@@ -72,6 +84,8 @@
       "username": "admin",
       "enabled": true,
       "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
       "credentials": [
         {
           "type": "password",
@@ -79,22 +93,166 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["${KEYCLOAK_ADMIN_ROLE}"]
+      "realmRoles": [
+        "admin"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
     },
     {
-      "username": "user",
+      "username": "testuser",
       "enabled": true,
-      "email": "user@example.com",
+      "email": "testuser@example.com",
+      "firstName": "Test",
+      "lastName": "User",
       "credentials": [
         {
           "type": "password",
           "value": "password",
           "temporary": false
         }
+      ],
+      "realmRoles": [
+        "project-participant"
       ],
       "attributes": {
         "collections": [
           "{\"collection-1-docs\":[\"read\",\"write\"],\"collection-2-contracts\":[\"read\"],\"collection-3-cat-pics\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-admin",
+      "enabled": true,
+      "email": "admin@test.example.com",
+      "firstName": "Test",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-trust-architect",
+      "enabled": true,
+      "email": "ta@test.example.com",
+      "firstName": "Test",
+      "lastName": "Architect",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "trust-architect"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-user-full",
+      "enabled": true,
+      "email": "full@test.example.com",
+      "firstName": "Test",
+      "lastName": "FullUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"],\"restricted\":[\"read\",\"write\"],\"shared\":[\"read\",\"write\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-user-limited",
+      "enabled": true,
+      "email": "limited@test.example.com",
+      "firstName": "Test",
+      "lastName": "LimitedUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-user-shared",
+      "enabled": true,
+      "email": "shared@test.example.com",
+      "firstName": "Test",
+      "lastName": "SharedUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"shared\":[\"read\",\"write\"]}"
+        ]
+      }
+    },
+    {
+      "username": "test-user-inactive",
+      "enabled": false,
+      "email": "inactive@test.example.com",
+      "firstName": "Test",
+      "lastName": "InactiveUser",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
         ]
       }
     }
