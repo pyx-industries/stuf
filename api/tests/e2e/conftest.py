@@ -31,17 +31,19 @@ def check_minio_ready():
 
 @pytest.fixture
 def real_keycloak_token():
-    """Get a real token from Keycloak"""
+    """Get a real token from Keycloak using password grant for a test user"""
     if not check_keycloak_ready():
         pytest.skip("Keycloak is not available for E2E tests")
     
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
     
-    # Use client credentials flow for E2E tests
+    # Use password grant with test user for E2E tests
     data = {
-        'grant_type': 'client_credentials',
-        'client_id': KEYCLOAK_CLIENT_ID,
-        'client_secret': os.environ.get('KEYCLOAK_CLIENT_SECRET', 'some-secret-value')
+        'grant_type': 'password',
+        'client_id': 'stuf-spa',  # Use SPA client for user authentication
+        'username': 'testuser',
+        'password': 'password',
+        'scope': 'openid stuf:access'
     }
     
     response = requests.post(token_url, data=data)
