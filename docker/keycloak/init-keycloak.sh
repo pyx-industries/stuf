@@ -42,6 +42,12 @@ if [ "$REALM_EXISTS" = "false" ]; then
   echo "DEBUG: UUID length: ${#STUF_SCOPE_UUID}"
   echo "Using client scope UUID: $STUF_SCOPE_UUID"
   echo "DEBUG: About to run command: create client-scopes/$STUF_SCOPE_UUID/protocol-mappers/models"
+  
+  if [ -z "$STUF_SCOPE_UUID" ]; then
+    echo "ERROR: STUF_SCOPE_UUID is empty! Cannot proceed."
+    exit 1
+  fi
+  
   /opt/keycloak/bin/kcadm.sh create client-scopes/$STUF_SCOPE_UUID/protocol-mappers/models -r $KEYCLOAK_REALM \
     -s name=collections \
     -s protocol=openid-connect \
