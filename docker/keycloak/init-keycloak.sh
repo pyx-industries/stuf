@@ -27,27 +27,42 @@ if [ "$REALM_EXISTS" = "false" ]; then
   echo "Creating admin role: $KEYCLOAK_ADMIN_ROLE"
   /opt/keycloak/bin/kcadm.sh create roles -r $KEYCLOAK_REALM -s name=$KEYCLOAK_ADMIN_ROLE -s description="Administrator role with full access to all collections"
   
-  # Create collection roles
-  echo "Creating collection roles from: $KEYCLOAK_COLLECTION_ROLES"
-  IFS=',' read -ra ROLES <<< "$KEYCLOAK_COLLECTION_ROLES"
-  for role in "${ROLES[@]}"; do
-    echo "Creating role $role"
-    /opt/keycloak/bin/kcadm.sh create roles -r $KEYCLOAK_REALM -s name=$role -s description="Access to $role collection"
-  done
+  # Create client scope for collections
+  echo "Creating client scope 'stuf:access'"
+  /opt/keycloak/bin/kcadm.sh create client-scopes -r $KEYCLOAK_REALM -s name=stuf:access -s protocol=openid-connect
+  
+  # Create protocol mapper for collections claim
+  echo "Creating 'collections' protocol mapper"
+  /opt/keycloak/bin/kcadm.sh create client-scopes/stuf:access/protocol-mappers/models -r $KEYCLOAK_REALM \
+    -s name=collections \
+    -s protocol=openid-connect \
+    -s protocolMapper=oidc-usermodel-attribute-mapper \
+    -s config.\"user.attribute\"="collections" \
+    -s config.\"claim.name\"="collections" \
+    -s config.\"jsonType.label\"="JSON" \
+    -s config.\"access.token.claim\"="true" \
+    -s config.\"id.token.claim\"="true"
   
   # Create SPA client
   echo "Creating SPA client: $KEYCLOAK_SPA_CLIENT_ID"
-  SPA_CLIENT_ID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_SPA_CLIENT_ID -s publicClient=true -s directAccessGrantsEnabled=true -s standardFlowEnabled=true -s redirectUris='["http://localhost:3000/*"]' -s webOrigins='["http://localhost:3000"]' -s name="STUF Single Page Application" -o)
-  echo "SPA client created with ID: $SPA_CLIENT_ID"
+  SPA_CLIENT_UUID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_SPA_CLIENT_ID -s publicClient=true -s directAccessGrantsEnabled=true -s standardFlowEnabled=true -s 'redirectUris=["http://localhost:3000/*"]' -s 'webOrigins=["http://localhost:3000"]' -s name="STUF Single Page Application" -i)
+  echo "SPA client created with UUID: $SPA_CLIENT_UUID"
   
   # Create API client
   echo "Creating API client: $KEYCLOAK_API_CLIENT_ID"
-  API_CLIENT_ID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_API_CLIENT_ID -s enabled=true -s clientAuthenticatorType=client-secret -s serviceAccountsEnabled=true -s name="STUF API Service" -o)
-  echo "API client created with ID: $API_CLIENT_ID"
+  API_CLIENT_UUID=$(/opt/keycloak/bin/kcadm.sh create clients -r $KEYCLOAK_REALM -s clientId=$KEYCLOAK_API_CLIENT_ID -s enabled=true -s clientAuthenticatorType=client-secret -s serviceAccountsEnabled=true -s name="STUF API Service" -i)
+  echo "API client created with UUID: $API_CLIENT_UUID"
   
   # Set client secret
   echo "Setting client secret for API client"
-  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_ID -r $KEYCLOAK_REALM -s "secret=$KEYCLOAK_API_CLIENT_SECRET"
+  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM -s "secret=$KEYCLOAK_API_CLIENT_SECRET"
+
+  # Add stuf:access scope to clients
+  echo "Adding 'stuf:access' scope to SPA client"
+  /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
+  
+  echo "Adding 'stuf:access' scope to API client"
+  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
   
   # Create admin user
   echo "Creating admin user..."
@@ -60,13 +75,11 @@ if [ "$REALM_EXISTS" = "false" ]; then
   /opt/keycloak/bin/kcadm.sh create users -r $KEYCLOAK_REALM -s username=testuser -s enabled=true -s email=testuser@example.com -s firstName=Test -s lastName=User
   /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username testuser --new-password password --temporary false
   
-  # Add collection roles to testuser
-  echo "Adding collection roles to testuser..."
-  IFS=',' read -ra ROLES <<< "$KEYCLOAK_COLLECTION_ROLES"
-  for role in "${ROLES[@]}"; do
-    echo "Adding role $role to testuser"
-    /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername testuser --rolename $role
-  done
+  # Add collections attribute to testuser
+  echo "Adding collections attribute to testuser..."
+  TESTUSER_ID=$(/opt/keycloak/bin/kcadm.sh get users -r $KEYCLOAK_REALM -q username=testuser --fields id --format csv --noquotes)
+  COLLECTIONS_JSON='{"collection-1-docs": ["read", "write"], "collection-2-contracts": ["read"], "collection-3-cat-pics": ["read", "write", "delete"]}'
+  /opt/keycloak/bin/kcadm.sh update users/$TESTUSER_ID -r $KEYCLOAK_REALM -s "attributes.collections=$COLLECTIONS_JSON"
   
   echo "Realm setup complete!"
 else

@@ -15,23 +15,36 @@
         "description": "Trust architect role for managing collections and users"
       },
       {
-        "name": "collection-test",
-        "description": "Access to test collection"
-      },
-      {
-        "name": "collection-restricted",
-        "description": "Access to restricted collection"
-      },
-      {
-        "name": "collection-shared",
-        "description": "Access to shared collection"
-      },
-      {
         "name": "project-participant",
         "description": "Basic project participant role"
       }
     ]
   },
+  "clientScopes": [
+    {
+      "name": "stuf:access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "collections",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "collections",
+            "claim.name": "collections",
+            "jsonType.label": "JSON",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
   "clients": [
     {
       "clientId": "stuf-spa",
@@ -42,14 +55,28 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "implicitFlowEnabled": false,
-      "serviceAccountsEnabled": false
+      "serviceAccountsEnabled": false,
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "stuf:access"
+      ]
     },
     {
       "clientId": "stuf-api",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "some-secret-value",
-      "serviceAccountsEnabled": true
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "stuf:access"
+      ]
     }
   ],
   "users": [
@@ -67,11 +94,13 @@
         }
       ],
       "realmRoles": [
-        "admin",
-        "collection-test",
-        "collection-restricted",
-        "collection-shared"
-      ]
+        "admin"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
     },
     {
       "username": "test-trust-architect",
@@ -87,11 +116,13 @@
         }
       ],
       "realmRoles": [
-        "trust-architect",
-        "collection-test",
-        "collection-restricted",
-        "collection-shared"
-      ]
+        "trust-architect"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
     },
     {
       "username": "test-user-full",
@@ -107,11 +138,13 @@
         }
       ],
       "realmRoles": [
-        "project-participant",
-        "collection-test",
-        "collection-restricted",
-        "collection-shared"
-      ]
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"],\"restricted\":[\"read\",\"write\"],\"shared\":[\"read\",\"write\"]}"
+        ]
+      }
     },
     {
       "username": "test-user-limited",
@@ -127,9 +160,13 @@
         }
       ],
       "realmRoles": [
-        "project-participant",
-        "collection-test"
-      ]
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
+        ]
+      }
     },
     {
       "username": "test-user-shared",
@@ -145,9 +182,13 @@
         }
       ],
       "realmRoles": [
-        "project-participant",
-        "collection-shared"
-      ]
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"shared\":[\"read\",\"write\"]}"
+        ]
+      }
     },
     {
       "username": "test-user-inactive",
@@ -163,9 +204,13 @@
         }
       ],
       "realmRoles": [
-        "project-participant",
-        "collection-test"
-      ]
+        "project-participant"
+      ],
+      "attributes": {
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
+        ]
+      }
     }
   ]
 }

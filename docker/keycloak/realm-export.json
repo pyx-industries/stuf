@@ -12,20 +12,46 @@
       }
     ]
   },
+  "clientScopes": [
+    {
+      "name": "stuf:access",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "collections",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "collections",
+            "claim.name": "collections",
+            "jsonType.label": "JSON",
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
   "clients": [
     {
       "clientId": "${KEYCLOAK_SPA_CLIENT_ID}",
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"]
+      "webOrigins": ["http://localhost:3000"],
+      "defaultClientScopes": [
+        "stuf:access"
+      ]
     },
     {
       "clientId": "${KEYCLOAK_API_CLIENT_ID}",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "${KEYCLOAK_API_CLIENT_SECRET}",
-      "serviceAccountsEnabled": true
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [
+        "stuf:access"
+      ]
     }
   ],
   "users": [
@@ -52,7 +78,12 @@
           "value": "password",
           "temporary": false
         }
-      ]
+      ],
+      "attributes": {
+        "collections": [
+          "{\"collection-1-docs\":[\"read\",\"write\"],\"collection-2-contracts\":[\"read\"],\"collection-3-cat-pics\":[\"read\",\"write\",\"delete\"]}"
+        ]
+      }
     }
   ]
 }
