@@ -1,0 +1,249 @@
+#+TITLE: STUF Product Requirements: Dynamic Collection Authorization
+#+AUTHOR: Pyx.io Team
+#+DATE: 2025-08-28
+
+* Overview
+
+Build a dynamic authorization system where users can access file collections based on permissions defined in an OIDC Identity Provider (IDP). The system must be IDP-agnostic and support runtime discovery of collections and permissions from access tokens, ensuring zero hardcoded collection names in application code.
+
+The goal is to provide a secure, flexible, and scalable file upload facility where access control is managed entirely within the identity provider, making the STUF application itself stateless regarding authorization policies.
+
+* Core Architectural Principles
+
+** Authorization Server and STUF Domain Relationship
+
+The STUF system implements a 1:1 mapping between OIDC Authorization Servers and STUF domains:
+
+- Each STUF domain (a distinct upload facility created by a Trust Architect) corresponds to exactly one OIDC Authorization Server (e.g., a Keycloak realm).
+- Each access token is issued by exactly one authorization server and can only be used within that domain.
+- The "iss" (issuer) claim in the access token identifies the specific authorization server that issued the token.
+
+This 1:1 mapping ensures proper isolation between different STUF instances and simplifies the authorization model. The API and SPA are configured to only accept access tokens from their specific authorization server.
+
+** Components and High-Level Flow
+
+The system consists of three main components:
+- *Single Page Application (SPA)*: A React frontend for all user interaction.
+- *REST API*: A FastAPI backend service that handles business logic and storage operations.
+- *OIDC Identity Provider (IDP)*: An OIDC-compliant authorization server (e.g., Keycloak) that manages users, authentication, and authorization policies.
+
+The high-level user flow is as follows:
+1. A user initiates login in the SPA and is redirected to the IDP.
+2. After successful authentication, the user is redirected back to the SPA with an OIDC access token.
+3. The SPA extracts collection permissions from custom claims within the access token.
+4. The SPA dynamically renders the user interface based on the discovered collections and permissions.
+5. The SPA makes API calls for authorized operations, passing the access token in the `Authorization` header.
+6. The API validates the token and trusts the IDP as the source of truth for collection existence and permissions.
+
+** Benefits of This Design
+
+- *IDP Agnostic*: Works with any OIDC-compliant authorization server (Keycloak, AWS Cognito, Azure Entra ID, etc.).
+- *Clear Domain Separation*: Secure isolation between STUF domains via authorization server boundaries.
+- *Dynamic Collection Discovery*: No hardcoded collections; all are discovered from token claims at runtime.
+- *Granular Permissions*: Fine-grained read/write/delete permissions per collection.
+- *On-Demand Collection Creation*: Collections are created automatically when authorized users access them.
+- *Standards Compliant*: Uses proper OIDC/OAuth2 terminology and flows.
+- *Flexible Authorization*: Trusts the authorization server as the source of truth for permissions.
+
+* Authentication and Authorization Flow
+
+** Authentication Flow (OIDC)
+
+The SPA implements the OIDC Authorization Code flow with PKCE, which is the current best practice for browser-based applications.
+
+1. User initiates login in the SPA and is redirected to the authorization server.
+2. The user authenticates with the authorization server.
+3. The authorization server issues an access token containing the necessary claims and scopes.
+4. The SPA receives and securely stores the access token (e.g., in memory).
+
+*** OIDC Configuration
+- *Response Type*: =code= (Authorization Code flow)
+- *Required Scopes*: =openid myapp:access=
+- *Redirect URI*: ={spa_base_url}/auth/callback=
+
+** API Authorization Flow
+
+1. The SPA makes API requests with an `Authorization: Bearer {token}` header.
+2. The API verifies the access token on every request by:
+   - Validating the JWT signature against the authorization server's public keys (fetched from the JWKS URI).
+   - Checking token expiration, issuer (=iss=), and audience (=aud=) claims.
+   - Confirming the token was issued by the correct authorization server for the STUF domain.
+3. The API extracts and parses the custom `collections` claim for permission checking.
+4. The API grants or denies access based on the specific permissions in the token.
+5. For write operations to non-existent collections, the API creates them on-demand if the user has appropriate permissions.
+
+* Authorization Structure and Data Models
+
+** Access Token Requirements
+
+Access tokens *must* contain a custom claim, `collections`, that defines the user's permissions. This claim is the single source of truth for authorization.
+
+#+BEGIN_SRC json
+{
+  "sub": "user-123",
+  "scope": "openid myapp:access",
+  "aud": "stuf-api",
+  "collections": {
+    "catpics": ["read", "write"],
+    "documents": ["read"],
+    "memes": ["read", "write", "delete"]
+  },
+  "exp": 1625097600,
+  "iat": 1625011200
+}
+#+END_SRC
+
+** Collection Permissions Model
+
+Permissions are granted on a per-collection basis with granular access levels.
+
+- *read*: View collection contents and download files.
+- *write*: Upload files to the collection.
+- *delete*: Remove files from the collection.
+
+#+BEGIN_SRC typescript
+interface CollectionPermissions {
+  [collectionName: string]: Permission[];
+}
+
+type Permission = 'read' | 'write' | 'delete';
+
+// Example
+const userCollections: CollectionPermissions = {
+  "catpics": ["read", "write"],
+  "documents": ["read"],
+  "admindata": ["read", "write", "delete"]
+};
+#+END_SRC
+
+** Admin Authorization
+
+A special "admin" role grants god-mode access within a STUF domain:
+- Full access to *all* collections.
+- Ability to configure metadata requirements.
+- User management capabilities.
+- Full access to all uploaded files and system configuration.
+
+* Component Requirements
+
+** SPA Requirements
+
+*** Authentication and Token Handling
+- Implement the OIDC Authorization Code flow with PKCE.
+- Handle login redirects and token extraction from the callback.
+- Store tokens securely in memory, not localStorage.
+- Implement token refresh logic to maintain user sessions.
+
+*** Dynamic UI
+- *No hardcoded collections*: The UI must be rendered dynamically based on the collections discovered in the access token.
+- Show only the collections for which a user has at least one permission.
+- Enable/disable UI actions (e.g., "Upload", "Download", "Delete" buttons) based on the user's specific permissions for each collection.
+- Handle graceful degradation if a token expires or permissions change.
+
+*** API Integration
+- Include the `Authorization: Bearer {token}` header in all API requests.
+- Handle 401 (Unauthorized) and 403 (Forbidden) responses from the API appropriately.
+
+** API Requirements
+
+*** Token Validation
+- Validate the JWT signature against the IDP's public keys.
+- Verify token expiration, issuer, and audience claims.
+- Extract and parse the `collections` claim.
+
+*** Authorization Logic
+- The API must re-validate permissions from the token on every request. Permissions must not be cached.
+- The authorization logic should be functionally equivalent to:
+  #+BEGIN_SRC javascript
+  function authorizeCollectionAccess(token, collectionName, action) {
+    const collections = token.collections || {};
+    const permissions = collections[collectionName] || [];
+    return permissions.includes(action);
+  }
+  #+END_SRC
+
+*** Dynamic Collection Management
+- *Trust the IDP*: If a token claim includes a collection, the API must consider it a valid target for operations.
+- *Create collections on-demand*: If a user with `write` permission uploads a file to a collection that does not yet exist in storage, the API must create it.
+
+*** API Endpoints
+#+BEGIN_SRC text
+GET    /api/files/list/{collection}        # List items in a collection (requires "read")
+POST   /api/files/upload                   # Create new item in a collection (requires "write")
+GET    /api/files/download/{collection}/{object_name} # Read a collection item (requires "read")
+DELETE /api/files/{collection}/{object_name} # Delete item (requires "delete")
+#+END_SRC
+
+*** Error Handling
+- Return `401 Unauthorized` if the token is invalid or expired.
+- Return `403 Forbidden` if the user lacks the required permission for a specific collection/action.
+- Return `404 Not Found` for resources that do not exist (only after a permission check passes).
+
+* IDP Configuration Requirements
+
+The IDP must be OIDC-compliant and support:
+- Custom claims in JWT access tokens.
+- Storage for user or group attributes that can hold structured data (JSON).
+- A mechanism for mapping user/group attributes to token claims.
+- A standard OIDC Discovery endpoint (`/.well-known/openid-configuration`).
+
+** Example Keycloak Setup
+1. *Create Client Scope*: Create a scope named `collections-access`.
+2. *Add Protocol Mapper*:
+   - Type: User Attribute Mapper
+   - User Attribute: `collections`
+   - Token Claim Name: `collections`
+   - Claim JSON Type: JSON
+3. *Configure Client*: Add `collections-access` as a default client scope for the SPA and API clients.
+4. *Manage Users/Groups*: Store collection permissions as a JSON string in the `collections` attribute for a user or group.
+
+* Security Requirements
+
+** Token Security
+- Validate all tokens on every API request.
+- Use short-lived access tokens (e.g., 15-30 minutes).
+- Implement a proper token refresh flow using refresh tokens.
+- The API must be the single source of truth for authorization; never trust client-side permission checks for sensitive operations.
+
+** Collection Access Control
+- The API must re-validate permissions from the token on every request.
+- Log all collection access attempts (successful and failed) for auditing purposes.
+
+* Testing Requirements
+
+** Test Cases
+1. *Authentication*: Full login, logout, and token refresh flows.
+2. *Permission Enforcement*: Verify the SPA correctly shows/hides actions based on permissions.
+3. *API Authorization*: Confirm the API correctly blocks unauthorized requests with 403 responses.
+4. *Dynamic Discovery*: Test with users who have different sets of collection permissions.
+5. *On-Demand Creation*: Verify that uploading a file to a new, authorized collection creates it.
+6. *IDP Integration*: Test with multiple OIDC providers if possible.
+
+** Test Data
+Create test users with varying permission sets to cover all scenarios:
+#+BEGIN_SRC json
+// Power user
+{"collections": {"catpics": ["read","write","delete"], "docs": ["read","write"]}}
+
+// Read-only user
+{"collections": {"catpics": ["read"], "docs": ["read"]}}
+
+// Limited access user
+{"collections": {"memes": ["read","write"]}}
+#+END_SRC
+
+* Success Criteria
+
+- Users see only the collections for which they have permissions.
+- The SPA UI adapts dynamically based on the user's specific permissions for each collection.
+- The API creates new collections on-demand when authorized users access them.
+- The system works with any standard OIDC provider without code changes.
+- Zero hardcoded collection names exist anywhere in the application code.
+- All authorization decisions are made server-side based on validated token claims.
+
+* Implementation Priority
+
+1. *Phase 1*: Basic OIDC integration and static collection permissions.
+2. *Phase 2*: Implement dynamic collection discovery from token claims.
+3. *Phase 3*: Implement on-demand collection creation in the API.
+4. *Phase 4*: Create an IDP abstraction layer for multi-provider support.
