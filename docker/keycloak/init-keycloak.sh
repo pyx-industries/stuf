@@ -91,13 +91,13 @@ if [ "$REALM_EXISTS" = "false" ]; then
   # Create admin user
   echo "Creating admin user..."
   /opt/keycloak/bin/kcadm.sh create users -r $KEYCLOAK_REALM -s username=admin -s enabled=true -s email=admin@example.com -s firstName=Admin -s lastName=User
-  /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username admin --new-password password --temporary false
+  /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username admin --new-password password
   /opt/keycloak/bin/kcadm.sh add-roles -r $KEYCLOAK_REALM --uusername admin --rolename $KEYCLOAK_ADMIN_ROLE
   
   # Create testuser for SPA authentication
   echo "Creating testuser..."
   /opt/keycloak/bin/kcadm.sh create users -r $KEYCLOAK_REALM -s username=testuser -s enabled=true -s email=testuser@example.com -s firstName=Test -s lastName=User
-  /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username testuser --new-password password --temporary false
+  /opt/keycloak/bin/kcadm.sh set-password -r $KEYCLOAK_REALM --username testuser --new-password password
   
   # Add collections attribute to testuser
   echo "Adding collections attribute to testuser..."
