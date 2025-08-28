@@ -83,10 +83,10 @@ if [ "$REALM_EXISTS" = "false" ]; then
   /opt/keycloak/bin/kcadm.sh get clients/$SPA_CLIENT_UUID/default-client-scopes -r $KEYCLOAK_REALM
   
   echo "Adding 'stuf:access' scope to SPA client"
-  /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
+  /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM -s "defaultClientScopes+=stuf:access"
   
   echo "Adding 'stuf:access' scope to API client"
-  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
+  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM -s "defaultClientScopes+=stuf:access"
   
   # Create admin user
   echo "Creating admin user..."
