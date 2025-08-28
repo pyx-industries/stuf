@@ -7,7 +7,7 @@ from api.main import app
 # E2E configuration - uses REAL services
 KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'stuf')
-KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_API_CLIENT_ID', 'stuf-api')
+KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'stuf-api')
 
 def check_keycloak_ready():
     """Check if Keycloak is ready."""
