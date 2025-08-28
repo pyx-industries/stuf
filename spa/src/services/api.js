@@ -77,6 +77,12 @@ class ApiService {
   async getPresignedUrl(collection, objectName, expires = 3600) {
     return this.request(`/api/files/presigned/${collection}/${objectName}?expires=${expires}`);
   }
+
+  async deleteFile(collection, objectName) {
+    return this.request(`/api/files/${collection}/${objectName}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 const apiService = new ApiService();

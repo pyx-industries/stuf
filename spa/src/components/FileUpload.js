@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useApi } from '../hooks/useApi';
 
-const FileUpload = ({ collection: propCollection }) => {
+const FileUpload = ({ collection: propCollection, onUploadSuccess }) => {
   const auth = useAuth();
   const apiService = useApi();
   const [file, setFile] = useState(null);
@@ -41,6 +41,9 @@ const FileUpload = ({ collection: propCollection }) => {
       setMetadata('');
       // Reset file input
       e.target.reset();
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (error) {
       setResult({ success: false, error: error.message });
     } finally {
