@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 # E2E configuration - uses REAL services
+# Use the same external URL that the host machine can reach
 KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'stuf')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'stuf-api')
@@ -46,11 +47,21 @@ def real_keycloak_token():
         'scope': 'openid stuf:access'
     }
     
+    print(f"DEBUG: Requesting token from: {token_url}")
+    print(f"DEBUG: Request data: {data}")
+    
     response = requests.post(token_url, data=data)
+    print(f"DEBUG: Token response status: {response.status_code}")
+    
     if response.status_code != 200:
+        print(f"DEBUG: Token response error: {response.text}")
         pytest.skip(f"Could not get token from Keycloak: {response.text}")
     
-    return response.json()['access_token']
+    token_data = response.json()
+    access_token = token_data['access_token']
+    print(f"DEBUG: Got access token (first 50 chars): {access_token[:50]}...")
+    
+    return access_token
 
 @pytest.fixture
 def e2e_client():
