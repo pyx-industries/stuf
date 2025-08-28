@@ -33,7 +33,8 @@ if [ "$REALM_EXISTS" = "false" ]; then
   
   # Create protocol mapper for collections claim
   echo "Creating 'collections' protocol mapper"
-  /opt/keycloak/bin/kcadm.sh create client-scopes/stuf:access/protocol-mappers/models -r $KEYCLOAK_REALM \
+  STUF_SCOPE_UUID=$(/opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name --format csv --noquotes | grep "stuf:access" | cut -d',' -f1)
+  /opt/keycloak/bin/kcadm.sh create client-scopes/$STUF_SCOPE_UUID/protocol-mappers/models -r $KEYCLOAK_REALM \
     -s name=collections \
     -s protocol=openid-connect \
     -s protocolMapper=oidc-usermodel-attribute-mapper \
@@ -59,10 +60,10 @@ if [ "$REALM_EXISTS" = "false" ]; then
 
   # Add stuf:access scope to clients
   echo "Adding 'stuf:access' scope to SPA client"
-  /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
+  /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID/default-client-scopes/$STUF_SCOPE_UUID -r $KEYCLOAK_REALM
   
   echo "Adding 'stuf:access' scope to API client"
-  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
+  /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID/default-client-scopes/$STUF_SCOPE_UUID -r $KEYCLOAK_REALM
   
   # Create admin user
   echo "Creating admin user..."
