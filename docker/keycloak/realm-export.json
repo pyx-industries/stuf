@@ -16,11 +16,16 @@
     {
       "name": "stuf:access",
       "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
       "protocolMappers": [
         {
           "name": "collections",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
           "config": {
             "user.attribute": "collections",
             "claim.name": "collections",
@@ -40,6 +45,10 @@
       "redirectUris": ["http://localhost:3000/*"],
       "webOrigins": ["http://localhost:3000"],
       "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
         "stuf:access"
       ]
     },
@@ -50,6 +59,10 @@
       "secret": "${KEYCLOAK_API_CLIENT_SECRET}",
       "serviceAccountsEnabled": true,
       "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
         "stuf:access"
       ]
     }
