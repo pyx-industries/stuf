@@ -65,7 +65,7 @@ test-integration:
 # Run E2E tests (slow, requires services)
 test-e2e:
 	@echo "Running E2E tests..."
-	@$(PYTEST) -m "e2e"
+	@set -a; if [ -f .env ]; then source .env; fi; set +a; $(PYTEST) -m "e2e"
 
 # Run all tests except E2E (default)
 test:
