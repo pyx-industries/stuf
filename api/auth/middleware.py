@@ -35,24 +35,40 @@ class User(BaseModel):
 
 def validate_token(token: str):
     """Validate the token with Keycloak introspection endpoint"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     data = {
         'token': token,
         'client_id': KEYCLOAK_CLIENT_ID,
         'client_secret': KEYCLOAK_CLIENT_SECRET
     }
     
-    response = requests.post(introspect_endpoint, data=data)
+    logger.info(f"DEBUG: Introspecting token at: {introspect_endpoint}")
+    logger.info(f"DEBUG: Using client_id: {KEYCLOAK_CLIENT_ID}")
+    logger.info(f"DEBUG: Token (first 50 chars): {token[:50]}...")
     
-    if response.status_code != 200:
-        return None
-    
-    token_info = response.json()
-    
-    # Check if token is active
-    if not token_info.get('active', False):
-        return None
+    try:
+        response = requests.post(introspect_endpoint, data=data, timeout=10)
+        logger.info(f"DEBUG: Introspection response status: {response.status_code}")
+        logger.info(f"DEBUG: Introspection response: {response.text}")
         
-    return token_info
+        if response.status_code != 200:
+            logger.error(f"DEBUG: Introspection failed with status {response.status_code}: {response.text}")
+            return None
+        
+        token_info = response.json()
+        logger.info(f"DEBUG: Token info: {token_info}")
+        
+        # Check if token is active
+        if not token_info.get('active', False):
+            logger.warning(f"DEBUG: Token is not active: {token_info}")
+            return None
+            
+        return token_info
+    except Exception as e:
+        logger.error(f"DEBUG: Exception during token validation: {e}")
+        return None
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     """Get the current user from the token"""
