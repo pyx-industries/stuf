@@ -27,6 +27,9 @@ The system consists of three main components:
 - *REST API*: A FastAPI backend service that handles business logic and storage operations.
 - *OIDC Identity Provider (IDP)*: An OIDC-compliant authorization server (e.g., Keycloak) that manages users, authentication, and authorization policies.
 
+*** A Note on OIDC Clients
+In OIDC terminology, both the SPA and the API are considered "clients," but they serve different roles. The SPA is a =public client= running in an untrusted browser, responsible for initiating the user's login. The API is a =confidential client= (acting as a "Resource Server") that can hold a secret and is responsible for validating tokens and protecting data. This separation is a security best practice.
+
 The high-level user flow is as follows:
 1. A user initiates login in the SPA and is redirected to the IDP.
 2. After successful authentication, the user is redirected back to the SPA with an OIDC access token.
