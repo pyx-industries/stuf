@@ -2,6 +2,9 @@
 
 .PHONY: help docs clean serve
 
+# Test command variable
+PYTEST = python -m pytest api/tests --tb=short
+
 # Default target - show help
 help:
 	@echo "STUF Project - Available Make Targets:"
@@ -52,29 +55,29 @@ clean:
 # Run unit tests only (fast)
 test-unit:
 	@echo "Running unit tests..."
-	@python -m pytest api/tests -m "unit" --tb=short
+	@$(PYTEST) -m "unit"
 
 # Run integration tests (medium speed)
 test-integration:
 	@echo "Running integration tests..."
-	@python -m pytest api/tests -m "integration" --tb=short
+	@$(PYTEST) -m "integration"
 
 # Run E2E tests (slow, requires services)
 test-e2e:
 	@echo "Running E2E tests..."
-	@python -m pytest api/tests -m "e2e" --tb=short
+	@$(PYTEST) -m "e2e"
 
 # Run all tests except E2E (default)
 test:
 	@echo "Running unit and integration tests..."
-	@python -m pytest api/tests -m "not e2e" --tb=short
+	@$(PYTEST) -m "not e2e"
 
 # Run all tests including E2E
 test-all:
 	@echo "Running all tests..."
-	@python -m pytest api/tests --tb=short
+	@$(PYTEST)
 
 # Run tests with coverage
 test-cov:
 	@echo "Running tests with coverage..."
-	@python -m pytest api/tests -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
+	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
