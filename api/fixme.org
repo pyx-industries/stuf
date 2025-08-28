@@ -24,10 +24,10 @@ This task focuses on improving the reliability and maintainability of end-to-end
 - [ ] The `pytest-docker` integration is implemented, managing service lifecycle.
 - [ ] Manual `docker-compose up/down` and `sleep` commands are removed from test setup.
 
-** TODO Clean up Test Suite Organization (P3)
+** DONE Clean up Test Suite Organization (P3)
 This section addresses structural and organizational improvements across the test suite. It includes removing unused BDD-related files, standardizing `pytest` invocation via the `Makefile`, and correcting import paths for better maintainability.
 
-*** TODO Remove unused BDD-related files and directories
+*** DONE Remove unused BDD-related files and directories
 This task removes unused BDD feature files, step definition files, and their containing directories to reduce clutter and streamline the test suite. The existing BDD framework setup appears incomplete or abandoned, and these files contribute to unnecessary complexity.
 
 **** Files to create/modify
@@ -39,11 +39,11 @@ This task removes unused BDD feature files, step definition files, and their con
 - `api/tests/features/`: Delete directory.
 
 **** Completion Criteria
-- [ ] All specified BDD feature files are deleted.
-- [ ] All specified BDD step definition files are deleted.
-- [ ] `api/tests/step_defs/` directory is removed.
-- [ ] `api/tests/features/` directory is removed.
-- [ ] The project structure is cleaner and less cluttered by unused BDD artifacts.
+- [X] All specified BDD feature files are deleted.
+- [X] All specified BDD step definition files are deleted.
+- [X] `api/tests/step_defs/` directory is removed.
+- [X] `api/tests/features/` directory is removed.
+- [X] The project structure is cleaner and less cluttered by unused BDD artifacts.
 
 *** DONE Refactor `Makefile` for consistent `pytest` invocation
 This task standardizes how `pytest` is invoked across all test targets in the `Makefile`. By running `pytest` from the project root and specifying the `api/tests` directory, import resolution is simplified, and integration with tools like `pytest-docker` becomes more seamless.
