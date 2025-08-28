@@ -10,3 +10,4 @@ site/
 .env
 __pycache__/
 .coverage
+\#*\#
