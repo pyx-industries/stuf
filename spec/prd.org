@@ -58,7 +58,7 @@ The SPA implements the OIDC Authorization Code flow with PKCE, which is the curr
 
 *** OIDC Configuration
 - *Response Type*: =code= (Authorization Code flow)
-- *Required Scopes*: =openid myapp:access=
+- *Required Scopes*: =openid stuf:access=
 - *Redirect URI*: ={spa_base_url}/auth/callback=
 
 ** API Authorization Flow
@@ -81,7 +81,7 @@ Access tokens *must* contain a custom claim, `collections`, that defines the use
 #+BEGIN_SRC json
 {
   "sub": "user-123",
-  "scope": "openid myapp:access",
+  "scope": "openid stuf:access",
   "aud": "stuf-api",
   "collections": {
     "catpics": ["read", "write"],
