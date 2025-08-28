@@ -33,8 +33,15 @@ if [ "$REALM_EXISTS" = "false" ]; then
   
   # Create protocol mapper for collections claim
   echo "Creating 'collections' protocol mapper"
+  echo "DEBUG: Getting client scopes..."
+  /opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM
+  echo "DEBUG: Getting client scopes with query..."
+  /opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name | grep "stuf:access"
   STUF_SCOPE_UUID=$(/opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name | grep "stuf:access" | awk '{print $1}')
+  echo "DEBUG: Extracted UUID: '$STUF_SCOPE_UUID'"
+  echo "DEBUG: UUID length: ${#STUF_SCOPE_UUID}"
   echo "Using client scope UUID: $STUF_SCOPE_UUID"
+  echo "DEBUG: About to run command: create client-scopes/$STUF_SCOPE_UUID/protocol-mappers/models"
   /opt/keycloak/bin/kcadm.sh create client-scopes/$STUF_SCOPE_UUID/protocol-mappers/models -r $KEYCLOAK_REALM \
     -s name=collections \
     -s protocol=openid-connect \
