@@ -41,7 +41,7 @@ def real_keycloak_token():
     data = {
         'grant_type': 'client_credentials',
         'client_id': KEYCLOAK_CLIENT_ID,
-        'client_secret': os.environ.get('KEYCLOAK_API_CLIENT_SECRET', 'some-secret-value')
+        'client_secret': os.environ.get('KEYCLOAK_CLIENT_SECRET', 'some-secret-value')
     }
     
     response = requests.post(token_url, data=data)
