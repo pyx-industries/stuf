@@ -37,7 +37,7 @@ if [ "$REALM_EXISTS" = "false" ]; then
   /opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM
   echo "DEBUG: Getting client scopes with query..."
   /opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name | grep "stuf:access"
-  STUF_SCOPE_UUID=$(/opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name | grep "stuf:access" | awk '{print $1}')
+  STUF_SCOPE_UUID=$(/opt/keycloak/bin/kcadm.sh get client-scopes -r $KEYCLOAK_REALM --fields id,name | grep -B1 "stuf:access" | grep '"id"' | sed 's/.*"id" : "\([^"]*\)".*/\1/')
   echo "DEBUG: Extracted UUID: '$STUF_SCOPE_UUID'"
   echo "DEBUG: UUID length: ${#STUF_SCOPE_UUID}"
   echo "Using client scope UUID: $STUF_SCOPE_UUID"
