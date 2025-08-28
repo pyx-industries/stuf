@@ -73,6 +73,15 @@ if [ "$REALM_EXISTS" = "false" ]; then
   /opt/keycloak/bin/kcadm.sh update clients/$API_CLIENT_UUID -r $KEYCLOAK_REALM -s "secret=$KEYCLOAK_API_CLIENT_SECRET"
 
   # Add stuf:access scope to clients
+  echo "DEBUG: Discovering kcadm.sh update options..."
+  /opt/keycloak/bin/kcadm.sh update --help
+  
+  echo "DEBUG: Checking client structure..."
+  /opt/keycloak/bin/kcadm.sh get clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM
+  
+  echo "DEBUG: Checking available client endpoints..."
+  /opt/keycloak/bin/kcadm.sh get clients/$SPA_CLIENT_UUID/default-client-scopes -r $KEYCLOAK_REALM
+  
   echo "Adding 'stuf:access' scope to SPA client"
   /opt/keycloak/bin/kcadm.sh update clients/$SPA_CLIENT_UUID -r $KEYCLOAK_REALM --add-default-client-scope stuf:access
   
