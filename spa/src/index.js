@@ -8,7 +8,7 @@ const oidcConfig = {
   client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'stuf-spa',
   redirect_uri: window.location.origin,
   response_type: 'code',
-  scope: 'openid profile email stuf:access',
+  scope: 'openid stuf:access',
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
 };

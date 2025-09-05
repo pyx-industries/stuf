@@ -68,29 +68,5 @@ class TestCompleteWorkflow:
         assert "roles" in user_info
         assert user_info["active"] is True
 
-    def test_presigned_url_generation(self, e2e_authenticated_client):
-        """Test presigned URL generation for file download"""
-        # First upload a file
-        test_content = b"Content for presigned URL test"
-        
-        response = e2e_authenticated_client.post(
-            "/api/files/upload",
-            files={"file": ("presigned_test.txt", io.BytesIO(test_content), "text/plain")},
-            data={
-                "collection": "test",
-                "metadata": '{}'
-            }
-        )
-        
-        assert response.status_code == 200
-        object_name = response.json()["object_name"]
-        
-        # Get presigned URL
-        file_path = object_name.split("/", 1)[1]
-        response = e2e_authenticated_client.get(f"/api/files/presigned/test/{file_path}")
-        assert response.status_code == 200
-        
-        result = response.json()
-        assert result["status"] == "success"
-        assert "url" in result
-        assert result["expires_in"] == 3600
+    # Presigned URL test commented out since endpoint was removed (YAGNI)
+    pass

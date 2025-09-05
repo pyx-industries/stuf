@@ -18,23 +18,26 @@ class TestAuthenticationE2E:
 
     def test_token_validation_with_real_keycloak(self, real_keycloak_token):
         """Test token validation against real Keycloak instance"""
-        from api.auth.middleware import validate_token
+        from api.auth.middleware import verify_jwt_token
         
         # This should work with a real token from the fixture
-        token_info = validate_token(real_keycloak_token)
+        token_info = verify_jwt_token(real_keycloak_token)
         
         assert token_info is not None
-        assert token_info.get("active") is True
+        # JWT tokens have standard claims, not "active" like introspection
+        assert "iss" in token_info  # Issuer is always present  
+        assert "exp" in token_info  # Expiration is always present
         # For user tokens, preferred_username should be present
-        # For service account tokens, it might be missing
-        assert "preferred_username" in token_info or "client_id" in token_info
+        assert "preferred_username" in token_info
+        # Collections should be present and parsed
+        assert "collections" in token_info
 
     def test_invalid_token_rejection(self):
         """Test that invalid tokens are properly rejected"""
-        from api.auth.middleware import validate_token
+        from api.auth.middleware import verify_jwt_token
         
         # Test with obviously invalid token
-        token_info = validate_token("invalid-token-12345")
+        token_info = verify_jwt_token("invalid-token-12345")
         
         assert token_info is None
 
