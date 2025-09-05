@@ -143,3 +143,6 @@ All services configured via environment variables with development defaults:
 - `GET /api/files/list/{collection}`: List files in collection
 - `GET /api/files/download/{collection}/{path}`: Stream file download
 - `DELETE /api/files/{collection}/{object}`: Delete file (admin only)
+
+## File Organization Notes
+- **spec/**: Contains important org-mode files for project planning and specifications - DO NOT DELETE

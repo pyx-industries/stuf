@@ -47,19 +47,14 @@ def real_keycloak_token():
         'scope': 'openid stuf:access'
     }
     
-    print(f"DEBUG: Requesting token from: {token_url}")
-    print(f"DEBUG: Request data: {data}")
     
     response = requests.post(token_url, data=data)
-    print(f"DEBUG: Token response status: {response.status_code}")
     
     if response.status_code != 200:
-        print(f"DEBUG: Token response error: {response.text}")
         pytest.skip(f"Could not get token from Keycloak: {response.text}")
     
     token_data = response.json()
     access_token = token_data['access_token']
-    print(f"DEBUG: Got access token (first 50 chars): {access_token[:50]}...")
     
     return access_token
 

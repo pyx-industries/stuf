@@ -51,30 +51,19 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 401
 
-    def test_upload_file_wrong_collection(self, integration_client, authenticated_headers):
+    def test_upload_file_wrong_collection(self, integration_client, limited_user_headers):
         """Test file upload to unauthorized collection"""
-        # Configure the mock response from Keycloak for a user with limited roles
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "active": True,
-            "preferred_username": "limiteduser",
-            "name": "Limited User",
-            "realm_access": {"roles": ["user", "collection-other"]}
-        }
-        integration_client.keycloak_post_mock.return_value = mock_response
-        
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
         
         response = integration_client.post(
             "/api/files/upload",
             files={"file": test_file},
             data={"collection": "test", "metadata": "{}"},
-            headers=authenticated_headers # Use the default authenticated headers
+            headers=limited_user_headers  # User only has access to "other" collection, not "test"
         )
         
         assert response.status_code == 403
-        assert "don't have access to collection" in response.json()["detail"]
+        assert "don't have" in response.json()["detail"] and "access to collection" in response.json()["detail"]
         
         # Ensure minio_mock.upload_file was *not* called because of permission error
         integration_client.minio_mock.upload_file.assert_not_called()

@@ -12,7 +12,7 @@ services:
       - "8080:8080"
     command: start-dev
     volumes:
-      - ./docker/keycloak/test-realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
 
   minio:
     image: minio/minio:latest

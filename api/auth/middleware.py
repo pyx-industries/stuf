@@ -68,7 +68,7 @@ def verify_jwt_token(token: str):
     import logging
     logger = logging.getLogger(__name__)
     
-    logger.info(f"DEBUG: Verifying JWT token (first 50 chars): {token[:50]}...")
+    logger.debug(f"Verifying JWT token (first 50 chars): {token[:50]}...")
     
     try:
         from jose import jwt, jwk
@@ -127,20 +127,20 @@ def verify_jwt_token(token: str):
             logger.error(f"Invalid audience in token: {token_aud}")
             return None
         
-        logger.info(f"DEBUG: JWT verification successful. Payload keys: {list(token_payload.keys())}")
+        logger.debug(f"JWT verification successful. Payload keys: {list(token_payload.keys())}")
         return token_payload
         
     except ExpiredSignatureError:
-        logger.warning("DEBUG: JWT token is expired")
+        logger.warning("JWT token is expired")
         return None
     except JWTClaimsError as e:
-        logger.error(f"DEBUG: JWT claims validation failed: {e}")
+        logger.error(f"JWT claims validation failed: {e}")
         return None
     except JWTError as e:
-        logger.error(f"DEBUG: JWT verification failed: {e}")
+        logger.error(f"JWT verification failed: {e}")
         return None
     except Exception as e:
-        logger.error(f"DEBUG: Exception during JWT verification: {e}")
+        logger.error(f"Exception during JWT verification: {e}")
         return None
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
@@ -157,7 +157,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     token_payload = verify_jwt_token(token)
     
     if not token_payload:
-        logger.error("DEBUG: JWT verification failed - token_payload is None")
+        logger.error("JWT verification failed - token_payload is None")
         raise credentials_exception
     
     # Audience and issuer are already validated in verify_jwt_token()
@@ -166,7 +166,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     # Extract user information from JWT - try multiple username fields
     username = token_payload.get("preferred_username") or token_payload.get("username") or token_payload.get("sub")
     if username is None:
-        logger.error(f"DEBUG: No username found in JWT. Available keys: {list(token_payload.keys())}")
+        logger.error(f"No username found in JWT. Available keys: {list(token_payload.keys())}")
         raise credentials_exception
     
     # Extract roles from realm_access
@@ -183,11 +183,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
                 collections = json.loads(collections_claim)
             else:
                 collections = collections_claim  # Already parsed
-            logger.info(f"DEBUG: Parsed collections: {collections}")
+            logger.debug(f"Parsed collections: {collections}")
         except (json.JSONDecodeError, TypeError) as e:
-            logger.warning(f"DEBUG: Failed to parse collections claim: {e}")
+            logger.warning(f"Failed to parse collections claim: {e}")
     
-    logger.info(f"DEBUG: Successfully authenticated user: {username} with roles: {roles}, collections: {list(collections.keys())}")
+    logger.info(f"Successfully authenticated user: {username} with roles: {roles}, collections: {list(collections.keys())}")
     
     return User(
         username=username,

@@ -6,6 +6,9 @@ from auth.middleware import get_current_user, User
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES, SAMPLE_USERS
 from api.main import app # Import app here for dependency override
 from storage.minio import MinioClient # Import MinioClient for spec
+import json
+import time
+from jose import jwt
 
 @pytest.fixture
 def mock_keycloak_requests():
@@ -18,7 +21,7 @@ def mock_keycloak_requests():
         yield mock_post
 
 @pytest.fixture
-def integration_client(mock_keycloak_requests):
+def integration_client(mock_keycloak_requests, mock_jwt_verification):
     """
     TestClient for integration tests. This fixture is function-scoped,
     meaning a fresh TestClient instance and its associated app.dependency_overrides
@@ -51,6 +54,67 @@ def integration_client(mock_keycloak_requests):
 
 
 @pytest.fixture
+def mock_jwt_verification():
+    """Mock JWT verification to avoid needing real Keycloak keys"""
+    def mock_verify_jwt_token(token):
+        if token == "valid-integration-test-token":
+            # Return a valid token payload for test user
+            return {
+                "sub": "testuser",
+                "preferred_username": "testuser", 
+                "email": "testuser@example.com",
+                "name": "Test User",
+                "realm_access": {"roles": ["user", "collection-test"]},
+                "collections": json.dumps({"test": ["read", "write", "delete"]}),
+                "aud": ["stuf-api"],
+                "iss": "http://localhost:8080/realms/stuf",
+                "exp": int(time.time()) + 3600,  # Valid for 1 hour
+                "iat": int(time.time())
+            }
+        elif token == "admin-integration-test-token":
+            # Return a valid token payload for admin user
+            return {
+                "sub": "admin",
+                "preferred_username": "admin",
+                "email": "admin@example.com", 
+                "name": "Admin User",
+                "realm_access": {"roles": ["admin", "collection-test", "collection-restricted"]},
+                "collections": json.dumps({"test": ["read", "write", "delete"], "restricted": ["read", "write", "delete"]}),
+                "aud": ["stuf-api"],
+                "iss": "http://localhost:8080/realms/stuf",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time())
+            }
+        elif token == "limited-integration-test-token":
+            # Return a valid token payload for limited user (only has access to "other" collection, not "test")
+            return {
+                "sub": "limiteduser",
+                "preferred_username": "limiteduser",
+                "email": "limiteduser@example.com",
+                "name": "Limited User", 
+                "realm_access": {"roles": ["user", "collection-other"]},
+                "collections": json.dumps({"other": ["read", "write", "delete"]}),  # No access to "test" collection
+                "aud": ["stuf-api"],
+                "iss": "http://localhost:8080/realms/stuf",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time())
+            }
+        return None
+
+    with patch('auth.middleware.verify_jwt_token', side_effect=mock_verify_jwt_token):
+        yield
+
+@pytest.fixture
 def authenticated_headers():
     """Headers with valid authentication token for integration tests"""
     return {"Authorization": "Bearer valid-integration-test-token"}
+
+@pytest.fixture 
+def admin_headers():
+    """Headers with valid admin authentication token for integration tests"""
+    return {"Authorization": "Bearer admin-integration-test-token"}
+
+@pytest.fixture
+def limited_user_headers():
+    """Headers with limited user authentication token (no access to test collection)"""
+    return {"Authorization": "Bearer limited-integration-test-token"}
