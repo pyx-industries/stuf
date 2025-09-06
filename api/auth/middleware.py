@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 
 # Keycloak configuration
-KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')
+KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')  # For internal API calls (JWKS, etc.)
+KEYCLOAK_ISSUER_URL = os.environ.get('KEYCLOAK_ISSUER_URL', 'http://localhost:8080')  # For JWT issuer validation
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'stuf')
 KEYCLOAK_CLIENT_ID = os.environ.get('KEYCLOAK_CLIENT_ID', 'stuf-api')
 KEYCLOAK_CLIENT_SECRET = os.environ.get('KEYCLOAK_CLIENT_SECRET', 'some-secret-value')
@@ -68,7 +69,7 @@ def verify_jwt_token(token: str):
     import logging
     logger = logging.getLogger(__name__)
     
-    logger.debug(f"Verifying JWT token (first 50 chars): {token[:50]}...")
+    logger.info(f"Verifying JWT token (first 50 chars): {token[:50]}...")
     
     try:
         from jose import jwt, jwk
@@ -100,7 +101,7 @@ def verify_jwt_token(token: str):
             return None
         
         # Verify and decode JWT with signature validation
-        expected_issuer = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}"
+        expected_issuer = f"{KEYCLOAK_ISSUER_URL}/realms/{KEYCLOAK_REALM}"
         
         # JWT validation options - disable audience verification to handle manually
         options = {
@@ -148,6 +149,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     import logging
     logger = logging.getLogger(__name__)
     
+    logger.info(f"get_current_user called with token: {token[:50] if token else 'None'}...")
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -187,7 +190,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         except (json.JSONDecodeError, TypeError) as e:
             logger.warning(f"Failed to parse collections claim: {e}")
     
-    logger.info(f"Successfully authenticated user: {username} with roles: {roles}, collections: {list(collections.keys())}")
+    logger.info(f"Successfully authenticated user: {username} with roles: {roles}, collections: {collections}")
     
     return User(
         username=username,

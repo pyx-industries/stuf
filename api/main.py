@@ -38,7 +38,19 @@ def info():
 
 @app.get("/api/me")
 def get_current_user_info(current_user: User = Depends(get_current_user)):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"API /me called for user: {current_user.username}")
+    logger.info(f"User collections: {current_user.collections}")
+    logger.info(f"User roles: {current_user.roles}")
     return current_user
+
+@app.get("/api/debug")
+def debug_endpoint():
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("DEBUG: Debug endpoint called - API changes are loaded")
+    return {"debug": "API changes loaded successfully"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))

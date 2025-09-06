@@ -15,12 +15,42 @@ class ApiService {
       const token = this.auth?.user?.access_token;
       const url = `${API_BASE_URL}${endpoint}`;
       
+      // Debug logging
+      console.log('API request - token exists:', !!token);
+      console.log('API request - token preview:', token?.substring(0, 20));
+      console.log('API request - options.headers:', options.headers);
+      
+      // Always include Authorization header if we have a token
+      const headers = {
+        ...(token && { Authorization: `Bearer ${token}` })
+      };
+      
+      console.log('API request - headers after auth:', headers);
+      
+      // Merge in custom headers
+      if (options.headers) {
+        Object.assign(headers, options.headers);
+      }
+      
+      console.log('API request - headers after merge:', headers);
+      
+      // Set default Content-Type for JSON requests, but skip for FormData
+      const isFormData = options.body instanceof FormData;
+      if (!headers.hasOwnProperty('Content-Type') && !isFormData) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      // Remove any headers with null/undefined values that might confuse fetch()
+      Object.keys(headers).forEach(key => {
+        if (headers[key] === null || headers[key] === undefined) {
+          delete headers[key];
+        }
+      });
+      
+      console.log('API request - final headers:', headers);
+      
       const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-          ...options.headers
-        },
+        headers,
         ...options
       };
 
@@ -61,7 +91,7 @@ class ApiService {
 
     return this.request('/api/files/upload', {
       method: 'POST',
-      headers: {}, // Don't set Content-Type for FormData
+      // Don't set any headers for FormData - let browser handle Content-Type
       body: formData
     });
   }

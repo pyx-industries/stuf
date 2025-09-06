@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict
 import uuid
@@ -201,15 +201,90 @@ async def download_file(
 async def delete_file(
     collection: str,
     object_name: str,
-    current_user: User = Depends(require_role("admin")),
+    request: Request,
     minio_client: MinioClient = Depends(MinioClient)
 ):
     """
-    Delete a file (admin only)
+    Delete a file (requires delete permission for collection)
     
     - **collection**: The collection the file belongs to
     - **object_name**: The object name in storage
     """
+    # Debug logging - check request headers first
+    logger.info(f"Delete request received for {collection}/{object_name}")
+    auth_header = request.headers.get("Authorization")
+    logger.info(f"Authorization header: {auth_header[:50] if auth_header else 'None'}...")
+    
+    # Extract and validate token manually
+    if not auth_header or not auth_header.startswith("Bearer "):
+        logger.error("No valid Authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header"
+        )
+    
+    token = auth_header.split(" ", 1)[1]
+    
+    # Import and use the auth middleware directly
+    from auth.middleware import verify_jwt_token, User
+    
+    token_payload = verify_jwt_token(token)
+    if not token_payload:
+        logger.error("JWT verification failed")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
+    
+    # Extract user information from JWT
+    username = token_payload.get("preferred_username") or token_payload.get("username") or token_payload.get("sub")
+    if username is None:
+        logger.error(f"No username found in JWT. Available keys: {list(token_payload.keys())}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
+    
+    # Extract roles from realm_access
+    realm_access = token_payload.get("realm_access", {})
+    roles = realm_access.get("roles", [])
+    
+    # Extract and parse collections from custom claim
+    collections = {}
+    collections_claim = token_payload.get("collections")
+    if collections_claim:
+        try:
+            if isinstance(collections_claim, str):
+                import json
+                collections = json.loads(collections_claim)
+            else:
+                collections = collections_claim  # Already parsed
+            logger.info(f"Parsed collections from JWT: {collections}")
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse collections claim: {e}")
+    
+    current_user = User(
+        username=username,
+        email=token_payload.get("email"),
+        full_name=token_payload.get("name"),
+        roles=roles,
+        collections=collections,
+        active=True
+    )
+    
+    logger.info(f"Delete attempt by user: {current_user.username}")
+    logger.info(f"User roles: {current_user.roles}")
+    logger.info(f"User collections: {current_user.collections}")
+    logger.info(f"Requested collection: {collection}")
+    logger.info(f"Has delete permission: {current_user.has_collection_permission(collection, 'delete')}")
+    
+    # Check if user has delete permission for this collection
+    if not current_user.has_collection_permission(collection, "delete"):
+        logger.warning(f"User {current_user.username} denied delete access to collection {collection}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You don't have delete access to collection: {collection}"
+        )
     # Ensure the object name starts with the collection
     full_object_name = f"{collection}/{object_name}" if not object_name.startswith(f"{collection}/") else object_name
     

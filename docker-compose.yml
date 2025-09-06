@@ -45,6 +45,7 @@ services:
       - "${API_PORT:-8000}:8000"
     environment:
       - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ISSUER_URL=http://localhost:8080
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
