@@ -146,3 +146,9 @@ All services configured via environment variables with development defaults:
 
 ## File Organization Notes
 - **spec/**: Contains important org-mode files for project planning and specifications - DO NOT DELETE
+
+## Git Commit Guidelines
+- NEVER use emojis in commit messages
+- NEVER advertise Claude Code in commit messages
+- Use clear, descriptive commit messages following conventional commit format
+- Keep commits focused on a single change or feature
