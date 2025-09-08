@@ -22,6 +22,6 @@ serve:
 # Clean generated files
 clean:
 	@echo "Cleaning generated PNG files and documentation site..."
-	@rm -f img/*.png
+	@rm -f docs/img/*.png
 	@rm -rf site/
 	@echo "Clean complete."
