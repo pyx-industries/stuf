@@ -1,4 +1,7 @@
 # Makefile for STUF project
+# TODO: Consider dockerizing docs build for better consistency and team onboarding
+# Benefits: eliminates PlantUML system dependency, consistent build environment,
+# easier CI/CD integration, and no "works on my machine" issues
 
 .PHONY: help docs clean serve
 
