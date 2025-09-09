@@ -1,0 +1,3 @@
+[submodule ".fun-police"]
+	path = .fun-police
+	url = https://github.com/monkeypants/fun-police.git

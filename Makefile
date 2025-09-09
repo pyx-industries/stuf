@@ -1,6 +1,32 @@
 # Makefile for STUF project
+# TODO: Consider dockerizing docs build for better consistency and team onboarding
+# Benefits: eliminates PlantUML system dependency, consistent build environment,
+# easier CI/CD integration, and no "works on my machine" issues
 
-.PHONY: docs clean serve
+.PHONY: help docs clean serve
+
+# Test command variable
+PYTEST = python -m pytest api/tests --tb=short
+
+# Default target - show help
+help:
+	@echo "STUF Project - Available Make Targets:"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  docs          Generate documentation from PlantUML and build MkDocs site"
+	@echo "  serve         Start local documentation server for development"
+	@echo "  clean         Remove generated PNG files and documentation site"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test          Run unit and integration tests (default, fast)"
+	@echo "  test-unit     Run only unit tests (fastest)"
+	@echo "  test-integration  Run only integration tests (medium speed)"
+	@echo "  test-e2e      Run end-to-end tests (slow, requires Docker services)"
+	@echo "  test-all      Run all tests including E2E"
+	@echo "  test-cov      Run tests with coverage report"
+	@echo ""
+	@echo "Usage: make <target>"
+	@echo "Example: make test-unit"
 
 # Generate documentation
 docs:
@@ -25,3 +51,36 @@ clean:
 	@rm -f img/*.png
 	@rm -rf site/
 	@echo "Clean complete."
+
+# Test targets
+.PHONY: test test-unit test-integration test-e2e test-all test-cov
+
+# Run unit tests only (fast)
+test-unit:
+	@echo "Running unit tests..."
+	@$(PYTEST) -m "unit"
+
+# Run integration tests (medium speed)
+test-integration:
+	@echo "Running integration tests..."
+	@$(PYTEST) -m "integration"
+
+# Run E2E tests (slow, requires services)
+test-e2e:
+	@echo "Running E2E tests..."
+	@set -a; if [ -f .env ]; then source .env; fi; set +a; $(PYTEST) -m "e2e"
+
+# Run all tests except E2E (default)
+test:
+	@echo "Running unit and integration tests..."
+	@$(PYTEST) -m "not e2e"
+
+# Run all tests including E2E
+test-all:
+	@echo "Running all tests..."
+	@$(PYTEST)
+
+# Run tests with coverage
+test-cov:
+	@echo "Running tests with coverage..."
+	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing

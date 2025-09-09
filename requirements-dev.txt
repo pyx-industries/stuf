@@ -1,1 +1,17 @@
 aider-chat
+pytest
+pytest-cov
+black
+flake8
+mypy
+pytest-mock
+pytest-asyncio
+pytest-xdist
+httpx
+factory-boy
+freezegun
+responses
+testcontainers
+pytest-docker
+mkdocs
+mkdocs-material

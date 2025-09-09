@@ -1,6 +1,6 @@
 @startuml stuf_c4_context_diagram
 
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include <C4/C4_Context>
 
 ' Define actors
 Person(trust_architect, "Trust Architect", "Administers the STUF system and manages access")
@@ -27,7 +27,5 @@ Rel(stuf_system, zulip, "Sends notifications about uploads")
 Rel(stuf_system, storage_provider, "Stores files and configuration")
 Rel(stuf_system, github, "Stores code and configuration as 'code under glass'")
 
-' Add legend
-SHOW_LEGEND()
 
 @enduml

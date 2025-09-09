@@ -82,3 +82,72 @@ For detailed information on deploying and using STUF, please refer to:
 ## Vision and Roadmap
 
 STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](docs/vision_and_roadmap.md).
+
+## Local Development with Docker Compose
+
+STUF can be run locally using Docker Compose for development and testing purposes.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Git for cloning the repository
+
+### Setup Instructions
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/pyx-industries/stuf.git
+   cd stuf
+   ```
+
+2. Create a `.env` file from the example and edit as needed:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs. 
+   Edit this file to customize your local development environment.
+
+3. Start the Docker Compose environment:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. Access the components:
+   - SPA (Frontend): http://localhost:3000
+   - API: http://localhost:8000
+     - Health check: http://localhost:8000/api/health
+     - API info: http://localhost:8000/api/info
+   - Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
+   - MinIO:
+     - API endpoint: http://localhost:9000
+     - Web console: http://localhost:9001 (minioadmin/minioadmin)
+
+### Environment Components
+
+- **Keycloak**: Authentication and authorization server
+  - Default admin credentials: admin/admin
+  - Configured with realm: stuf
+  - Clients:
+    - stuf-spa: Public client for the SPA
+    - stuf-api: Confidential client with service account
+  - Roles:
+    - admin: Administrator role with full access
+    - collection-*: Collection-specific access roles
+  - Test users:
+    - admin@example.com / password (admin role)
+- **MinIO**: S3-compatible object storage
+- **API**: FastAPI backend service
+- **SPA**: React frontend application
+
+### Stopping the Environment
+
+To stop the Docker Compose environment:
+```bash
+docker-compose down
+```
+
+To stop and remove volumes (will delete all data):
+```bash
+docker-compose down -v
+```

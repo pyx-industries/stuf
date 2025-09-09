@@ -1,0 +1,72 @@
+import pytest
+import io
+import tempfile
+import os
+
+@pytest.mark.e2e
+class TestCompleteWorkflow:
+    """True end-to-end tests using real services"""
+    
+    def test_complete_file_upload_workflow(self, e2e_authenticated_client):
+        """Test the complete file upload and retrieval workflow"""
+        # Create test file
+        test_content = b"This is E2E test content"
+        
+        # Upload file
+        response = e2e_authenticated_client.post(
+            "/api/files/upload",
+            files={"file": ("e2e_test.txt", io.BytesIO(test_content), "text/plain")},
+            data={
+                "collection": "test",
+                "metadata": '{"description": "E2E test file"}'
+            }
+        )
+        
+        assert response.status_code == 200
+        upload_result = response.json()
+        assert upload_result["status"] == "success"
+        object_name = upload_result["object_name"]
+        
+        # List files to verify upload
+        response = e2e_authenticated_client.get("/api/files/list/test")
+        assert response.status_code == 200
+        
+        files = response.json()["files"]
+        assert any(f["name"] == object_name for f in files)
+        
+        # Download file to verify content
+        # Extract the path part after collection/
+        file_path = object_name.split("/", 1)[1]
+        response = e2e_authenticated_client.get(f"/api/files/download/test/{file_path}")
+        assert response.status_code == 200
+        assert response.content == test_content
+
+    def test_unauthorized_access_rejected(self, e2e_client):
+        """Test that unauthorized requests are properly rejected"""
+        response = e2e_client.get("/api/files/list/test")
+        assert response.status_code == 401
+
+    def test_health_and_info_endpoints(self, e2e_client):
+        """Test public endpoints work without authentication"""
+        # Health check
+        response = e2e_client.get("/api/health")
+        assert response.status_code == 200
+        assert response.json()["status"] == "healthy"
+        
+        # Info endpoint
+        response = e2e_client.get("/api/info")
+        assert response.status_code == 200
+        assert response.json()["name"] == "STUF API"
+
+    def test_user_info_endpoint(self, e2e_authenticated_client):
+        """Test authenticated user info endpoint"""
+        response = e2e_authenticated_client.get("/api/me")
+        assert response.status_code == 200
+        
+        user_info = response.json()
+        assert "username" in user_info
+        assert "roles" in user_info
+        assert user_info["active"] is True
+
+    # Presigned URL test commented out since endpoint was removed (YAGNI)
+    pass
