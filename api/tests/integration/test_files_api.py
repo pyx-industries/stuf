@@ -68,6 +68,7 @@ class TestFilesAPIIntegration:
         # Ensure storage repository was *not* called because of permission error
         integration_client.storage_repo_mock.store_file.assert_not_called()
 
+
     def test_list_files_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file listing with valid authentication"""
         response = integration_client.get(
@@ -83,6 +84,7 @@ class TestFilesAPIIntegration:
         
         # Verify MinIO list was called with correct prefix
         integration_client.storage_repo_mock.list_files_in_collection.assert_called_once_with("test")
+
 
     def test_list_files_without_auth(self, integration_client):
         """Test file listing without authentication"""
@@ -106,6 +108,7 @@ class TestFilesAPIIntegration:
         # Verify storage repository download was called
         integration_client.storage_repo_mock.retrieve_file.assert_called_once_with("test/user/test.txt")
 
+
     def test_invalid_metadata_format(self, integration_client, authenticated_headers):
         """Test upload with invalid metadata JSON"""
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
@@ -122,6 +125,7 @@ class TestFilesAPIIntegration:
         
         assert response.status_code == 400
         assert "Invalid metadata JSON format" in response.json()["detail"]
+
 
     def test_delete_file_with_valid_auth(self, integration_client, authenticated_headers):
         """Test file deletion with valid authentication"""
@@ -174,3 +178,4 @@ class TestFilesAPIIntegration:
         assert response.status_code == 500
         assert "Storage error during deletion" in response.json()["detail"]
         assert "Storage error" in response.json()["detail"]
+

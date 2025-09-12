@@ -27,7 +27,6 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     scopes={}
 )
 
-
 def get_keycloak_public_keys():
     """Fetch Keycloak public keys for JWT verification"""
     import logging
