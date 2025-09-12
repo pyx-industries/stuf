@@ -3,8 +3,8 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 from jose import jwt, JWTError
 import requests
 import os
-from pydantic import BaseModel
 from typing import List, Optional, Dict
+from domain.models import User
 
 # Keycloak configuration
 KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://localhost:8080')  # For internal API calls (JWKS, etc.)
@@ -26,26 +26,6 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     refreshUrl=f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token",
     scopes={}
 )
-
-class User(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    roles: List[str] = []  # Generic roles (admin, trust-architect, project-participant)
-    collections: Dict[str, List[str]] = {}  # Collection permissions: {"test": ["read", "write"], ...}
-    active: bool = True
-    
-    def is_admin(self) -> bool:
-        """Check if user has admin role"""
-        return "admin" in self.roles
-    
-    def has_collection_permission(self, collection: str, permission: str) -> bool:
-        """Check if user has specific permission for a collection"""
-        if self.is_admin():
-            return True  # Admin has all permissions
-        
-        collection_perms = self.collections.get(collection, [])
-        return permission in collection_perms
 
 def get_keycloak_public_keys():
     """Fetch Keycloak public keys for JWT verification"""

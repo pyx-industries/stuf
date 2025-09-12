@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 
-from auth.middleware import get_current_user, User
+from auth.middleware import get_current_user
+from domain.models import User
 from routers import files
 
 app = FastAPI(
