@@ -144,7 +144,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         raise credentials_exception
     
     # Audience and issuer are already validated in verify_jwt_token()
-    logger.info(f"DEBUG: JWT verification successful. Payload keys: {list(token_payload.keys())}")
+    logger.debug(f"JWT verification successful. Payload keys: {list(token_payload.keys())}")
     
     # Extract user information from JWT - try multiple username fields
     username = token_payload.get("preferred_username") or token_payload.get("username") or token_payload.get("sub")
