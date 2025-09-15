@@ -21,3 +21,8 @@ __pycache__/
 
 # Editor backup files
 *~
+
+# Browser E2E test artifacts
+tests/e2e-browser/reports/
+tests/e2e-browser/auth-storage-state.json
+tests/.venv/
