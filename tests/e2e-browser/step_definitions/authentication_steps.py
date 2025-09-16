@@ -21,11 +21,11 @@ def application_accessible():
 
 
 @given("I navigate to the STUF application")
-def navigate_to_application(page: Page):
+def navigate_to_application(page: Page, bdd_screenshot_helper):
     """Navigate to the STUF application."""
     dashboard = DashboardPage(page)
     dashboard.navigate_to()
-    dashboard.take_screenshot("01-application-loaded")
+    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "application-loaded", "Given I navigate to the STUF application")
 
 
 @given("I am not authenticated")
@@ -62,7 +62,7 @@ def on_dashboard(page: Page):
 
 
 @when("I am redirected to the login page")
-def redirected_to_login(page: Page):
+def redirected_to_login(page: Page, bdd_screenshot_helper):
     """Trigger and wait for redirect to login page."""
     # First check if we need to click login (not authenticated)
     page.wait_for_timeout(2000)  # Let React load
@@ -80,29 +80,29 @@ def redirected_to_login(page: Page):
     # Now wait for the actual login form
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
-    login_page.take_screenshot("02-redirected-to-login")
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "redirected-to-login", "When I am redirected to the login page")
 
 
 @when("I enter valid admin credentials")
-def enter_valid_admin_credentials(page: Page):
+def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
     """Enter valid admin credentials."""
     login_page = LoginPage(page)
     login_page.fill_username("admin@example.com")
     login_page.fill_password("password")
-    login_page.take_screenshot("02-credentials-entered")
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "credentials-entered", "And I enter valid admin credentials")
 
 
 @when("I enter invalid credentials")
-def enter_invalid_credentials(page: Page):
+def enter_invalid_credentials(page: Page, bdd_screenshot_helper):
     """Enter invalid credentials."""
     login_page = LoginPage(page)
     login_page.fill_username("invalid@example.com")
     login_page.fill_password("wrongpassword")
-    login_page.take_screenshot("02-invalid-credentials-entered")
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "invalid-credentials-entered", "And I enter invalid credentials")
 
 
 @when("I click the login button")
-def click_login_button(page: Page):
+def click_login_button(page: Page, bdd_screenshot_helper):
     """Click the SPA login button to start OIDC flow."""
     dashboard = DashboardPage(page)
     
@@ -114,16 +114,14 @@ def click_login_button(page: Page):
     assert login_button.is_visible(), "SPA Login button should be visible"
     login_button.click()
     
-    dashboard.take_screenshot("02-redirected-to-login")
+    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "clicked-login-button", "When I click the login button")
 
 
 @when("I click the logout button")
 def click_logout_button(page: Page):
-    """Simulate logout by clearing auth state (SPA doesn't have logout button)."""
+    """Click the logout button."""
     dashboard = DashboardPage(page)
-    # Clear auth state to simulate logout (same approach as working smoke tests)
-    page.context.clear_cookies()
-    page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
+    dashboard.click_logout()
 
 
 @when("I try to access the application directly")
@@ -173,7 +171,7 @@ def login_as_user_type(page: Page, user_type: str):
 
 
 @then("I should be redirected back to the application")
-def redirected_back_to_application(page: Page):
+def redirected_back_to_application(page: Page, bdd_screenshot_helper):
     """Verify redirect back to the application."""
     # Wait for the OIDC callback process to complete
     page.wait_for_timeout(3000)
@@ -187,36 +185,38 @@ def redirected_back_to_application(page: Page):
     
     from pages.base_page import BasePage
     base_page = BasePage(page)
-    base_page.take_screenshot("05-redirected-back-to-spa")
+    bdd_screenshot_helper.take_bdd_screenshot(base_page, "redirected-back-to-spa", "Then I should be redirected back to the application")
     
     assert "localhost:3100" in current_url, f"Should be back at SPA, but URL is: {current_url}"
 
 
 @then("I should see the dashboard")
-def see_dashboard(page: Page):
+def see_dashboard(page: Page, bdd_screenshot_helper):
     """Verify the dashboard is visible."""
     dashboard = DashboardPage(page)
     
     # Use the same approach as the working smoke tests
     # Wait for the actual dashboard content, not URL navigation
     page.wait_for_selector('text="File Management"', timeout=10000)
-    dashboard.take_screenshot("05-dashboard-loaded")
+    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "dashboard-loaded", "And I should see the dashboard")
     dashboard.assert_on_dashboard()
 
 
 @then("I should be logged in as an authenticated user")
-def logged_in_as_authenticated_user(page: Page):
+def logged_in_as_authenticated_user(page: Page, bdd_screenshot_helper):
     """Verify user is logged in."""
     dashboard = DashboardPage(page)
-    dashboard.take_screenshot("06-authenticated-success")
+    # First verify authentication state
     dashboard.assert_user_logged_in()
+    # Then take screenshot showing the authenticated state
+    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "authenticated-success", "And I should be logged in as an authenticated user")
 
 
 @then("I should see an authentication error message")
-def see_authentication_error(page: Page):
+def see_authentication_error(page: Page, bdd_screenshot_helper):
     """Verify authentication error message is displayed."""
     login_page = LoginPage(page)
-    login_page.take_screenshot("03-authentication-error-displayed")
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "authentication-error", "Then I should see an authentication error message")
     login_page.assert_error_message_visible()
 
 
@@ -308,21 +308,24 @@ def successfully_authenticated(page: Page):
 
 # IDP-agnostic step definitions
 @when("I am redirected to the IDP login page")
-def redirected_to_idp_login(page: Page):
+def redirected_to_idp_login(page: Page, bdd_screenshot_helper):
     """Wait for redirect to IDP login page (same as Keycloak)."""
     # Reuse the same logic as the existing redirect step
-    redirected_to_login(page)
+    redirected_to_login(page, bdd_screenshot_helper)
+    # Additional screenshot with IDP-specific naming
+    from pages.login_page import LoginPage
+    login_page = LoginPage(page)
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "redirected-to-idp", "And I am redirected to the IDP login page")
 
 
 @when("I click the IDP login button")  
-def click_idp_login_button(page: Page):
+def click_idp_login_button(page: Page, bdd_screenshot_helper):
     """Click the IDP login button to submit credentials."""
     login_page = LoginPage(page)
-    login_page.take_screenshot("03-before-login-click")
+    bdd_screenshot_helper.take_bdd_screenshot(login_page, "before-login-click", "And I click the IDP login button")
     login_page.click_login()
     # Wait a moment for navigation to start
     page.wait_for_timeout(1000)
-    login_page.take_screenshot("04-after-login-click")
 
 
 @then("I should see the dashboard appropriate for my role")

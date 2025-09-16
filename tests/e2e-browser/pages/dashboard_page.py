@@ -36,11 +36,43 @@ class DashboardPage(BasePage):
     
     def assert_user_logged_in(self) -> None:
         """Assert that a user is logged in (authentication successful)."""
-        # Simple check: if we don't see "Authentication Required", we're logged in
+        # Wait for authenticated state to be stable
+        self.page.wait_for_timeout(1000)
+        
+        # First check for authentication errors - take screenshot for debugging
+        self.take_screenshot("debug-before-auth-check")
+        page_content = self.page.content()
+        print(f"DEBUG: Page contains 'Authentication error': {'Authentication error' in page_content}")
+        print(f"DEBUG: Page title: {self.page.title()}")
+        
+        auth_error = self.page.get_by_text("Authentication error", exact=False)
+        print(f"DEBUG: Checking for auth error, found: {auth_error.count()}")
+        if auth_error.is_visible():
+            self.take_screenshot("auth-error-detected")
+            error_text = auth_error.text_content()
+            print(f"DEBUG: Auth error detected: {error_text}")
+            raise AssertionError(f"Authentication failed: {error_text}")
+        else:
+            print("DEBUG: No auth error visible")
+        
+        # Check for other error indicators
+        try_again_button = self.page.locator('button:text("Try Again")')
+        if try_again_button.is_visible():
+            self.take_screenshot("auth-retry-button-detected")
+            raise AssertionError("Authentication failed - 'Try Again' button is visible")
+        
+        # Positive check: we should see authenticated content (like "File Management")
+        try:
+            self.page.wait_for_selector('text="File Management"', timeout=5000)
+        except:
+            # If we don't see the expected authenticated content, capture current state
+            self.take_screenshot("auth-verification-failed")
+            raise AssertionError("User is not logged in - cannot find 'File Management' content")
+        
+        # Negative checks: we should not see authentication required states
         auth_required = self.page.locator('text="Authentication Required"')
         assert not auth_required.is_visible(), "User is not logged in - still seeing authentication required message"
         
-        # Additional check: we should not see the login button
         login_button = self.page.locator('button:text("Login")')
         assert not login_button.is_visible(), "User is not logged in - still seeing login button"
     

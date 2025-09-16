@@ -44,7 +44,7 @@ class BasePage:
         except:
             return False
     
-    def take_screenshot(self, name: str, scenario_name: str = "", step_index: int = 0, step_text: str = "") -> str:
+    def take_screenshot(self, name: str, scenario_name: str = "", step_index: int = 0, step_text: str = "", test_type: str = "bdd") -> str:
         """Take a screenshot and return the file path.
         
         Args:
@@ -52,6 +52,7 @@ class BasePage:
             scenario_name: Optional scenario name for directory organization
             step_index: Step number (1-based) for proper ordering
             step_text: BDD step text for descriptive filenames
+            test_type: Type of test ("bdd" or "direct") to separate screenshot directories
         """
         from pathlib import Path
         import re
@@ -59,9 +60,10 @@ class BasePage:
         base_screenshots_dir = Path(__file__).parent.parent / "reports" / "screenshots"
         
         if scenario_name and step_index > 0:
-            # Hierarchical storage: scenario/step-NN-description.png
+            # Hierarchical storage: bdd/scenario/step-NN-description.png OR direct/test-name/step-NN-description.png
+            type_dir = base_screenshots_dir / test_type
             clean_scenario = self._clean_name_for_path(scenario_name)
-            scenario_dir = base_screenshots_dir / clean_scenario
+            scenario_dir = type_dir / clean_scenario
             scenario_dir.mkdir(parents=True, exist_ok=True)
             
             # Create descriptive filename from step text or fallback to name
@@ -74,8 +76,8 @@ class BasePage:
                 
             screenshot_path = scenario_dir / filename
         else:
-            # Fallback: unorganized flat storage
-            fallback_dir = base_screenshots_dir / "_unorganized"
+            # Legacy fallback for old-style calls - should be eliminated
+            fallback_dir = base_screenshots_dir / "_legacy" / test_type
             fallback_dir.mkdir(parents=True, exist_ok=True)
             
             clean_name = self._clean_name_for_path(name)

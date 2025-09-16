@@ -36,10 +36,19 @@ def browser(playwright):
 @pytest.fixture(scope="session")
 def browser_context_args():
     """Arguments for browser context creation."""
+    from pathlib import Path
+    
+    # Ensure video directory exists
+    videos_dir = Path(__file__).parent / "reports" / "videos" / "bdd"
+    videos_dir.mkdir(parents=True, exist_ok=True)
+    
     args = {
         "viewport": {"width": 1280, "height": 720},
         "ignore_https_errors": True,
         "permissions": ["clipboard-read", "clipboard-write"],
+        # TODO: Re-enable video recording after debugging hang issue
+        # "record_video_dir": str(videos_dir),
+        # "record_video_size": {"width": 1280, "height": 720}
     }
     
     # Note: No longer using storage state since authenticated_page does live auth
@@ -279,3 +288,17 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "upload: File upload tests")
     config.addinivalue_line("markers", "permissions: Permission-related tests")
     config.addinivalue_line("markers", "slow: Slow-running tests")
+
+
+@pytest.fixture
+def bdd_screenshot_helper(page, request):
+    """Provide BDD screenshot helper with scenario context."""
+    from helpers.bdd_screenshot import BDDScreenshotHelper
+    helper = BDDScreenshotHelper(page, request)
+    
+    # TODO: Re-enable video saving after debugging hang issue
+    # def _save_video():
+    #     helper.save_scenario_video()
+    # request.addfinalizer(_save_video)
+    
+    return helper

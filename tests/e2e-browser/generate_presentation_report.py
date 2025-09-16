@@ -87,7 +87,7 @@ class PresentationReportGenerator:
         return None
     
     def find_artifacts_for_scenario(self, scenario_title: str) -> Dict:
-        """Find screenshots, videos, and results for a scenario using hierarchical storage."""
+        """Find screenshots, videos, and results for a scenario using BDD hierarchical storage."""
         # Clean scenario title for directory matching (same logic as BasePage._clean_name_for_path)
         clean_title = self._clean_name_for_path(scenario_title)
         
@@ -97,9 +97,9 @@ class PresentationReportGenerator:
             'traces': []
         }
         
-        # Find screenshots in hierarchical structure
-        screenshots_dir = self.reports_dir / "screenshots"
-        scenario_dir = screenshots_dir / clean_title
+        # Find screenshots in BDD hierarchical structure
+        bdd_screenshots_dir = self.reports_dir / "screenshots" / "bdd"
+        scenario_dir = bdd_screenshots_dir / clean_title
         
         if scenario_dir.exists() and scenario_dir.is_dir():
             # Get all step screenshots in the scenario directory
@@ -114,32 +114,15 @@ class PresentationReportGenerator:
             screenshot_files.sort(key=get_step_number)
             artifacts['screenshots'] = screenshot_files
         
-        # Also check for legacy flat screenshots for backward compatibility
-        if screenshots_dir.exists():
-            legacy_files = []
-            for screenshot in screenshots_dir.glob("*.png"):
-                if screenshot.name.startswith(f"{clean_title}_"):
-                    legacy_files.append(screenshot)
-            
-            if legacy_files:
-                # Sort legacy files by number
-                def get_legacy_sort_key(screenshot_path):
-                    name = screenshot_path.stem
-                    if name.startswith(f"{clean_title}_"):
-                        step_part = name[len(clean_title)+1:]
-                        number_match = re.match(r'(\d+)', step_part)
-                        return int(number_match.group(1)) if number_match else 999
-                    return 999
-                
-                legacy_files.sort(key=get_legacy_sort_key)
-                artifacts['screenshots'].extend(legacy_files)
+        # Find videos in BDD hierarchical structure
+        bdd_videos_dir = self.reports_dir / "videos" / "bdd"
+        scenario_video_dir = bdd_videos_dir / clean_title
         
-        # Find videos
-        videos_dir = self.reports_dir / "videos"
-        if videos_dir.exists():
-            for video in videos_dir.glob("*.webm"):
-                if clean_title in video.name:
-                    artifacts['videos'].append(video)
+        if scenario_video_dir.exists() and scenario_video_dir.is_dir():
+            # Get the main scenario video file
+            video_files = list(scenario_video_dir.glob(f"{clean_title}.webm"))
+            if video_files:
+                artifacts['videos'] = video_files
         
         # Find traces
         traces_dir = self.reports_dir / "traces" 
@@ -234,6 +217,20 @@ class PresentationReportGenerator:
         }
         .steps-with-evidence {
             padding: 20px;
+        }
+        .scenario-video {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+        .scenario-video h4 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        .video-container {
+            margin: 15px 0;
         }
         .step-screenshot { 
             text-align: center; 
@@ -406,9 +403,24 @@ class PresentationReportGenerator:
                 <div class="scenario-title">{scenario['title']}</div>
                 <span class="feature-tag">{scenario['feature']}</span>
             </div>
-            
-            <div class="steps-with-evidence">
 """)
+            
+            # Show video at the top if available
+            if artifacts['videos']:
+                html_parts.append('            <div class="scenario-video">\n')
+                html_parts.append('                <h4>📹 Complete Scenario Recording:</h4>\n')
+                for video in artifacts['videos']:
+                    rel_path = video.relative_to(self.reports_dir)
+                    html_parts.append(f"""                <div class="video-container">
+                    <video controls width="100%" style="max-width: 800px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <source src="{rel_path}" type="video/webm">
+                        <p>Your browser doesn't support HTML5 video. <a href="{rel_path}">Download the video</a> instead.</p>
+                    </video>
+                </div>
+""")
+                html_parts.append('            </div>\n')
+            
+            html_parts.append('            <div class="steps-with-evidence">\n')
             
             # Intersperse steps with screenshots
             for step_index, step in enumerate(scenario['steps']):
@@ -438,27 +450,16 @@ class PresentationReportGenerator:
             
             html_parts.append('            </div>\n')
             
-            # Additional artifacts (videos, traces) at the end
-            html_parts.append('            <div class="additional-artifacts">\n')
+            # Additional artifacts (traces only - videos are shown at top)
+            if artifacts['traces']:
+                html_parts.append('            <div class="additional-artifacts">\n')
+                html_parts.append('                <h4>Debug Traces:</h4>\n')
+                for trace in artifacts['traces']:
+                    rel_path = trace.relative_to(self.reports_dir)
+                    html_parts.append(f'                <a href="{rel_path}" class="trace-link">View Detailed Trace</a>\n')
+                html_parts.append('            </div>\n')
             
-            if artifacts['videos'] or artifacts['traces']:
-                html_parts.append('                <h4>Additional Evidence:</h4>\n')
-                
-                if artifacts['videos']:
-                    html_parts.append('                <h4>Video Recordings:</h4>\n')
-                    for video in artifacts['videos']:
-                        rel_path = video.relative_to(self.reports_dir)
-                        html_parts.append(f'                <a href="{rel_path}" class="video-link">Watch Full Test Run</a>\n')
-                
-                if artifacts['traces']:
-                    html_parts.append('                <h4>Debug Traces:</h4>\n')
-                    for trace in artifacts['traces']:
-                        rel_path = trace.relative_to(self.reports_dir)
-                        html_parts.append(f'                <a href="{rel_path}" class="trace-link">View Detailed Trace</a>\n')
-            else:
-                html_parts.append('                <div class="no-artifacts">Test completed - artifacts will be generated on next run</div>\n')
-            
-            html_parts.append('            </div>\n        </div>\n')
+            html_parts.append('        </div>\n')
         
         html_parts.append("""    </div>
 </body>
