@@ -44,15 +44,59 @@ class BasePage:
         except:
             return False
     
-    def take_screenshot(self, name: str) -> str:
-        """Take a screenshot and return the file path."""
-        from pathlib import Path
-        screenshot_dir = Path(__file__).parent.parent / "reports" / "screenshots"
-        screenshot_dir.mkdir(parents=True, exist_ok=True)
+    def take_screenshot(self, name: str, scenario_name: str = "", step_index: int = 0, step_text: str = "") -> str:
+        """Take a screenshot and return the file path.
         
-        screenshot_path = screenshot_dir / f"{name}.png"
-        self.page.screenshot(path=str(screenshot_path))
+        Args:
+            name: Step-specific name for the screenshot
+            scenario_name: Optional scenario name for directory organization
+            step_index: Step number (1-based) for proper ordering
+            step_text: BDD step text for descriptive filenames
+        """
+        from pathlib import Path
+        import re
+        
+        base_screenshots_dir = Path(__file__).parent.parent / "reports" / "screenshots"
+        
+        if scenario_name and step_index > 0:
+            # Hierarchical storage: scenario/step-NN-description.png
+            clean_scenario = self._clean_name_for_path(scenario_name)
+            scenario_dir = base_screenshots_dir / clean_scenario
+            scenario_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create descriptive filename from step text or fallback to name
+            if step_text:
+                clean_step = self._clean_name_for_path(step_text)
+                filename = f"step-{step_index:02d}-{clean_step}.png"
+            else:
+                clean_name = self._clean_name_for_path(name)
+                filename = f"step-{step_index:02d}-{clean_name}.png"
+                
+            screenshot_path = scenario_dir / filename
+        else:
+            # Fallback: unorganized flat storage
+            fallback_dir = base_screenshots_dir / "_unorganized"
+            fallback_dir.mkdir(parents=True, exist_ok=True)
+            
+            clean_name = self._clean_name_for_path(name)
+            filename = f"{clean_name}.png"
+            screenshot_path = fallback_dir / filename
+        
+        # Take full page screenshot instead of just viewport
+        self.page.screenshot(path=str(screenshot_path), full_page=True)
         return str(screenshot_path)
+    
+    def _clean_name_for_path(self, name: str) -> str:
+        """Clean a name for use in file paths - no spaces, safe characters only."""
+        import re
+        # Convert to lowercase, replace spaces with hyphens
+        clean = name.lower().replace(' ', '-').replace('_', '-')
+        # Remove non-alphanumeric characters except hyphens
+        clean = re.sub(r'[^a-z0-9-]', '', clean)
+        # Remove multiple consecutive hyphens
+        clean = re.sub(r'-+', '-', clean)
+        # Remove leading/trailing hyphens
+        return clean.strip('-')
     
     def wait_for_url_contains(self, text: str, timeout: int = 30000) -> None:
         """Wait for URL to contain specific text."""

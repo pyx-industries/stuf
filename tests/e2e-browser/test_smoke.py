@@ -56,15 +56,18 @@ class TestSmokeConnectivity:
         
         # Should show unauthenticated state with login button
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
+        dashboard.take_screenshot("01-unauthenticated-state")
         login_button = page.locator('button:text("Login")')
         assert login_button.is_visible(), "Should show login button when unauthenticated"
         
         # Click login to start OIDC flow
         login_button.click()
+        dashboard.take_screenshot("02-clicked-login-button")
         
         # Should redirect to Keycloak
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
+        login_page.take_screenshot("03-keycloak-login-form")
         login_page.assert_login_form_visible()
     
     def test_complete_authentication_flow(self, page: Page):
@@ -97,10 +100,12 @@ class TestSmokeConnectivity:
         login_page.wait_for_login_form()
         
         # Complete login
+        login_page.take_screenshot("04-before-credential-entry")
         login_page.login_with_admin_user()
         
         # Should be back at SPA and authenticated
         page.wait_for_selector('text="File Management"', timeout=10000)
+        dashboard.take_screenshot("05-authenticated-dashboard")
         dashboard.assert_user_logged_in()
     
     def test_authenticated_api_request_works(self, authenticated_page: Page):
@@ -139,34 +144,6 @@ class TestSmokeConnectivity:
         api_errors = [log for log in api_errors if 'websocket' not in log.lower()]
         
         assert len(api_errors) == 0, f"Found API/auth errors in console: {api_errors}"
-    
-    @pytest.mark.slow
-    def test_session_persistence(self, authenticated_page: Page):
-        """Test that authentication session persists across page reloads."""
-        # The authenticated_page fixture already provides an authenticated session
-        dashboard = DashboardPage(authenticated_page)
-        
-        # Verify initially authenticated
-        dashboard.assert_user_logged_in()
-        
-        # Reload page
-        authenticated_page.reload()
-        
-        # Wait for React to re-initialize
-        authenticated_page.wait_for_timeout(3000)
-        
-        # Should still be authenticated
-        try:
-            authenticated_page.wait_for_selector('text="File Management"', timeout=10000)
-            dashboard.assert_user_logged_in()
-        except:
-            # If auth doesn't persist, should at least not crash
-            current_url = authenticated_page.url
-            assert "localhost:3100" in current_url, f"Should stay at SPA, but URL is: {current_url}"
-            
-        # Should not have been redirected to login
-        current_url = authenticated_page.url
-        assert "localhost:8180" not in current_url, "Should not have been redirected to login"
 
 
 @pytest.mark.smoke

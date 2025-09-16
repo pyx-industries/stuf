@@ -34,6 +34,7 @@ help:
 	@echo "  test-e2e-browser-debug     Run browser tests with debugging"
 	@echo "  test-e2e-browser-clean     Clean browser test artifacts"
 	@echo "  test-e2e-browser-report    Open browser test report"
+	@echo "  test-e2e-browser-presentation  Generate stakeholder presentation from test artifacts"
 	@echo ""
 	@echo "Usage: make <target>"
 	@echo "Example: make test-unit"
@@ -65,7 +66,7 @@ clean:
 
 # Test targets
 .PHONY: test test-unit test-integration test-api-e2e test-e2e-browser test-e2e test-complete test-cov
-.PHONY: test-e2e-browser-env-up test-e2e-browser-env-down test-e2e-browser-env-logs test-e2e-browser-clean test-e2e-browser-report test-e2e-browser-debug
+.PHONY: test-e2e-browser-env-up test-e2e-browser-env-down test-e2e-browser-env-logs test-e2e-browser-clean test-e2e-browser-report test-e2e-browser-debug test-e2e-browser-presentation
 
 # Run unit tests only (fast)
 test-unit:
@@ -111,6 +112,11 @@ test-e2e-browser-clean:
 test-e2e-browser-report:
 	@echo "Opening browser E2E test report..."
 	@tests/run.sh report
+
+test-e2e-browser-presentation:
+	@echo "Generating stakeholder presentation from E2E test artifacts..."
+	@cd tests/e2e-browser && python generate_presentation_report.py
+	@echo "Presentation generated at: tests/e2e-browser/reports/stakeholder_presentation.html"
 
 # Combined E2E tests (both API and browser)
 test-e2e:

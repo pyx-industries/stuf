@@ -44,8 +44,8 @@ PLAYWRIGHT_CONFIG = {
                 "browser_name": "chromium",
                 "headless": True,  # Can be overridden with --headed flag
                 "viewport": {"width": 1280, "height": 720},
-                "screenshot": "only-on-failure",
-                "video": "retain-on-failure",
+                "screenshot": "on",  # Always capture screenshots for presentation
+                "video": "on",  # Always record videos for stakeholder presentations
                 "trace": "retain-on-failure",
                 
                 # Artifact paths
@@ -67,8 +67,8 @@ PLAYWRIGHT_CONFIG = {
                 "browser_name": "firefox",
                 "headless": True,
                 "viewport": {"width": 1280, "height": 720},
-                "screenshot": "only-on-failure",
-                "video": "retain-on-failure",
+                "screenshot": "on",  # Always capture screenshots for presentation
+                "video": "on",  # Always record videos for stakeholder presentations
                 "trace": "retain-on-failure",
                 
                 # Artifact paths
@@ -86,8 +86,8 @@ PLAYWRIGHT_CONFIG = {
         }
     ],
     
-    # Global setup for authentication
-    "global_setup": str(TESTS_DIR / "global-setup.py"),
+    # Global setup disabled - tests use live auth via authenticated_page fixture
+    # "global_setup": str(TESTS_DIR / "global-setup.py"),
     
     # Retry configuration
     "retries": 1,  # Retry once on failure

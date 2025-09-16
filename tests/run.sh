@@ -254,9 +254,7 @@ run_tests() {
     # Navigate to E2E test directory
     cd "$E2E_DIR"
     
-    # Run global setup first (authentication)
-    log_info "Running global setup (authentication)..."
-    python global-setup.py
+    # Global setup removed - tests use live auth via authenticated_page fixture
     
     # Run tests
     log_info "Running tests with pytest..."
