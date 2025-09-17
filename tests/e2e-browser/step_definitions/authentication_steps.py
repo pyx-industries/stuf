@@ -1,6 +1,5 @@
 """Authentication step definitions for BDD tests."""
 
-import pytest
 from pytest_bdd import given, when, then, parsers
 from playwright.sync_api import Page
 
@@ -25,7 +24,9 @@ def navigate_to_application(page: Page, bdd_screenshot_helper):
     """Navigate to the STUF application."""
     dashboard = DashboardPage(page)
     dashboard.navigate_to()
-    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "application-loaded", "Given I navigate to the STUF application")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "application-loaded", "Given I navigate to the STUF application"
+    )
 
 
 @given("I am not authenticated")
@@ -33,32 +34,39 @@ def not_authenticated(page: Page):
     """Ensure user is not authenticated by clearing storage state."""
     # First navigate to have localStorage access (same pattern as working smoke tests)
     from pages.dashboard_page import DashboardPage
+
     dashboard = DashboardPage(page)
     dashboard.navigate_to()
-    
+
     # Clear any existing authentication state (after navigating to have localStorage access)
     page.context.clear_cookies()
     try:
         page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
-    except:
+    except Exception:
         # If localStorage access fails, just continue
         pass
 
 
 @given("I am logged in as an admin user")
-def logged_in_as_admin(authenticated_page: Page):
+def logged_in_as_admin(authenticated_page: Page, bdd_screenshot_helper):
     """Use the authenticated_page fixture which handles login."""
     dashboard = DashboardPage(authenticated_page)
     # Use the same approach as working smoke tests - wait for content, not URL
     authenticated_page.wait_for_selector('text="File Management"', timeout=10000)
     dashboard.assert_user_logged_in()
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "logged-in-as-admin", "Given I am logged in as an admin user"
+    )
 
 
 @given("I am on the dashboard")
-def on_dashboard(page: Page):
+def on_dashboard(authenticated_page: Page, bdd_screenshot_helper):
     """Ensure we are on the dashboard."""
-    dashboard = DashboardPage(page)
+    dashboard = DashboardPage(authenticated_page)
     dashboard.assert_on_dashboard()
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "on-dashboard", "And I am on the dashboard"
+    )
 
 
 @when("I am redirected to the login page")
@@ -66,61 +74,112 @@ def redirected_to_login(page: Page, bdd_screenshot_helper):
     """Trigger and wait for redirect to login page."""
     # First check if we need to click login (not authenticated)
     page.wait_for_timeout(2000)  # Let React load
-    
+
     try:
         # Look for authentication required state
         page.wait_for_selector('text="Authentication Required"', timeout=5000)
         # Click login button to trigger redirect
         login_button = page.locator('button:text("Login")')
         login_button.click()
-    except:
+    except Exception:
         # Might already be redirected or in a different state
         pass
-    
+
     # Now wait for the actual login form
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "redirected-to-login", "When I am redirected to the login page")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "redirected-to-login", "When I am redirected to the login page"
+    )
 
 
 @when("I enter valid admin credentials")
 def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
     """Enter valid admin credentials."""
     login_page = LoginPage(page)
-    login_page.fill_username("admin@example.com")
-    login_page.fill_password("password")
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "credentials-entered", "And I enter valid admin credentials")
+
+    # Use more explicit interaction - click and type rather than just fill
+    page.click('input[name="username"]')
+    page.type('input[name="username"]', "admin@example.com")
+
+    page.click('input[name="password"]')
+    page.type('input[name="password"]', "password")
+
+    # Wait for visual updates to complete
+    page.wait_for_timeout(1000)
+
+    # Verify both fields show content (username text, password asterisks)
+    page.wait_for_function("""
+        () => {
+            const usernameInput = document.querySelector('input[name="username"]');
+            const passwordInput = document.querySelector('input[name="password"]');
+            return usernameInput && passwordInput && 
+                   usernameInput.value.length > 0 && 
+                   passwordInput.value.length > 0;
+        }
+    """)
+
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "credentials-entered", "And I enter valid admin credentials"
+    )
 
 
 @when("I enter invalid credentials")
 def enter_invalid_credentials(page: Page, bdd_screenshot_helper):
     """Enter invalid credentials."""
     login_page = LoginPage(page)
-    login_page.fill_username("invalid@example.com")
-    login_page.fill_password("wrongpassword")
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "invalid-credentials-entered", "And I enter invalid credentials")
+
+    # Use more explicit interaction - click and type rather than just fill
+    page.click('input[name="username"]')
+    page.type('input[name="username"]', "invalid@example.com")
+
+    page.click('input[name="password"]')
+    page.type('input[name="password"]', "wrongpassword")
+
+    # Wait for visual updates to complete
+    page.wait_for_timeout(1000)
+
+    # Verify both fields show content (username text, password asterisks)
+    page.wait_for_function("""
+        () => {
+            const usernameInput = document.querySelector('input[name="username"]');
+            const passwordInput = document.querySelector('input[name="password"]');
+            return usernameInput && passwordInput && 
+                   usernameInput.value.length > 0 && 
+                   passwordInput.value.length > 0;
+        }
+    """)
+
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "invalid-credentials-entered", "And I enter invalid credentials"
+    )
 
 
 @when("I click the login button")
 def click_login_button(page: Page, bdd_screenshot_helper):
     """Click the SPA login button to start OIDC flow."""
     dashboard = DashboardPage(page)
-    
+
     # Should be at SPA showing authentication required
     page.wait_for_selector('text="Authentication Required"', timeout=10000)
-    
+
     # Click the SPA Login button
     login_button = page.locator('button:text("Login")')
     assert login_button.is_visible(), "SPA Login button should be visible"
     login_button.click()
-    
-    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "clicked-login-button", "When I click the login button")
+
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "clicked-login-button", "When I click the login button"
+    )
 
 
 @when("I click the logout button")
-def click_logout_button(page: Page):
+def click_logout_button(authenticated_page: Page, bdd_screenshot_helper):
     """Click the logout button."""
-    dashboard = DashboardPage(page)
+    dashboard = DashboardPage(authenticated_page)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "before-logout", "When I click the logout button"
+    )
     dashboard.click_logout()
 
 
@@ -136,21 +195,21 @@ def login_as_user_type(page: Page, user_type: str):
     """Log in as a specific type of user."""
     # First trigger redirect to login page (same as working login tests)
     page.wait_for_timeout(2000)  # Let React load
-    
+
     try:
         # Look for authentication required state
         page.wait_for_selector('text="Authentication Required"', timeout=5000)
         # Click login button to trigger redirect
         login_button = page.locator('button:text("Login")')
         login_button.click()
-    except:
+    except Exception:
         # Might already be redirected or in a different state
         pass
-    
+
     # Now wait for the actual login form and complete login
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
-    
+
     if user_type.lower() == "regular":
         login_page.fill_username("testuser@example.com")
         login_page.fill_password("password")
@@ -165,7 +224,7 @@ def login_as_user_type(page: Page, user_type: str):
         login_page.click_login()
     else:
         raise ValueError(f"Unknown user type: {user_type}")
-    
+
     # Wait for redirect back to SPA
     page.wait_for_timeout(3000)
 
@@ -175,30 +234,40 @@ def redirected_back_to_application(page: Page, bdd_screenshot_helper):
     """Verify redirect back to the application."""
     # Wait for the OIDC callback process to complete
     page.wait_for_timeout(3000)
-    
+
     # Check if we're back at the SPA (should contain localhost:3100)
     current_url = page.url
     if "localhost:3100" not in current_url:
         # If not back yet, wait a bit more for the redirect
         page.wait_for_timeout(5000)
         current_url = page.url
-    
+
+    assert (
+        "localhost:3100" in current_url
+    ), f"Should be back at SPA, but URL is: {current_url}"
+
+    # Take screenshot AFTER verifying we're back at the SPA
     from pages.base_page import BasePage
+
     base_page = BasePage(page)
-    bdd_screenshot_helper.take_bdd_screenshot(base_page, "redirected-back-to-spa", "Then I should be redirected back to the application")
-    
-    assert "localhost:3100" in current_url, f"Should be back at SPA, but URL is: {current_url}"
+    bdd_screenshot_helper.take_bdd_screenshot(
+        base_page,
+        "redirected-back-to-spa",
+        "Then I should be redirected back to the application",
+    )
 
 
 @then("I should see the dashboard")
 def see_dashboard(page: Page, bdd_screenshot_helper):
     """Verify the dashboard is visible."""
     dashboard = DashboardPage(page)
-    
+
     # Use the same approach as the working smoke tests
     # Wait for the actual dashboard content, not URL navigation
     page.wait_for_selector('text="File Management"', timeout=10000)
-    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "dashboard-loaded", "And I should see the dashboard")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "dashboard-loaded", "And I should see the dashboard"
+    )
     dashboard.assert_on_dashboard()
 
 
@@ -209,14 +278,22 @@ def logged_in_as_authenticated_user(page: Page, bdd_screenshot_helper):
     # First verify authentication state
     dashboard.assert_user_logged_in()
     # Then take screenshot showing the authenticated state
-    bdd_screenshot_helper.take_bdd_screenshot(dashboard, "authenticated-success", "And I should be logged in as an authenticated user")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "authenticated-success",
+        "And I should be logged in as an authenticated user",
+    )
 
 
 @then("I should see an authentication error message")
 def see_authentication_error(page: Page, bdd_screenshot_helper):
     """Verify authentication error message is displayed."""
     login_page = LoginPage(page)
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "authentication-error", "Then I should see an authentication error message")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page,
+        "authentication-error",
+        "Then I should see an authentication error message",
+    )
     login_page.assert_error_message_visible()
 
 
@@ -229,46 +306,76 @@ def remain_on_login_page(page: Page):
 
 
 @then("I should be logged out")
-def should_be_logged_out(page: Page):
+def should_be_logged_out(authenticated_page: Page, bdd_screenshot_helper):
     """Verify user is logged out."""
     # After logout, accessing the app should redirect to login
-    dashboard = DashboardPage(page)
+    dashboard = DashboardPage(authenticated_page)
     dashboard.navigate_to()
-    
+
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should now show unauthenticated state
     try:
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
-    except:
+        authenticated_page.wait_for_selector(
+            'text="Authentication Required"', timeout=10000
+        )
+    except Exception:
         # Alternative: should show login button
-        login_button = page.locator('button:text("Login")')
-        assert login_button.is_visible(), "Should show either auth required or login button after logout"
+        login_button = authenticated_page.locator('button:text("Login")')
+        assert (
+            login_button.is_visible()
+        ), "Should show either auth required or login button after logout"
+
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "logout-verified", "Then I should be logged out"
+    )
 
 
 @then("I should be redirected to the login page")
-def redirected_to_login_page(page: Page):
+def redirected_to_login_page(page: Page, bdd_screenshot_helper):
     """Verify redirect to login page."""
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should show unauthenticated state indicating need to login
     try:
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
-    except:
+    except Exception:
         # Alternative: should show login button
         login_button = page.locator('button:text("Login")')
-        assert login_button.is_visible(), "Should show either auth required or login button when redirected to login"
+        assert (
+            login_button.is_visible()
+        ), "Should show either auth required or login button when redirected to login"
+
+    from pages.dashboard_page import DashboardPage
+
+    dashboard = DashboardPage(page)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "redirected-to-login",
+        "Then I should be redirected to the login page",
+    )
 
 
 @then("I should be redirected to the login page when accessing protected content")
-def redirected_to_login_when_accessing_protected(page: Page):
+def redirected_to_login_when_accessing_protected(
+    authenticated_page: Page, bdd_screenshot_helper
+):
     """Verify redirect to login when accessing protected content."""
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should show unauthenticated state indicating need to login
     try:
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
-    except:
+        authenticated_page.wait_for_selector(
+            'text="Authentication Required"', timeout=10000
+        )
+    except Exception:
         # Alternative: should show login button
-        login_button = page.locator('button:text("Login")')
+        login_button = authenticated_page.locator('button:text("Login")')
         assert login_button.is_visible(), "Should show either auth required or login button when accessing protected content"
+
+    dashboard = DashboardPage(authenticated_page)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "protected-content-redirect",
+        "And I should be redirected to the login page when accessing protected content",
+    )
 
 
 @then("I should still see the dashboard")
@@ -288,9 +395,9 @@ def see_login_form(page: Page):
             login_button.click()
             # Wait for redirect to Keycloak
             page.wait_for_timeout(2000)
-    except:
+    except Exception:
         pass
-    
+
     # Now verify we're at the Keycloak login form
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
@@ -314,18 +421,23 @@ def redirected_to_idp_login(page: Page, bdd_screenshot_helper):
     redirected_to_login(page, bdd_screenshot_helper)
     # Additional screenshot with IDP-specific naming
     from pages.login_page import LoginPage
+
     login_page = LoginPage(page)
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "redirected-to-idp", "And I am redirected to the IDP login page")
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "redirected-to-idp", "And I am redirected to the IDP login page"
+    )
 
 
-@when("I click the IDP login button")  
+@when("I click the IDP login button")
 def click_idp_login_button(page: Page, bdd_screenshot_helper):
     """Click the IDP login button to submit credentials."""
     login_page = LoginPage(page)
-    bdd_screenshot_helper.take_bdd_screenshot(login_page, "before-login-click", "And I click the IDP login button")
     login_page.click_login()
-    # Wait a moment for navigation to start
+    # Wait for navigation to start and take screenshot showing the consequence
     page.wait_for_timeout(1000)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "after-login-click", "And I click the IDP login button"
+    )
 
 
 @then("I should see the dashboard appropriate for my role")
@@ -334,5 +446,3 @@ def see_role_appropriate_dashboard(page: Page):
     dashboard = DashboardPage(page)
     dashboard.assert_on_dashboard()
     # Role-specific assertions could be added here based on the UI
-
-
