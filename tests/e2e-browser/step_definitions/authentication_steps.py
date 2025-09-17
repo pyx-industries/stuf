@@ -30,7 +30,7 @@ def navigate_to_application(page: Page, bdd_screenshot_helper):
 
 
 @given("I am not authenticated")
-def not_authenticated(page: Page):
+def not_authenticated(page: Page, bdd_screenshot_helper):
     """Ensure user is not authenticated by clearing storage state."""
     # First navigate to have localStorage access (same pattern as working smoke tests)
     from pages.dashboard_page import DashboardPage
@@ -45,6 +45,12 @@ def not_authenticated(page: Page):
     except Exception:
         # If localStorage access fails, just continue
         pass
+
+    # Wait for the page to show unauthenticated state
+    page.wait_for_timeout(2000)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard, "unauthenticated-state", "Given I am not authenticated"
+    )
 
 
 @given("I am logged in as an admin user")
@@ -184,14 +190,22 @@ def click_logout_button(authenticated_page: Page, bdd_screenshot_helper):
 
 
 @when("I try to access the application directly")
-def access_application_directly(page: Page):
+def access_application_directly(page: Page, bdd_screenshot_helper):
     """Try to access the application directly."""
     dashboard = DashboardPage(page)
     dashboard.navigate_to()
 
+    # Wait for the page to load and show the access attempt result
+    page.wait_for_timeout(2000)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "direct-access-attempt",
+        "When I try to access the application directly",
+    )
+
 
 @when(parsers.parse('I log in as a "{user_type}" user'))
-def login_as_user_type(page: Page, user_type: str):
+def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
     """Log in as a specific type of user."""
     # First trigger redirect to login page (same as working login tests)
     page.wait_for_timeout(2000)  # Let React load
@@ -213,14 +227,32 @@ def login_as_user_type(page: Page, user_type: str):
     if user_type.lower() == "regular":
         login_page.fill_username("testuser@example.com")
         login_page.fill_password("password")
+        # Take screenshot before clicking login to show the filled form
+        bdd_screenshot_helper.take_bdd_screenshot(
+            login_page,
+            f"login-form-filled-{user_type.lower()}",
+            f'When I log in as a "{user_type}" user',
+        )
         login_page.click_login()
     elif user_type.lower() == "admin":
         login_page.fill_username("admin@example.com")
         login_page.fill_password("password")
+        # Take screenshot before clicking login to show the filled form
+        bdd_screenshot_helper.take_bdd_screenshot(
+            login_page,
+            f"login-form-filled-{user_type.lower()}",
+            f'When I log in as a "{user_type}" user',
+        )
         login_page.click_login()
     elif user_type.lower() == "limited":
         login_page.fill_username("limiteduser@example.com")
         login_page.fill_password("password")
+        # Take screenshot before clicking login to show the filled form
+        bdd_screenshot_helper.take_bdd_screenshot(
+            login_page,
+            f"login-form-filled-{user_type.lower()}",
+            f'When I log in as a "{user_type}" user',
+        )
         login_page.click_login()
     else:
         raise ValueError(f"Unknown user type: {user_type}")
@@ -386,7 +418,7 @@ def still_see_dashboard(page: Page):
 
 
 @then("I should see the login form")
-def see_login_form(page: Page):
+def see_login_form(page: Page, bdd_screenshot_helper):
     """Verify login form is visible."""
     # If we're at the SPA authentication required state, click Login to go to Keycloak
     try:
@@ -403,14 +435,26 @@ def see_login_form(page: Page):
     login_page.wait_for_login_form()
     login_page.assert_login_form_visible()
 
+    # Take screenshot after login form is fully loaded and visible
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page, "login-form-visible", "And I should see the login form"
+    )
+
 
 @then("I should be successfully authenticated")
-def successfully_authenticated(page: Page):
+def successfully_authenticated(page: Page, bdd_screenshot_helper):
     """Verify successful authentication."""
     dashboard = DashboardPage(page)
     # Use the same approach as working smoke tests - wait for content, not URL
     page.wait_for_selector('text="File Management"', timeout=10000)
     dashboard.assert_user_logged_in()
+
+    # Take screenshot after successful authentication is verified
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "authentication-successful",
+        "Then I should be successfully authenticated",
+    )
 
 
 # IDP-agnostic step definitions
@@ -441,8 +485,15 @@ def click_idp_login_button(page: Page, bdd_screenshot_helper):
 
 
 @then("I should see the dashboard appropriate for my role")
-def see_role_appropriate_dashboard(page: Page):
+def see_role_appropriate_dashboard(page: Page, bdd_screenshot_helper):
     """Verify dashboard appropriate for user role is shown."""
     dashboard = DashboardPage(page)
     dashboard.assert_on_dashboard()
+
+    # Take screenshot showing the role-appropriate dashboard
+    bdd_screenshot_helper.take_bdd_screenshot(
+        dashboard,
+        "role-appropriate-dashboard",
+        "And I should see the dashboard appropriate for my role",
+    )
     # Role-specific assertions could be added here based on the UI
