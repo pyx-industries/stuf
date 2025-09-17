@@ -140,6 +140,32 @@ STUF can be run locally using Docker Compose for development and testing purpose
 - **API**: FastAPI backend service
 - **SPA**: React frontend application
 
+### Development Tools
+
+#### Pre-commit Hooks
+
+This project uses pre-commit hooks with ruff for code formatting and linting:
+
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+2. Install pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
+
+The hooks will automatically run ruff formatting and linting on changed files during commits. You can also run them manually:
+
+```bash
+# Run on all files
+pre-commit run --all-files
+
+# Run on staged files only
+pre-commit run
+```
+
 ### Stopping the Environment
 
 To stop the Docker Compose environment:
