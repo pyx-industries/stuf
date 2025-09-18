@@ -1,7 +1,12 @@
 import React from 'react';
 import { useAuth } from 'react-oidc-context';
 
-const ProtectedRoute = ({ children, fallback = null }) => {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, fallback = null }) => {
   const auth = useAuth();
 
   if (auth.isLoading) {

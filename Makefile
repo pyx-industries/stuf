@@ -3,7 +3,7 @@
 # Benefits: eliminates PlantUML system dependency, consistent build environment,
 # easier CI/CD integration, and no "works on my machine" issues
 
-.PHONY: help docs serve clean
+.PHONY: help docs serve clean spa-dev spa-prod spa-build spa-stop
 
 # Test command variable
 PYTEST = python -m pytest api/tests --tb=short
@@ -27,6 +27,12 @@ help:
 	@echo "  test-complete Run all tests including E2E (comprehensive)"
 	@echo "  test-cov      Run tests with coverage report"
 	@echo ""
+	@echo "SPA Development:"
+	@echo "  spa-dev       Start SPA in development mode with hot reloading"
+	@echo "  spa-prod      Start SPA in production mode"
+	@echo "  spa-build     Build SPA for production"
+	@echo "  spa-stop      Stop SPA services"
+	@echo ""
 	@echo "Browser E2E Environment:"
 	@echo "  test-e2e-browser-env-up    Start browser E2E services"
 	@echo "  test-e2e-browser-env-down  Stop browser E2E services"
@@ -37,7 +43,7 @@ help:
 	@echo "  test-e2e-browser-presentation  Generate stakeholder presentation from test artifacts"
 	@echo ""
 	@echo "Usage: make <target>"
-	@echo "Example: make test-unit"
+	@echo "Example: make spa-dev"
 
 # Generate documentation
 docs:
@@ -139,3 +145,29 @@ test-complete:
 test-cov:
 	@echo "Running tests with coverage..."
 	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
+
+# SPA development and production targets
+.PHONY: spa-dev spa-prod spa-build spa-stop
+
+# Start SPA in development mode with hot reloading
+spa-dev:
+	@echo "Starting SPA in development mode with hot reloading..."
+	@echo "This includes full environment (API, Keycloak, MinIO) + fast SPA reloading"
+	@echo "Access at: http://localhost:3000"
+	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+# Start SPA in production mode
+spa-prod:
+	@echo "Starting SPA in production mode..."
+	@echo "Access at: http://localhost:3000"
+	@docker-compose up --build spa
+
+# Build SPA for production
+spa-build:
+	@echo "Building SPA for production..."
+	@docker-compose build --target production spa
+
+# Stop SPA services
+spa-stop:
+	@echo "Stopping SPA services..."
+	@docker-compose down

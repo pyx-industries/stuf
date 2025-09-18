@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
 
 from api.main import app
-from api.storage.minio import MinioClient # Import for type hinting
+from api.storage.minio import MinioClient  # Import for type hinting
+
 
 @pytest.fixture
 def mock_minio_client():
@@ -15,7 +16,11 @@ def mock_minio_client():
     # Configure default successful responses
     mock.upload_file.return_value = "test/user/file.txt"
     mock.list_objects.return_value = SAMPLE_FILES
-    mock.download_file.return_value = (b"test content", {"original_filename": "test.txt"}, "text/plain")
+    mock.download_file.return_value = (
+        b"test content",
+        {"original_filename": "test.txt"},
+        "text/plain",
+    )
     mock.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
     mock.delete_object.return_value = True
 
@@ -27,12 +32,14 @@ def mock_minio_client():
     app.dependency_overrides.clear()
     app.dependency_overrides.update(original_overrides)
 
+
 @pytest.fixture
 def mock_keycloak_validation():
     """Mock Keycloak token validation for unit tests"""
-    with patch('api.auth.middleware.validate_token') as mock:
+    with patch("api.auth.middleware.validate_token") as mock:
         mock.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
         yield mock
+
 
 @pytest.fixture
 def unit_client(mock_minio_client, mock_keycloak_validation):
@@ -47,14 +54,16 @@ def unit_client(mock_minio_client, mock_keycloak_validation):
     with TestClient(app) as client:
         yield client
 
+
 @pytest.fixture
 def mock_user():
     """Mock authenticated user for unit tests"""
     from api.auth.middleware import User
+
     return User(
         username="testuser",
         email="testuser@example.com",
         full_name="Test User",
         roles=["user", "collection-test"],
-        active=True
+        active=True,
     )

@@ -10,181 +10,203 @@ from pages.login_page import LoginPage
 
 class TestSmokeConnectivity:
     """Basic smoke tests to verify SPA to API connectivity."""
-    
+
     def test_spa_loads(self, page: Page):
         """Test that the SPA loads successfully."""
         dashboard = DashboardPage(page)
         dashboard.navigate_to()
-        
+
         # Wait for React app to load
         page.wait_for_timeout(2000)
-        
+
         # Should either see the dashboard (if authenticated) or login prompt
         try:
             # Check if we're authenticated
             page.wait_for_selector('text="File Management"', timeout=5000)
-        except:
+        except Exception:
             # If not authenticated, should see auth required or be redirected
             auth_required = page.locator('text="Authentication Required"')
             login_button = page.locator('button:text("Login")')
-            assert auth_required.is_visible() or login_button.is_visible(), "Should show either auth required or login option"
-    
+            assert (
+                auth_required.is_visible() or login_button.is_visible()
+            ), "Should show either auth required or login option"
+
     def test_api_health_endpoint_accessible(self):
         """Test that the API health endpoint is accessible."""
         with httpx.Client() as client:
             response = client.get("http://localhost:8100/api/health", timeout=10.0)
             assert response.status_code == 200
-    
+
     def test_oidc_authentication_flow_starts(self, page: Page):
         """Test that OIDC authentication flow can start."""
         dashboard = DashboardPage(page)
         dashboard.navigate_to()
-        
+
         # Clear any existing auth state (after navigating to have localStorage access)
         page.context.clear_cookies()
         try:
             page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
-        except:
+        except Exception:
             # If localStorage access fails, just continue
             pass
-        
+
         # Reload page to see unauthenticated state
         page.reload()
-        
+
         # Wait for React to load
         page.wait_for_timeout(2000)
-        
+
         # Should show unauthenticated state with login button
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
         dashboard.take_screenshot("01-unauthenticated-state")
         login_button = page.locator('button:text("Login")')
-        assert login_button.is_visible(), "Should show login button when unauthenticated"
-        
+        assert (
+            login_button.is_visible()
+        ), "Should show login button when unauthenticated"
+
         # Click login to start OIDC flow
         login_button.click()
         dashboard.take_screenshot("02-clicked-login-button")
-        
+
         # Should redirect to Keycloak
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
         login_page.take_screenshot("03-keycloak-login-form")
         login_page.assert_login_form_visible()
-    
+
     def test_complete_authentication_flow(self, page: Page):
         """Test complete authentication flow from SPA to API."""
         # Start at SPA
         dashboard = DashboardPage(page)
         dashboard.navigate_to()
-        
+
         # Clear any existing auth state (after navigating to have localStorage access)
         page.context.clear_cookies()
         try:
             page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
-        except:
+        except Exception:
             # If localStorage access fails, just continue
             pass
-        
-        # Reload page to see unauthenticated state  
+
+        # Reload page to see unauthenticated state
         page.reload()
-        
+
         # Wait for React to load
         page.wait_for_timeout(2000)
-        
+
         # Should show unauthenticated state
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
         login_button = page.locator('button:text("Login")')
         login_button.click()
-        
+
         # Should redirect to login
         login_page = LoginPage(page)
         login_page.wait_for_login_form()
-        
+
         # Complete login
         login_page.take_screenshot("04-before-credential-entry")
         login_page.login_with_admin_user()
-        
+
         # Should be back at SPA and authenticated
         page.wait_for_selector('text="File Management"', timeout=10000)
         dashboard.take_screenshot("05-authenticated-dashboard")
         dashboard.assert_user_logged_in()
-    
+
     def test_authenticated_api_request_works(self, authenticated_page: Page):
         """Test that authenticated API requests work from the SPA."""
         # The authenticated_page fixture already provides an authenticated session
         dashboard = DashboardPage(authenticated_page)
-        
+
         # Verify we are authenticated
         dashboard.assert_user_logged_in()
-        
+
         # Check that there are no console errors related to API calls
         logs = []
         authenticated_page.on("console", lambda msg: logs.append(msg.text))
-        authenticated_page.on("pageerror", lambda error: logs.append(f"Page error: {error}"))
-        
+        authenticated_page.on(
+            "pageerror", lambda error: logs.append(f"Page error: {error}")
+        )
+
         # Reload to trigger API calls
         authenticated_page.reload()
-        
+
         # Wait for React to re-initialize
         authenticated_page.wait_for_timeout(3000)
-        
+
         # Check if still authenticated (auth might not persist across reload)
         try:
             authenticated_page.wait_for_selector('text="File Management"', timeout=5000)
-        except:
+        except Exception:
             # If not authenticated, that's also a valid test outcome
             # Just verify we're still at the SPA
             current_url = authenticated_page.url
-            assert "localhost:3100" in current_url, f"Should stay at SPA, but URL is: {current_url}"
-        
+            assert (
+                "localhost:3100" in current_url
+            ), f"Should stay at SPA, but URL is: {current_url}"
+
         # Check for authentication or API-related errors
-        api_errors = [log for log in logs if any(keyword in log.lower() 
-                     for keyword in ['401', '403', 'unauthorized', 'forbidden'])]
-        
+        api_errors = [
+            log
+            for log in logs
+            if any(
+                keyword in log.lower()
+                for keyword in ["401", "403", "unauthorized", "forbidden"]
+            )
+        ]
+
         # Filter out expected websocket errors
-        api_errors = [log for log in api_errors if 'websocket' not in log.lower()]
-        
+        api_errors = [log for log in api_errors if "websocket" not in log.lower()]
+
         assert len(api_errors) == 0, f"Found API/auth errors in console: {api_errors}"
 
 
 @pytest.mark.smoke
 class TestBasicFunctionality:
     """Basic functionality smoke tests."""
-    
+
     def test_dashboard_elements_load(self, authenticated_page: Page):
         """Test that basic dashboard elements load."""
         # The authenticated_page fixture already provides an authenticated session at the dashboard
         dashboard = DashboardPage(authenticated_page)
-        
+
         # Take screenshot for visual verification
         dashboard.take_dashboard_screenshot("smoke-test")
-        
+
         # Basic assertions that dashboard loaded
         dashboard.assert_user_logged_in()
-        
+
         # Verify we're at the right place
         current_url = authenticated_page.url
-        assert "localhost:3100" in current_url, f"Should be at SPA, but URL is: {current_url}"
-    
+        assert (
+            "localhost:3100" in current_url
+        ), f"Should be at SPA, but URL is: {current_url}"
+
     def test_logout_functionality(self, authenticated_page: Page):
         """Test basic logout functionality."""
         # The authenticated_page fixture already provides an authenticated session
         dashboard = DashboardPage(authenticated_page)
-        
+
         # Verify we start authenticated
         dashboard.assert_user_logged_in()
-        
+
         # Clear auth state to simulate logout (our simple SPA doesn't have logout button)
         authenticated_page.context.clear_cookies()
-        authenticated_page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
-        
+        authenticated_page.evaluate(
+            "() => { localStorage.clear(); sessionStorage.clear(); }"
+        )
+
         # Navigate to SPA again
         authenticated_page.goto("http://localhost:3100")
         authenticated_page.wait_for_timeout(2000)
-        
+
         # Should now show unauthenticated state
         try:
-            authenticated_page.wait_for_selector('text="Authentication Required"', timeout=10000)
-        except:
+            authenticated_page.wait_for_selector(
+                'text="Authentication Required"', timeout=10000
+            )
+        except Exception:
             # Alternative: should show login button
             login_button = authenticated_page.locator('button:text("Login")')
-            assert login_button.is_visible(), "Should show either auth required or login button after logout"
+            assert (
+                login_button.is_visible()
+            ), "Should show either auth required or login button after logout"
