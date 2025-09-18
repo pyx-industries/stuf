@@ -20,10 +20,9 @@ class TestFilesAPIIntegration:
         test_file = ("test.txt", io.BytesIO(test_content), "text/plain")
 
         response = integration_client.post(
-            "/api/files/upload",
+            "/api/files/test",
             files={"file": test_file},
             data={
-                "collection": "test",
                 "metadata": '{"description": "Integration test file"}',
             },
             headers=authenticated_headers,
@@ -42,9 +41,9 @@ class TestFilesAPIIntegration:
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
 
         response = integration_client.post(
-            "/api/files/upload",
+            "/api/files/test",
             files={"file": test_file},
-            data={"collection": "test", "metadata": "{}"},
+            data={"metadata": "{}"},
         )
 
         assert response.status_code == 401
@@ -56,9 +55,9 @@ class TestFilesAPIIntegration:
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
 
         response = integration_client.post(
-            "/api/files/upload",
+            "/api/files/test",
             files={"file": test_file},
-            data={"collection": "test", "metadata": "{}"},
+            data={"metadata": "{}"},
             headers=limited_user_headers,  # User only has access to "other" collection, not "test"
         )
 
@@ -76,7 +75,7 @@ class TestFilesAPIIntegration:
     ):
         """Test file listing with valid authentication"""
         response = integration_client.get(
-            "/api/files/list/test", headers=authenticated_headers
+            "/api/files/test", headers=authenticated_headers
         )
 
         assert response.status_code == 200
@@ -92,7 +91,7 @@ class TestFilesAPIIntegration:
 
     def test_list_files_without_auth(self, integration_client):
         """Test file listing without authentication"""
-        response = integration_client.get("/api/files/list/test")
+        response = integration_client.get("/api/files/test")
 
         assert response.status_code == 401
 
@@ -103,7 +102,7 @@ class TestFilesAPIIntegration:
         # The mock is already configured in conftest.py to return appropriate values
 
         response = integration_client.get(
-            "/api/files/download/test/user/test.txt", headers=authenticated_headers
+            "/api/files/test/user/test.txt", headers=authenticated_headers
         )
 
         assert response.status_code == 200
@@ -120,9 +119,9 @@ class TestFilesAPIIntegration:
         test_file = ("test.txt", io.BytesIO(b"content"), "text/plain")
 
         response = integration_client.post(
-            "/api/files/upload",
+            "/api/files/test",
             files={"file": test_file},
-            data={"collection": "test", "metadata": "invalid json"},
+            data={"metadata": "invalid json"},
             headers=authenticated_headers,
         )
 

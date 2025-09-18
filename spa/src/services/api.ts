@@ -83,10 +83,9 @@ class ApiService {
   async uploadFile(file: File, collection: string, metadata: Record<string, any> = {}) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('collection', collection);
     formData.append('metadata', JSON.stringify(metadata));
 
-    return this.request('/api/files/upload', {
+    return this.request(`/api/files/${collection}`, {
       method: 'POST',
       // Don't set any headers for FormData - let browser handle Content-Type
       body: formData
@@ -94,11 +93,11 @@ class ApiService {
   }
 
   async listFiles(collection: string) {
-    return this.request(`/api/files/list/${collection}`);
+    return this.request(`/api/files/${collection}`);
   }
 
   async downloadFile(collection: string, objectName: string) {
-    return this.request(`/api/files/download/${collection}/${objectName}`);
+    return this.request(`/api/files/${collection}/${objectName}`);
   }
 
   async getPresignedUrl(collection: string, objectName: string, expires: number = 3600) {
@@ -106,7 +105,7 @@ class ApiService {
   }
 
   async deleteFile(collection: string, objectName: string) {
-    return this.request(`/api/files/remove/${collection}?object_name=${encodeURIComponent(objectName)}`, {
+    return this.request(`/api/files/${collection}/${objectName}`, {
       method: 'DELETE'
     });
   }

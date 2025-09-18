@@ -18,13 +18,9 @@ help:
 	@echo "  clean         Remove generated PNG files and documentation site"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test          Run unit and integration tests (default, fast)"
-	@echo "  test-unit     Run only unit tests (fastest)"
-	@echo "  test-integration  Run only integration tests (medium speed)"
-	@echo "  test-api-e2e  Run API end-to-end tests (requires Docker services)"
-	@echo "  test-e2e-browser  Run browser end-to-end tests (requires Docker services)"
-	@echo "  test-e2e      Run all E2E tests (API + browser)"
-	@echo "  test-complete Run all tests including E2E (comprehensive)"
+	@echo "  test          Run fast tests (unit + integration)"
+	@echo "  test-e2e      Run end-to-end tests (API + browser)"
+	@echo "  test-all      Run all tests (fast + E2E)"
 	@echo "  test-cov      Run tests with coverage report"
 	@echo ""
 	@echo "SPA Development:"
@@ -33,14 +29,6 @@ help:
 	@echo "  spa-build     Build SPA for production"
 	@echo "  spa-stop      Stop SPA services"
 	@echo ""
-	@echo "Browser E2E Environment:"
-	@echo "  test-e2e-browser-env-up    Start browser E2E services"
-	@echo "  test-e2e-browser-env-down  Stop browser E2E services"
-	@echo "  test-e2e-browser-env-logs  Show browser E2E service logs"
-	@echo "  test-e2e-browser-debug     Run browser tests with debugging"
-	@echo "  test-e2e-browser-clean     Clean browser test artifacts"
-	@echo "  test-e2e-browser-report    Open browser test report"
-	@echo "  test-e2e-browser-presentation  Generate stakeholder presentation from test artifacts"
 	@echo ""
 	@echo "Usage: make <target>"
 	@echo "Example: make spa-dev"
@@ -67,79 +55,32 @@ clean:
 	@echo "Cleaning all generated files and artifacts..."
 	@rm -f img/*.png
 	@rm -rf site/
+	@rm -rf api/htmlcov/
+	@rm -f api/.coverage
 	@tests/run.sh clean
 	@echo "Clean complete."
 
 # Test targets
-.PHONY: test test-unit test-integration test-api-e2e test-e2e-browser test-e2e test-complete test-cov
-.PHONY: test-e2e-browser-env-up test-e2e-browser-env-down test-e2e-browser-env-logs test-e2e-browser-clean test-e2e-browser-report test-e2e-browser-debug test-e2e-browser-presentation
+.PHONY: test test-e2e test-all test-cov
 
-# Run unit tests only (fast)
-test-unit:
-	@echo "Running unit tests..."
-	@$(PYTEST) -m "unit"
-
-# Run integration tests (medium speed)
-test-integration:
-	@echo "Running integration tests..."
-	@$(PYTEST) -m "integration"
-
-# Run API E2E tests (renamed from test-e2e for clarity)
-test-api-e2e:
-	@echo "Running API E2E tests..."
-	@set -a; if [ -f .env ]; then source .env; fi; set +a; $(PYTEST) -m "e2e"
-
-# Browser E2E test environment management
-test-e2e-browser-env-up:
-	@echo "Starting browser E2E services..."
-	@tests/run.sh env-up
-
-test-e2e-browser-env-down:
-	@echo "Stopping browser E2E services..."
-	@tests/run.sh env-down
-
-test-e2e-browser-env-logs:
-	@echo "Showing browser E2E service logs..."
-	@tests/run.sh env-logs
-
-# Browser E2E testing
-test-e2e-browser:
-	@echo "Running browser E2E tests..."
-	@tests/run.sh test
-
-test-e2e-browser-debug:
-	@echo "Running browser E2E tests in debug mode..."
-	@tests/run.sh debug
-
-test-e2e-browser-clean:
-	@echo "Cleaning browser E2E artifacts..."
-	@tests/run.sh clean
-
-test-e2e-browser-report:
-	@echo "Opening browser E2E test report..."
-	@tests/run.sh report
-
-test-e2e-browser-presentation:
-	@echo "Generating stakeholder presentation from E2E test artifacts..."
-	@cd tests/e2e-browser && python generate_presentation_report.py
-	@echo "Presentation generated at: tests/e2e-browser/reports/stakeholder_presentation.html"
-
-# Combined E2E tests (both API and browser)
-test-e2e:
-	@echo "Running all E2E tests (API and browser)..."
-	@$(MAKE) test-api-e2e
-	@$(MAKE) test-e2e-browser
-
-# Run all tests except E2E (default)
+# Run fast tests (unit + integration) - default
 test:
-	@echo "Running unit and integration tests..."
+	@echo "Running fast tests (unit + integration)..."
 	@$(PYTEST) -m "not e2e"
 
-# Run all tests including both API and browser E2E (renamed from test-all)
-test-complete:
-	@echo "Running all tests (unit, integration, API E2E, browser E2E)..."
-	@$(PYTEST)
-	@$(MAKE) test-e2e-browser
+# Run end-to-end tests (API + browser) with coverage
+test-e2e:
+	@echo "Running end-to-end tests with coverage..."
+	@echo "Starting API E2E tests with coverage..."
+	@set -a; if [ -f .env ]; then source .env; fi; set +a; $(PYTEST) -m "e2e" --cov=api --cov-report=html:api/htmlcov --cov-report=term-missing
+	@echo "Starting browser E2E tests..."
+	@tests/run.sh test
+
+# Run all tests (fast + E2E)
+test-all:
+	@echo "Running all tests (fast + E2E)..."
+	@$(MAKE) test
+	@$(MAKE) test-e2e
 
 # Run tests with coverage
 test-cov:

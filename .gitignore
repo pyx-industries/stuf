@@ -26,3 +26,12 @@ __pycache__/
 tests/e2e-browser/reports/
 tests/e2e-browser/auth-storage-state.json
 tests/.venv/
+
+# SPA build artifacts
+spa/build/
+spa/dist/
+
+# Coverage reports
+api/htmlcov/
+api/.coverage
+.coverage
