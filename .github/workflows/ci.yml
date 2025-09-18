@@ -90,16 +90,30 @@ jobs:
           npm install
         fi
 
+    - name: Update system packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget gnupg
+
     - name: Install browser E2E test dependencies
       run: |
         pip install -r tests/e2e-browser/requirements.txt
         playwright install chromium
-        playwright install-deps chromium
+        sudo playwright install-deps chromium
+
+    - name: Verify Playwright installation
+      run: |
+        playwright --version
+        python -c "from playwright.sync_api import sync_playwright; print('Playwright Python binding OK')"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Debug Docker container status
+    - name: Run E2E tests
+      run: make test-e2e
+
+    - name: Debug Docker containers on failure
+      if: failure()
       run: |
         echo "=== Docker containers status ==="
         docker ps -a
@@ -112,17 +126,6 @@ jobs:
         docker logs --tail=20 e2e-browser-keycloak-e2e-1 || echo "Keycloak container not found"
         echo "--- MinIO logs (last 10 lines) ---"
         docker logs --tail=10 e2e-browser-minio-e2e-1 || echo "MinIO container not found"
-
-    - name: Test service connectivity directly
-      run: |
-        echo "=== Testing service endpoints ==="
-        curl -v http://localhost:8100/api/health || echo "API health check failed"
-        curl -v http://localhost:3100 || echo "SPA endpoint failed"
-        curl -v http://localhost:8180/health/ready || echo "Keycloak health check failed"
-        curl -v http://localhost:9000/minio/health/live || echo "MinIO health check failed"
-
-    - name: Run E2E tests
-      run: make test-e2e
 
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
