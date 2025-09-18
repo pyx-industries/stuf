@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider, WebStorageStateStore } from 'react-oidc-context';
 import App from './App';
+import './index.css';
 
 const oidcConfig = {
   authority: `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`,
@@ -11,8 +12,11 @@ const oidcConfig = {
   scope: 'openid stuf:access',
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
-  // Store auth state in sessionStorage to persist across page reloads
-  userStore: new WebStorageStateStore({ store: window.sessionStorage }),
+  // Use default storage (localStorage) - works fine for most cases
+  onSigninCallback: () => {
+    // Clean up URL after successful sign in
+    window.history.replaceState({}, document.title, window.location.pathname);
+  },
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

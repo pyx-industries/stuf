@@ -10,129 +10,134 @@ This script combines:
 Into a presentation-ready HTML report for non-technical stakeholders.
 """
 
-import json
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from datetime import datetime
 
 
 class PresentationReportGenerator:
     """Generate stakeholder-friendly presentation from E2E test artifacts."""
-    
+
     def __init__(self, base_dir: Path = None):
         """Initialize generator with base directory."""
         self.base_dir = base_dir or Path(__file__).parent
         self.reports_dir = self.base_dir / "reports"
         self.features_dir = self.base_dir / "features"
-        
+
     def parse_feature_files(self) -> List[Dict]:
         """Parse Gherkin feature files into structured data."""
         scenarios = []
-        
+
         for feature_file in self.features_dir.glob("*.feature"):
-            with open(feature_file, 'r') as f:
+            with open(feature_file, "r") as f:
                 content = f.read()
-                
+
             # Extract feature title and description
-            feature_match = re.search(r'Feature: (.+?)(?:\n|$)', content)
-            feature_title = feature_match.group(1).strip() if feature_match else "Unknown Feature"
-            
+            feature_match = re.search(r"Feature: (.+?)(?:\n|$)", content)
+            feature_title = (
+                feature_match.group(1).strip() if feature_match else "Unknown Feature"
+            )
+
             # Extract scenarios
-            scenario_blocks = re.findall(r'Scenario: (.+?)(?=\n  Scenario:|\n\nScenario:|\Z)', content, re.DOTALL)
-            
+            scenario_blocks = re.findall(
+                r"Scenario: (.+?)(?=\n  Scenario:|\n\nScenario:|\Z)", content, re.DOTALL
+            )
+
             for scenario_block in scenario_blocks:
-                lines = scenario_block.strip().split('\n')
+                lines = scenario_block.strip().split("\n")
                 scenario_title = lines[0].strip()
-                
+
                 steps = []
                 for line in lines[1:]:
                     line = line.strip()
-                    if line and (line.startswith('Given') or line.startswith('When') or 
-                               line.startswith('Then') or line.startswith('And')):
+                    if line and (
+                        line.startswith("Given")
+                        or line.startswith("When")
+                        or line.startswith("Then")
+                        or line.startswith("And")
+                    ):
                         steps.append(line)
-                
-                scenarios.append({
-                    'feature': feature_title,
-                    'title': scenario_title,
-                    'steps': steps,
-                    'file': feature_file.name
-                })
-        
+
+                scenarios.append(
+                    {
+                        "feature": feature_title,
+                        "title": scenario_title,
+                        "steps": steps,
+                        "file": feature_file.name,
+                    }
+                )
+
         return scenarios
-    
+
     def _clean_name_for_path(self, name: str) -> str:
         """Clean a name for use in file paths - no spaces, safe characters only."""
         # Convert to lowercase, replace spaces with hyphens
-        clean = name.lower().replace(' ', '-').replace('_', '-')
+        clean = name.lower().replace(" ", "-").replace("_", "-")
         # Remove non-alphanumeric characters except hyphens
-        clean = re.sub(r'[^a-z0-9-]', '', clean)
+        clean = re.sub(r"[^a-z0-9-]", "", clean)
         # Remove multiple consecutive hyphens
-        clean = re.sub(r'-+', '-', clean)
+        clean = re.sub(r"-+", "-", clean)
         # Remove leading/trailing hyphens
-        return clean.strip('-')
-    
+        return clean.strip("-")
+
     def _find_screenshot_for_step(self, screenshot_files: List, step_number: int):
         """Find the screenshot that corresponds to a specific step number."""
         for screenshot in screenshot_files:
             # Check if this screenshot is for the requested step number
             name = screenshot.stem
-            step_match = re.match(r'step-(\d+)', name)
+            step_match = re.match(r"step-(\d+)", name)
             if step_match and int(step_match.group(1)) == step_number:
                 return screenshot
             # Legacy format: check for step number at beginning
-            legacy_match = re.match(rf'.*{step_number:02d}', name)
+            legacy_match = re.match(rf".*{step_number:02d}", name)
             if legacy_match:
                 return screenshot
         return None
-    
+
     def find_artifacts_for_scenario(self, scenario_title: str) -> Dict:
         """Find screenshots, videos, and results for a scenario using BDD hierarchical storage."""
         # Clean scenario title for directory matching (same logic as BasePage._clean_name_for_path)
         clean_title = self._clean_name_for_path(scenario_title)
-        
-        artifacts = {
-            'screenshots': [],
-            'videos': [],
-            'traces': []
-        }
-        
+
+        artifacts = {"screenshots": [], "videos": [], "traces": []}
+
         # Find screenshots in BDD hierarchical structure
         bdd_screenshots_dir = self.reports_dir / "screenshots" / "bdd"
         scenario_dir = bdd_screenshots_dir / clean_title
-        
+
         if scenario_dir.exists() and scenario_dir.is_dir():
             # Get all step screenshots in the scenario directory
             screenshot_files = list(scenario_dir.glob("step-*.png"))
-            
+
             # Sort by step number
             def get_step_number(screenshot_path):
                 name = screenshot_path.stem
-                step_match = re.match(r'step-(\d+)', name)
+                step_match = re.match(r"step-(\d+)", name)
                 return int(step_match.group(1)) if step_match else 999
-            
+
             screenshot_files.sort(key=get_step_number)
-            artifacts['screenshots'] = screenshot_files
-        
+            artifacts["screenshots"] = screenshot_files
+
         # Find videos in BDD hierarchical structure
         bdd_videos_dir = self.reports_dir / "videos" / "bdd"
         scenario_video_dir = bdd_videos_dir / clean_title
-        
+
         if scenario_video_dir.exists() and scenario_video_dir.is_dir():
             # Get the main scenario video file
             video_files = list(scenario_video_dir.glob(f"{clean_title}.webm"))
             if video_files:
-                artifacts['videos'] = video_files
-        
+                artifacts["videos"] = video_files
+
         # Find traces
-        traces_dir = self.reports_dir / "traces" 
+        traces_dir = self.reports_dir / "traces"
         if traces_dir.exists():
             for trace in traces_dir.glob("*.zip"):
                 if clean_title in trace.name:
-                    artifacts['traces'].append(trace)
-        
+                    artifacts["traces"].append(trace)
+
         return artifacts
-    
+
     def generate_html_report(self, scenarios: List[Dict]) -> str:
         """Generate HTML presentation report."""
         html_parts = [
@@ -371,45 +376,52 @@ class PresentationReportGenerator:
         <div class="header">
             <h1>STUF E2E Test Results</h1>
             <p>Automated End-to-End Testing Demonstration</p>
-            <p>Generated: """ + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</p>
+            <p>Generated: """
+            + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            + """</p>
         </div>
         
         <div class="summary">
             <h3>Test Execution Summary</h3>
             <div class="stats">
                 <div class="stat">
-                    <div class="stat-number">""" + str(len(scenarios)) + """</div>
+                    <div class="stat-number">"""
+            + str(len(scenarios))
+            + """</div>
                     <div class="stat-label">Scenarios Tested</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-number">""" + str(len(set(s['feature'] for s in scenarios))) + """</div>
+                    <div class="stat-number">"""
+            + str(len(set(s["feature"] for s in scenarios)))
+            + """</div>
                     <div class="stat-label">Features Covered</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-number">""" + str(sum(len(s['steps']) for s in scenarios)) + """</div>
+                    <div class="stat-number">"""
+            + str(sum(len(s["steps"]) for s in scenarios))
+            + """</div>
                     <div class="stat-label">Test Steps</div>
                 </div>
             </div>
         </div>
 """
         ]
-        
+
         for scenario in scenarios:
-            artifacts = self.find_artifacts_for_scenario(scenario['title'])
-            
+            artifacts = self.find_artifacts_for_scenario(scenario["title"])
+
             html_parts.append(f"""
         <div class="scenario">
             <div class="scenario-header">
-                <div class="scenario-title">{scenario['title']}</div>
-                <span class="feature-tag">{scenario['feature']}</span>
+                <div class="scenario-title">{scenario["title"]}</div>
+                <span class="feature-tag">{scenario["feature"]}</span>
             </div>
 """)
-            
+
             # Show video at the top if available
-            if artifacts['videos']:
+            if artifacts["videos"]:
                 html_parts.append('            <div class="scenario-video">\n')
-                html_parts.append('                <h4>📹 Complete Scenario Recording:</h4>\n')
-                for video in artifacts['videos']:
+                for video in artifacts["videos"]:
                     rel_path = video.relative_to(self.reports_dir)
                     html_parts.append(f"""                <div class="video-container">
                     <video controls width="100%" style="max-width: 800px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
@@ -418,27 +430,31 @@ class PresentationReportGenerator:
                     </video>
                 </div>
 """)
-                html_parts.append('            </div>\n')
-            
+                html_parts.append("            </div>\n")
+
             html_parts.append('            <div class="steps-with-evidence">\n')
-            
+
             # Intersperse steps with screenshots
-            for step_index, step in enumerate(scenario['steps']):
-                step_class = 'step'
-                if step.startswith('Given'):
-                    step_class += ' step-given'
-                elif step.startswith('When'):
-                    step_class += ' step-when'
-                elif step.startswith('Then'):
-                    step_class += ' step-then'
-                
+            for step_index, step in enumerate(scenario["steps"]):
+                step_class = "step"
+                if step.startswith("Given"):
+                    step_class += " step-given"
+                elif step.startswith("When"):
+                    step_class += " step-when"
+                elif step.startswith("Then"):
+                    step_class += " step-then"
+
                 # Output step
-                html_parts.append(f'                <div class="{step_class}">{step}</div>\n')
-                
+                html_parts.append(
+                    f'                <div class="{step_class}">{step}</div>\n'
+                )
+
                 # Find corresponding screenshot for this step
-                step_screenshot = self._find_screenshot_for_step(artifacts['screenshots'], step_index + 1)
+                step_screenshot = self._find_screenshot_for_step(
+                    artifacts["screenshots"], step_index + 1
+                )
                 if step_screenshot:
-                    screenshot_name = step_screenshot.stem.replace('-', ' ').title()
+                    screenshot_name = step_screenshot.stem.replace("-", " ").title()
                     rel_path = step_screenshot.relative_to(self.reports_dir)
                     html_parts.append(f"""                <div class="step-screenshot">
                     <a href="{rel_path}" target="_blank" title="Click to view full resolution">
@@ -447,45 +463,49 @@ class PresentationReportGenerator:
                     <div class="screenshot-caption">Visual evidence for step {step_index + 1}</div>
                 </div>
 """)
-            
-            html_parts.append('            </div>\n')
-            
+
+            html_parts.append("            </div>\n")
+
             # Additional artifacts (traces only - videos are shown at top)
-            if artifacts['traces']:
+            if artifacts["traces"]:
                 html_parts.append('            <div class="additional-artifacts">\n')
-                html_parts.append('                <h4>Debug Traces:</h4>\n')
-                for trace in artifacts['traces']:
+                html_parts.append("                <h4>Debug Traces:</h4>\n")
+                for trace in artifacts["traces"]:
                     rel_path = trace.relative_to(self.reports_dir)
-                    html_parts.append(f'                <a href="{rel_path}" class="trace-link">View Detailed Trace</a>\n')
-                html_parts.append('            </div>\n')
-            
-            html_parts.append('        </div>\n')
-        
+                    html_parts.append(
+                        f'                <a href="{rel_path}" class="trace-link">View Detailed Trace</a>\n'
+                    )
+                html_parts.append("            </div>\n")
+
+            html_parts.append("        </div>\n")
+
         html_parts.append("""    </div>
 </body>
 </html>""")
-        
-        return ''.join(html_parts)
-    
+
+        return "".join(html_parts)
+
     def generate(self, output_file: str = "stakeholder_presentation.html") -> Path:
         """Generate the complete presentation report."""
         print("Parsing BDD feature files...")
         scenarios = self.parse_feature_files()
-        
-        print(f"Found {len(scenarios)} scenarios across {len(set(s['feature'] for s in scenarios))} features")
-        
+
+        print(
+            f"Found {len(scenarios)} scenarios across {len(set(s['feature'] for s in scenarios))} features"
+        )
+
         print("Generating HTML presentation...")
         html_content = self.generate_html_report(scenarios)
-        
+
         output_path = self.reports_dir / output_file
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
+
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        
+
         print(f"Presentation generated: {output_path}")
         print(f"Open in browser: file://{output_path.absolute()}")
-        
+
         return output_path
 
 
