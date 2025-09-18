@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
@@ -8,9 +8,7 @@ from domain.models import User
 from routers import files
 
 app = FastAPI(
-    title="STUF API",
-    description="Secure Transfer Upload Facility API",
-    version="0.1.0"
+    title="STUF API", description="Secure Transfer Upload Facility API", version="0.1.0"
 )
 
 # Add CORS middleware
@@ -25,21 +23,25 @@ app.add_middleware(
 # Include routers
 app.include_router(files.router, prefix="/api/files", tags=["files"])
 
+
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy", "service": "stuf-api"}
+
 
 @app.get("/api/info")
 def info():
     return {
         "name": "STUF API",
         "version": "0.1.0",
-        "description": "Secure Transfer Upload Facility API"
+        "description": "Secure Transfer Upload Facility API",
     }
+
 
 @app.get("/api/me")
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     import logging
+
     logger = logging.getLogger(__name__)
     logger.info(f"API /me called for user: {current_user.username}")
     logger.info(f"User collections: {current_user.collections}")
@@ -49,5 +51,5 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
-    
+
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

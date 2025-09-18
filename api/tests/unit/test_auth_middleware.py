@@ -4,7 +4,7 @@
 """
 Original unit tests would need to be updated to:
 1. Mock JWKS endpoint responses
-2. Test JWT signature verification 
+2. Test JWT signature verification
 3. Test collections-based authorization
 4. Handle new User model with collections attribute
 """

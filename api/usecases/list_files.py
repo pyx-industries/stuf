@@ -14,12 +14,12 @@ class ListFilesUseCase:
             raise InsufficientPermissionsError(
                 f"You don't have read access to collection: {request.collection}"
             )
-        
+
         try:
             # Use repository protocol to get domain objects directly
             domain_files = self.storage.list_files_in_collection(request.collection)
             return domain_files
-            
+
         except StorageError as e:
             raise FileListingError(f"Storage error during listing: {str(e)}")
         except Exception as e:
