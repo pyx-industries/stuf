@@ -1,0 +1,24 @@
+# Browser-based E2E testing dependencies for STUF
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# BDD testing with Gherkin support
+pytest-bdd>=6.1.0
+
+# Browser automation
+playwright>=1.39.0
+
+# Enhanced test reporting
+pytest-html>=4.1.0
+allure-pytest>=2.13.0
+
+# HTTP client for API testing
+httpx>=0.25.0
+
+# Test utilities
+pytest-xdist>=3.3.0  # Parallel test execution
+pytest-timeout>=2.1.0  # Test timeouts
+
+# Development utilities
+python-dotenv>=1.0.0  # Environment variable management

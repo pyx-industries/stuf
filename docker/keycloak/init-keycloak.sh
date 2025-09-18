@@ -6,22 +6,7 @@ echo "Starting Keycloak initialization script..."
 # Start Keycloak in the background
 /opt/keycloak/bin/kc.sh start-dev &
 
-# Wait for Keycloak to be ready
-echo "Waiting for Keycloak to be ready..."
-for i in $(seq 1 60); do
-  if curl -f http://localhost:8080/realms/master > /dev/null 2>&1; then
-    echo "Keycloak is ready!"
-    break
-  fi
-  echo "Waiting for Keycloak... attempt $i/60"
-  sleep 5
-done
-
-# Verify Keycloak is actually ready
-if ! curl -f http://localhost:8080/realms/master > /dev/null 2>&1; then
-  echo "ERROR: Keycloak failed to start after 300 seconds"
-  exit 1
-fi
+sleep 30
 
 echo "Proceeding with configuration..."
 

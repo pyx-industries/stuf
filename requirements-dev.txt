@@ -1,8 +1,8 @@
 aider-chat
 pytest
 pytest-cov
-black
-flake8
+pre-commit
+ruff
 mypy
 pytest-mock
 pytest-asyncio

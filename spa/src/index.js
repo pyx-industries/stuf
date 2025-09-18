@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider } from 'react-oidc-context';
+import { AuthProvider, WebStorageStateStore } from 'react-oidc-context';
 import App from './App';
 
 const oidcConfig = {
@@ -11,6 +11,8 @@ const oidcConfig = {
   scope: 'openid stuf:access',
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
+  // Store auth state in sessionStorage to persist across page reloads
+  userStore: new WebStorageStateStore({ store: window.sessionStorage }),
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
