@@ -94,9 +94,32 @@ jobs:
       run: |
         pip install -r tests/e2e-browser/requirements.txt
         playwright install chromium
+        playwright install-deps chromium
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+
+    - name: Debug Docker container status
+      run: |
+        echo "=== Docker containers status ==="
+        docker ps -a
+        echo "=== Docker container logs ==="
+        echo "--- API logs ---"
+        docker logs e2e-browser-api-e2e-1 || echo "API container not found"
+        echo "--- SPA logs ---"
+        docker logs e2e-browser-spa-e2e-1 || echo "SPA container not found"
+        echo "--- Keycloak logs (last 20 lines) ---"
+        docker logs --tail=20 e2e-browser-keycloak-e2e-1 || echo "Keycloak container not found"
+        echo "--- MinIO logs (last 10 lines) ---"
+        docker logs --tail=10 e2e-browser-minio-e2e-1 || echo "MinIO container not found"
+
+    - name: Test service connectivity directly
+      run: |
+        echo "=== Testing service endpoints ==="
+        curl -v http://localhost:8100/api/health || echo "API health check failed"
+        curl -v http://localhost:3100 || echo "SPA endpoint failed"
+        curl -v http://localhost:8180/health/ready || echo "Keycloak health check failed"
+        curl -v http://localhost:9000/minio/health/live || echo "MinIO health check failed"
 
     - name: Run E2E tests
       run: make test-e2e

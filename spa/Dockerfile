@@ -23,7 +23,7 @@ COPY src/ ./src/
 EXPOSE 3000
 
 # Use Vite dev server for development
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Production stage
 FROM node:20-alpine as production
@@ -55,4 +55,4 @@ RUN npm run build
 
 # Use Vite preview server for production
 EXPOSE 3000
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]
