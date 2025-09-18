@@ -70,9 +70,8 @@ jobs:
         pip install -r api/requirements.txt
 
     - name: Install SPA dependencies
-      run: |
-        cd spa
-        npm ci
+      working-directory: spa
+      run: npm ci
 
     - name: Install browser E2E test dependencies
       run: |
