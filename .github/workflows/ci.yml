@@ -99,7 +99,7 @@ jobs:
       run: |
         pip install -r tests/e2e-browser/requirements.txt
         playwright install chromium
-        sudo python -m playwright install-deps chromium
+        sudo $(which python) -m playwright install-deps chromium
 
     - name: Verify Playwright installation
       run: |
