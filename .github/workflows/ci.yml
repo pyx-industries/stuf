@@ -69,9 +69,26 @@ jobs:
         pip install -r requirements-dev.txt
         pip install -r api/requirements.txt
 
+    - name: Debug SPA directory
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Contents of spa directory:"
+        ls -la spa/
+        echo "Looking for package files:"
+        find . -name "package*.json" -type f
+
     - name: Install SPA dependencies
       working-directory: spa
-      run: npm ci
+      run: |
+        echo "Working directory contents:"
+        ls -la
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          echo "package-lock.json not found, using npm install"
+          npm install
+        fi
 
     - name: Install browser E2E test dependencies
       run: |
