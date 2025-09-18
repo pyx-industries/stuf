@@ -19,7 +19,6 @@ COPY index.html ./
 
 # Copy source code
 COPY src/ ./src/
-COPY public/ ./public/
 
 EXPOSE 3000
 
@@ -47,7 +46,6 @@ COPY index.html ./
 
 # Copy source code
 COPY src/ ./src/
-COPY public/ ./public/
 
 # Install dev dependencies needed for build
 RUN npm install vite @vitejs/plugin-react --save-dev
