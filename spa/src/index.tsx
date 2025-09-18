@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider, WebStorageStateStore } from 'react-oidc-context';
 import App from './App';
+import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 
 const oidcConfig = {
@@ -21,7 +22,9 @@ const oidcConfig = {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <AuthProvider {...oidcConfig}>
-    <App />
-  </AuthProvider>
+  <ThemeProvider defaultTheme="system" storageKey="stuf-ui-theme">
+    <AuthProvider {...oidcConfig}>
+      <App />
+    </AuthProvider>
+  </ThemeProvider>
 );

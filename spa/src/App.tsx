@@ -3,6 +3,7 @@ import { useAuth } from 'react-oidc-context';
 import AuthButton from './components/AuthButton';
 import ProtectedRoute from './components/ProtectedRoute';
 import Collections from './components/Collections';
+import { ThemeToggle } from './components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 
 function App() {
@@ -36,7 +37,10 @@ function App() {
           <h1 className="text-3xl font-bold mb-2">STUF - Secure Transfer Upload Facility</h1>
           <p className="text-muted-foreground">A secure platform for file uploads and transfers.</p>
         </div>
-        <AuthButton />
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <AuthButton />
+        </div>
       </header>
 
       <main>
