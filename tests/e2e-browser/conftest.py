@@ -176,8 +176,9 @@ def ensure_services_ready():
     print("\nChecking service health...")
 
     for url, name in services:
-        max_retries = 30
+        max_retries = 60  # Increased from 30 for CI environment
         retry_delay = 2
+        print(f"Checking {name} at {url}")
 
         for attempt in range(max_retries):
             try:
@@ -189,7 +190,7 @@ def ensure_services_ready():
             except Exception as e:
                 if attempt < max_retries - 1:
                     print(
-                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries})"
+                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries}) - Error: {e}"
                     )
                     time.sleep(retry_delay)
                 else:

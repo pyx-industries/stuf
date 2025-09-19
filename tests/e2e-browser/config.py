@@ -9,6 +9,7 @@ KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8180")
 
 
 # Extract just the hostname:port for URL matching (for both localhost and internal Docker names)
+# SLOP: this is a stupid function and it's not clear why it needs to exist.
 def get_spa_host():
     """Get SPA host for URL matching (e.g., 'localhost:3100' or 'spa-e2e:3000')"""
     if "spa-e2e:3000" in SPA_URL:
