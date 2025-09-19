@@ -2,6 +2,7 @@
 
 from playwright.sync_api import Page
 from .base_page import BasePage
+from config import KEYCLOAK_URL, SPA_HOST
 
 
 class LoginPage(BasePage):
@@ -9,7 +10,7 @@ class LoginPage(BasePage):
 
     def __init__(self, page: Page):
         super().__init__(page)
-        self.keycloak_url = "http://localhost:8180"
+        self.keycloak_url = KEYCLOAK_URL
 
     # Selectors
     USERNAME_INPUT = 'input[name="username"]'
@@ -27,8 +28,83 @@ class LoginPage(BasePage):
             timeout=timeout,
         )
 
+        # Debug: Print current URL and page content
+        current_url = self.page.url
+        print(f"DEBUG: Successfully redirected to Keycloak URL: {current_url}")
+
+        # Check if the page loaded properly
+        try:
+            page_title = self.page.title()
+            print(f"DEBUG: Page title: {page_title}")
+        except Exception as e:
+            print(f"DEBUG: Could not get page title: {e}")
+
+        # Wait for page to fully load (CSS/JS)
+        self.page.wait_for_load_state("networkidle", timeout=15000)
+
+        # Give extra time for JavaScript to execute and render form
+        self.page.wait_for_timeout(3000)
+
+        # Listen for JavaScript console errors
+        console_messages = []
+        self.page.on(
+            "console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}")
+        )
+        self.page.on(
+            "pageerror", lambda error: console_messages.append(f"PAGE ERROR: {error}")
+        )
+
         # Wait for login form elements
-        self.wait_for_selector(self.USERNAME_INPUT, timeout=10000)
+        try:
+            self.wait_for_selector(self.USERNAME_INPUT, timeout=15000)
+        except Exception as e:
+            print(f"DEBUG: Username input not found. Current URL: {self.page.url}")
+
+            # Check what input fields are actually present
+            all_inputs = self.page.query_selector_all("input")
+            print(f"DEBUG: Found {len(all_inputs)} input elements:")
+            for i, input_elem in enumerate(all_inputs):
+                try:
+                    input_type = input_elem.get_attribute("type")
+                    input_name = input_elem.get_attribute("name")
+                    input_id = input_elem.get_attribute("id")
+                    print(
+                        f"  Input {i}: type='{input_type}', name='{input_name}', id='{input_id}'"
+                    )
+                except Exception:
+                    print(f"  Input {i}: Could not get attributes")
+
+            # Print console errors if any
+            if console_messages:
+                print("DEBUG: Console messages during page load:")
+                for msg in console_messages:
+                    print(f"  {msg}")
+            else:
+                print("DEBUG: No console messages captured")
+
+            # Get the full page content to see the body
+            full_content = self.page.content()
+            print(f"DEBUG: Full page content length: {len(full_content)} characters")
+
+            # Look for body content specifically
+            if "<body" in full_content:
+                body_start = full_content.find("<body")
+                body_content = full_content[body_start : body_start + 2000]
+                print(f"DEBUG: Body content preview: {body_content}...")
+            else:
+                print("DEBUG: No body tag found!")
+                print(f"DEBUG: Page content preview: {full_content[:1500]}...")
+
+            # Try to take a screenshot for debugging
+            try:
+                screenshot_path = "/app/reports/debug-keycloak-login.png"
+                self.page.screenshot(path=screenshot_path)
+                print(f"DEBUG: Screenshot saved to {screenshot_path}")
+            except Exception as screenshot_error:
+                print(f"DEBUG: Could not take screenshot: {screenshot_error}")
+
+            raise e
+
         self.wait_for_selector(self.PASSWORD_INPUT, timeout=10000)
         self.wait_for_selector(self.LOGIN_BUTTON, timeout=10000)
 
@@ -54,11 +130,11 @@ class LoginPage(BasePage):
         # Wait for redirect back to the SPA (more flexible)
         try:
             # Wait for navigation away from Keycloak
-            self.page.wait_for_url("*localhost:3100*", timeout=15000)
+            self.page.wait_for_url(f"*{SPA_HOST}*", timeout=15000)
         except Exception:
             # Maybe already redirected - check current URL
             current_url = self.get_current_url()
-            if "localhost:3100" not in current_url:
+            if SPA_HOST not in current_url:
                 raise RuntimeError(
                     f"Login failed - not redirected to SPA. Current URL: {current_url}"
                 )
@@ -135,7 +211,7 @@ class LoginPage(BasePage):
 
     def wait_for_redirect_to_spa(self, timeout: int = 30000) -> None:
         """Wait for redirect back to the SPA after successful login."""
-        self.wait_for_url_contains("localhost:3100", timeout=timeout)
+        self.wait_for_url_contains(SPA_HOST, timeout=timeout)
         # Wait for the page to load completely
         self.wait_for_network_idle()
 

@@ -109,7 +109,11 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Run E2E tests
-      run: make test-e2e
+      run: |
+        cd tests/e2e-browser
+        docker-compose -f docker-compose.e2e-browser.yml up -d
+        docker-compose -f docker-compose.e2e-browser.yml --profile testing run --rm test-runner
+        docker-compose -f docker-compose.e2e-browser.yml down
 
     - name: Debug Docker containers on failure
       if: failure()

@@ -6,10 +6,9 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import sync_playwright
 
-# Test configuration - E2E ports
-BASE_URL = "http://localhost:3100"
-API_URL = "http://localhost:8100"
-KEYCLOAK_URL = "http://localhost:8180"
+# Use centralized configuration
+from config import SPA_URL as BASE_URL, API_URL, KEYCLOAK_URL, SPA_HOST
+
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
 
 
@@ -131,7 +130,7 @@ def authenticated_page(page):
         for attempt in range(max_attempts):
             page.wait_for_timeout(1000)
             current_url = page.url
-            if "localhost:3100" in current_url:
+            if SPA_HOST in current_url:
                 break
         else:
             raise RuntimeError(

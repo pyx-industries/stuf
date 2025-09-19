@@ -2,6 +2,7 @@
 
 from playwright.sync_api import Page, expect
 from typing import Optional
+from config import SPA_URL
 
 
 class BasePage:
@@ -10,7 +11,9 @@ class BasePage:
     def __init__(self, page: Page):
         """Initialize base page with Playwright page object."""
         self.page = page
-        self.base_url = "http://localhost:3100"
+        self.base_url = SPA_URL
+        # Debug: Print the actual URL being used
+        print(f"DEBUG: BasePage initialized with base_url: {self.base_url}")
 
     def navigate_to(self, path: str = "") -> None:
         """Navigate to a specific path within the application."""

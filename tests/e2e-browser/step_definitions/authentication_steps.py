@@ -5,6 +5,7 @@ from playwright.sync_api import Page
 
 from pages.login_page import LoginPage
 from pages.dashboard_page import DashboardPage
+from config import SPA_HOST
 
 
 @given("the STUF services are running")
@@ -267,16 +268,14 @@ def redirected_back_to_application(page: Page, bdd_screenshot_helper):
     # Wait for the OIDC callback process to complete
     page.wait_for_timeout(3000)
 
-    # Check if we're back at the SPA (should contain localhost:3100)
+    # Check if we're back at the SPA (should contain spa host)
     current_url = page.url
-    if "localhost:3100" not in current_url:
+    if SPA_HOST not in current_url:
         # If not back yet, wait a bit more for the redirect
         page.wait_for_timeout(5000)
         current_url = page.url
 
-    assert (
-        "localhost:3100" in current_url
-    ), f"Should be back at SPA, but URL is: {current_url}"
+    assert SPA_HOST in current_url, f"Should be back at SPA, but URL is: {current_url}"
 
     # Take screenshot AFTER verifying we're back at the SPA
     from pages.base_page import BasePage

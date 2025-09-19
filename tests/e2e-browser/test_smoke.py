@@ -6,6 +6,7 @@ from playwright.sync_api import Page
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
+from config import SPA_URL, API_URL, SPA_HOST
 
 
 class TestSmokeConnectivity:
@@ -34,7 +35,7 @@ class TestSmokeConnectivity:
     def test_api_health_endpoint_accessible(self):
         """Test that the API health endpoint is accessible."""
         with httpx.Client() as client:
-            response = client.get("http://localhost:8100/api/health", timeout=10.0)
+            response = client.get(f"{API_URL}/api/health", timeout=10.0)
             assert response.status_code == 200
 
     def test_oidc_authentication_flow_starts(self, page: Page):
@@ -141,7 +142,7 @@ class TestSmokeConnectivity:
             # Just verify we're still at the SPA
             current_url = authenticated_page.url
             assert (
-                "localhost:3100" in current_url
+                SPA_HOST in current_url
             ), f"Should stay at SPA, but URL is: {current_url}"
 
         # Check for authentication or API-related errors
@@ -177,9 +178,7 @@ class TestBasicFunctionality:
 
         # Verify we're at the right place
         current_url = authenticated_page.url
-        assert (
-            "localhost:3100" in current_url
-        ), f"Should be at SPA, but URL is: {current_url}"
+        assert SPA_HOST in current_url, f"Should be at SPA, but URL is: {current_url}"
 
     def test_logout_functionality(self, authenticated_page: Page):
         """Test basic logout functionality."""
@@ -196,7 +195,7 @@ class TestBasicFunctionality:
         )
 
         # Navigate to SPA again
-        authenticated_page.goto("http://localhost:3100")
+        authenticated_page.goto(SPA_URL)
         authenticated_page.wait_for_timeout(2000)
 
         # Should now show unauthenticated state

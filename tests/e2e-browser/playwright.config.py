@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 
 # Test environment URLs - these match the E2E Docker Compose setup
-BASE_URL = "http://localhost:3100"  # React SPA (E2E port)
-API_URL = "http://localhost:8100"  # FastAPI (E2E port)
-KEYCLOAK_URL = "http://localhost:8180"  # Keycloak (E2E port)
+BASE_URL = os.getenv("SPA_URL", "http://localhost:3100")  # React SPA (E2E port)
+API_URL = os.getenv("API_URL", "http://localhost:8100")  # FastAPI (E2E port)
+KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8180")  # Keycloak (E2E port)
 
 # Test directories
 TESTS_DIR = Path(__file__).parent
