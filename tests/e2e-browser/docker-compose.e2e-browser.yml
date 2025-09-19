@@ -82,6 +82,7 @@ services:
     build:
       context: ../../spa
       dockerfile: Dockerfile
+      target: development
     ports:
       - "3100:3000"  # Different port
     environment:
