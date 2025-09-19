@@ -74,7 +74,9 @@ test-e2e:
 	@echo "Starting API E2E tests with coverage..."
 	@set -a; if [ -f .env ]; then source .env; fi; set +a; $(PYTEST) -m "e2e" --cov=api --cov-report=html:api/htmlcov --cov-report=term-missing
 	@echo "Starting browser E2E tests..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml up -d && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm test-runner pytest --tb=short -x --html=reports/test-report.html --self-contained-html --alluredir=reports/allure-results . && docker compose -f docker-compose.e2e-browser.yml down
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml up -d && echo "Waiting for services to be ready..." && sleep 5 && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm test-runner pytest --tb=short -x --html=reports/test-report.html --self-contained-html --alluredir=reports/allure-results . && docker compose -f docker-compose.e2e-browser.yml down
+	# EXPERIMENTAL: Added sleep 5 to work around potential GitHub Actions Docker network timing issues
+	# TODO: Remove this sleep if it doesn't resolve the "Connection refused" error in CI
 
 # Run all tests (fast + E2E)
 test-all:
