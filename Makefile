@@ -95,20 +95,20 @@ spa-dev:
 	@echo "Starting SPA in development mode with hot reloading..."
 	@echo "This includes full environment (API, Keycloak, MinIO) + fast SPA reloading"
 	@echo "Access at: http://localhost:3000"
-	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 # Start SPA in production mode
 spa-prod:
 	@echo "Starting SPA in production mode..."
 	@echo "Access at: http://localhost:3000"
-	@docker-compose up --build spa
+	@docker compose up --build spa
 
 # Build SPA for production
 spa-build:
 	@echo "Building SPA for production..."
-	@docker-compose build --target production spa
+	@docker compose build --target production spa
 
 # Stop SPA services
 spa-stop:
 	@echo "Stopping SPA services..."
-	@docker-compose down
+	@docker compose down
