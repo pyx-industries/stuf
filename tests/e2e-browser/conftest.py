@@ -312,6 +312,33 @@ def ensure_services_ready():
 
     print("All services are ready!")
 
+    # DEBUG: Test Keycloak CORS headers directly from test-runner (bypasses browser CORS)
+    print("\nDEBUG: Testing Keycloak CORS configuration directly...")
+    try:
+        keycloak_url = f"{KEYCLOAK_URL}/realms/stuf/.well-known/openid_configuration"
+        print(f"DEBUG: Testing {keycloak_url}")
+
+        with httpx.Client(timeout=10.0) as client:
+            # Test with explicit Origin header like browser would send
+            headers = {
+                "Origin": BASE_URL,  # This is what browser sends: http://spa-e2e:3000
+                "User-Agent": "Test-Runner-Direct-Request",
+            }
+            response = client.get(keycloak_url, headers=headers)
+            print(f"DEBUG: Keycloak direct response status: {response.status_code}")
+            print(f"DEBUG: Keycloak response headers: {dict(response.headers)}")
+
+            # Check specifically for CORS headers
+            cors_headers = {
+                k: v
+                for k, v in response.headers.items()
+                if "access-control" in k.lower() or "cors" in k.lower()
+            }
+            print(f"DEBUG: Keycloak CORS headers: {cors_headers}")
+
+    except Exception as e:
+        print(f"DEBUG: Keycloak direct test failed: {e}")
+
 
 # BDD step fixtures for pytest-bdd
 @pytest.fixture

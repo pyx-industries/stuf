@@ -16,8 +16,16 @@ console.log('DEBUG OIDC: Environment variables:', {
 const authority = `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`;
 console.log('DEBUG OIDC: Authority URL:', authority);
 
-// DEBUG: Test Keycloak connectivity
-fetch(`${authority}/.well-known/openid_configuration`)
+// DEBUG: Test Keycloak connectivity with explicit headers logging
+const testRequest = new Request(`${authority}/.well-known/openid_configuration`);
+console.log('DEBUG OIDC: Request details:', {
+  url: testRequest.url,
+  origin_header: window.location.origin,
+  current_location: window.location.href,
+  user_agent: navigator.userAgent
+});
+
+fetch(testRequest)
   .then(response => {
     console.log('DEBUG OIDC: Keycloak connectivity test - Status:', response.status);
     if (response.ok) {
