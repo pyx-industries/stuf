@@ -174,20 +174,92 @@ def ensure_services_ready():
     ]
 
     print("\nChecking service health...")
+    print("DEBUG: Environment URLs:")
+    print(f"  BASE_URL (SPA): {BASE_URL}")
+    print(f"  API_URL: {API_URL}")
+    print(f"  KEYCLOAK_URL: {KEYCLOAK_URL}")
+    print(f"  SPA_HOST: {SPA_HOST}")
+
+    # DEBUG: Check Docker container states
+    try:
+        import subprocess
+
+        result = subprocess.run(
+            [
+                "docker",
+                "ps",
+                "--filter",
+                "name=spa-e2e",
+                "--format",
+                "table {{.Names}}\t{{.Status}}\t{{.Ports}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        print("DEBUG: SPA container status:")
+        print(result.stdout)
+
+        # Check if SPA container has health status
+        result = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{.State.Health.Status}}",
+                "e2e-browser-spa-e2e-1",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        print(f"DEBUG: SPA container health status: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"DEBUG: Failed to check Docker container status: {e}")
 
     for url, name in services:
         max_retries = 60  # Increased from 30 for CI environment
         retry_delay = 2
         print(f"Checking {name} at {url}")
 
+        # DEBUG: DNS resolution test
+        if "spa-e2e" in url:
+            import socket
+
+            try:
+                ip = socket.gethostbyname("spa-e2e")
+                print(f"DEBUG: spa-e2e resolves to IP: {ip}")
+            except Exception as e:
+                print(f"DEBUG: DNS resolution failed for spa-e2e: {e}")
+
+            # DEBUG: Network connectivity test
+            try:
+                import subprocess
+
+                result = subprocess.run(
+                    ["ping", "-c", "1", "spa-e2e"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                print(f"DEBUG: ping spa-e2e result: {result.returncode}")
+                if result.returncode != 0:
+                    print(f"DEBUG: ping stderr: {result.stderr}")
+            except Exception as e:
+                print(f"DEBUG: ping test failed: {e}")
+
         for attempt in range(max_retries):
             try:
                 with httpx.Client(timeout=5.0) as client:
+                    print(f"DEBUG: Attempting HTTP GET to {url}")
                     response = client.get(url)
+                    print(f"DEBUG: HTTP response status: {response.status_code}")
                     if response.status_code < 400:
                         print(f"{name} is ready ({url})")
                         break
             except Exception as e:
+                print(f"DEBUG: HTTP request exception type: {type(e).__name__}")
+                print(f"DEBUG: HTTP request exception details: {e}")
                 if attempt < max_retries - 1:
                     print(
                         f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries}) - Error: {e}"
