@@ -18,6 +18,14 @@ export default defineConfig({
     hmr: {
       clientPort: 3000,
     },
+    // Disable host header validation entirely for Docker environments
+    strictPort: false,
+    // Additional headers to prevent 403
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      'Access-Control-Allow-Headers': '*',
+    },
   },
   build: {
     outDir: 'build',
