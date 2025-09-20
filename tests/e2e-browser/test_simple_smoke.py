@@ -59,11 +59,33 @@ class TestBasicConnectivity:
         page.reload()
         page.wait_for_load_state("networkidle", timeout=15000)
 
+        # DEBUG: Print all console messages to understand what's actually happening
+        print(f"\nDEBUG: Captured {len(console_messages)} total console messages:")
+        for i, msg in enumerate(console_messages):
+            print(f"  {i+1}: {repr(msg)}")
+
         # Look for authentication-related console messages
         auth_messages = [msg for msg in console_messages if "Auth user" in msg]
+        print(f"\nDEBUG: Found {len(auth_messages)} messages containing 'Auth user':")
+        for msg in auth_messages:
+            print(f"  - {repr(msg)}")
+
+        # DEBUG: Check for other auth-related patterns that might exist
+        broad_auth_keywords = ["auth", "login", "token", "user", "oidc", "keycloak"]
+        broad_auth_messages = [
+            msg
+            for msg in console_messages
+            if any(keyword.lower() in msg.lower() for keyword in broad_auth_keywords)
+        ]
+        print(
+            f"\nDEBUG: Found {len(broad_auth_messages)} messages with any auth keywords {broad_auth_keywords}:"
+        )
+        for msg in broad_auth_messages:
+            print(f"  - {repr(msg)}")
+
         assert (
             len(auth_messages) > 0
-        ), "Should see authentication-related console messages"
+        ), f"Should see authentication-related console messages. Found {len(console_messages)} total messages, {len(broad_auth_messages)} auth-related, but 0 containing 'Auth user'"
 
     def test_basic_oidc_redirect_available(self, page: Page):
         """Test that OIDC redirect mechanism is available (without full auth)."""
