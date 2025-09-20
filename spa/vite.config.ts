@@ -18,14 +18,8 @@ export default defineConfig({
     hmr: {
       clientPort: 3000,
     },
-    // Disable host header validation entirely for Docker environments
-    strictPort: false,
-    // Additional headers to prevent 403
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      'Access-Control-Allow-Headers': '*',
-    },
+    // Allow Docker container hostnames - THIS IS THE KEY FIX
+    allowedHosts: ['spa-e2e', 'localhost', '127.0.0.1', 'all'],
   },
   build: {
     outDir: 'build',
