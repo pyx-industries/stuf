@@ -232,6 +232,31 @@ def ensure_services_ready():
             except Exception as e:
                 print(f"DEBUG: DNS resolution failed for spa-e2e: {e}")
 
+            # DEBUG: Test different URL variations to see which works
+            test_urls = [
+                f"http://{ip}:3000",  # Direct IP
+                "http://127.0.0.1:3000",  # Localhost
+                "http://localhost:3000",  # Localhost hostname
+                url,  # Original spa-e2e:3000
+            ]
+
+            for test_url in test_urls:
+                try:
+                    import httpx
+
+                    with httpx.Client(timeout=2.0) as test_client:
+                        test_response = test_client.get(test_url)
+                        print(
+                            f"DEBUG: Test URL {test_url} -> Status: {test_response.status_code}"
+                        )
+                        if test_response.status_code < 400:
+                            print(
+                                f"DEBUG: SUCCESS! {test_url} works, but {url} doesn't!"
+                            )
+                            break
+                except Exception as e:
+                    print(f"DEBUG: Test URL {test_url} -> Error: {e}")
+
             # DEBUG: Network connectivity test
             try:
                 import subprocess
@@ -254,6 +279,19 @@ def ensure_services_ready():
                     print(f"DEBUG: Attempting HTTP GET to {url}")
                     response = client.get(url)
                     print(f"DEBUG: HTTP response status: {response.status_code}")
+
+                    # Add detailed debugging for 403 responses
+                    if response.status_code == 403:
+                        print(
+                            f"DEBUG: HTTP 403 response headers: {dict(response.headers)}"
+                        )
+                        print(
+                            f"DEBUG: HTTP 403 response body: {response.text[:500]}"
+                        )  # First 500 chars
+                        print(
+                            f"DEBUG: Request headers sent: {dict(client.headers) if hasattr(client, 'headers') else 'N/A'}"
+                        )
+
                     if response.status_code < 400:
                         print(f"{name} is ready ({url})")
                         break
