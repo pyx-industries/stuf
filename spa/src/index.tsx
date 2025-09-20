@@ -5,8 +5,37 @@ import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 
+// DEBUG: Log OIDC configuration and environment
+console.log('DEBUG OIDC: Environment variables:', {
+  REACT_APP_KEYCLOAK_URL: process.env.REACT_APP_KEYCLOAK_URL,
+  REACT_APP_KEYCLOAK_REALM: process.env.REACT_APP_KEYCLOAK_REALM,
+  REACT_APP_KEYCLOAK_CLIENT_ID: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
+  window_origin: window.location.origin,
+});
+
+const authority = `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`;
+console.log('DEBUG OIDC: Authority URL:', authority);
+
+// DEBUG: Test Keycloak connectivity
+fetch(`${authority}/.well-known/openid_configuration`)
+  .then(response => {
+    console.log('DEBUG OIDC: Keycloak connectivity test - Status:', response.status);
+    if (response.ok) {
+      return response.json();
+    }
+    throw new Error(`HTTP ${response.status}`);
+  })
+  .then(config => {
+    console.log('DEBUG OIDC: Keycloak OIDC config retrieved successfully');
+    console.log('DEBUG OIDC: Available endpoints:', Object.keys(config));
+  })
+  .catch(error => {
+    console.error('DEBUG OIDC: Failed to connect to Keycloak:', error);
+    console.error('DEBUG OIDC: This explains why OIDC library is not initializing');
+  });
+
 const oidcConfig = {
-  authority: `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`,
+  authority,
   client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'stuf-spa',
   redirect_uri: window.location.origin,
   response_type: 'code',
@@ -15,6 +44,7 @@ const oidcConfig = {
   includeIdTokenInSilentRenew: true,
   // Use default storage (localStorage) - works fine for most cases
   onSigninCallback: () => {
+    console.log('DEBUG OIDC: Sign-in callback executed');
     // Clean up URL after successful sign in
     window.history.replaceState({}, document.title, window.location.pathname);
   },

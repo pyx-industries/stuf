@@ -9,8 +9,17 @@ import { Button } from '@/components/ui/button';
 function App() {
   const auth = useAuth();
 
+  // DEBUG: Log auth state for debugging
+  console.log('DEBUG OIDC: Auth state:', {
+    isLoading: auth.isLoading,
+    isAuthenticated: auth.isAuthenticated,
+    error: auth.error?.message || null,
+    user: auth.user ? 'User object exists' : 'No user',
+  });
+
   // Show loading while auth is initializing
   if (auth.isLoading) {
+    console.log('DEBUG OIDC: Auth is loading, showing loading screen');
     return (
       <div className="p-8 text-center">
         <h1 className="text-3xl font-bold mb-4">STUF - Secure Transfer Upload Facility</h1>
@@ -18,6 +27,9 @@ function App() {
       </div>
     );
   }
+
+  // DEBUG: Log when auth loading is complete
+  console.log('DEBUG OIDC: Auth loading complete, rendering main app');
 
   // Show error if auth failed
   if (auth.error) {
