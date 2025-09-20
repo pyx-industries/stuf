@@ -12,6 +12,12 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // Allow all origins for Docker networking in CI environments
+    cors: true,
+    // Disable host checking for containerized environments
+    hmr: {
+      clientPort: 3000,
+    },
   },
   build: {
     outDir: 'build',
