@@ -180,8 +180,6 @@ def ensure_services_ready():
         (f"{KEYCLOAK_URL}", "Keycloak"),
     ]
 
-    print("Checking service health...")
-
     for url, name in services:
         max_retries = 30
         retry_delay = 2
@@ -191,13 +189,9 @@ def ensure_services_ready():
                 with httpx.Client(timeout=5.0) as client:
                     response = client.get(url)
                     if response.status_code < 400:
-                        print(f"{name} is ready")
                         break
             except Exception as e:
                 if attempt < max_retries - 1:
-                    print(
-                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries})"
-                    )
                     time.sleep(retry_delay)
                 else:
                     raise RuntimeError(
@@ -205,8 +199,6 @@ def ensure_services_ready():
                     )
         else:
             raise RuntimeError(f"{name} never became ready")
-
-    print("All services are ready!")
 
 
 # BDD step fixtures for pytest-bdd

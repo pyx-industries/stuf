@@ -140,9 +140,7 @@ services:
     volumes:
       - ./reports:/app/reports
       - .:/app
-      # Mount API tests directly for easier access
-      - ../../api/tests/e2e:/app/api_e2e_tests
-      # Mount the entire API directory for imports
+      # Mount the entire API directory for imports and tests
       - ../../api:/app/api
     profiles:
       - testing

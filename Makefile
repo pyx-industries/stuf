@@ -74,7 +74,7 @@ test-e2e:
 	@echo "Starting browser E2E services..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml --profile testing up -d
 	@echo "Running API E2E and browser E2E tests (inside container)..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x /app/api_e2e_tests/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results ."
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results ."
 	@echo "Stopping browser E2E services..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml down
 

@@ -109,7 +109,6 @@ class BDDScreenshotHelper:
                 if source_path.exists():
                     try:
                         shutil.move(str(source_path), str(target_path))
-                        print(f"Video saved: {target_path}")
                         return
                     except (OSError, IOError) as e:
                         # File might still be being written
