@@ -11,10 +11,6 @@ from pathlib import Path
 
 # Add the browser E2E helpers to Python path for shared modules
 browser_e2e_path = Path(__file__).parent.parent.parent.parent / "tests" / "e2e-browser"
-if not browser_e2e_path.exists():
-    # In Docker container, the path is /app instead
-    browser_e2e_path = Path("/app")
-
 sys.path.insert(0, str(browser_e2e_path))
 
 # E2E configuration - uses browser E2E Docker services
