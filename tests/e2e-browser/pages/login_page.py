@@ -28,16 +28,7 @@ class LoginPage(BasePage):
             timeout=timeout,
         )
 
-        # Debug: Print current URL and page content
-        current_url = self.page.url
-        print(f"DEBUG: Successfully redirected to Keycloak URL: {current_url}")
-
-        # Check if the page loaded properly
-        try:
-            page_title = self.page.title()
-            print(f"DEBUG: Page title: {page_title}")
-        except Exception as e:
-            print(f"DEBUG: Could not get page title: {e}")
+        # current_url = self.page.url
 
         # Wait for page to fully load (CSS/JS)
         self.page.wait_for_load_state("networkidle", timeout=15000)

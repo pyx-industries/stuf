@@ -44,23 +44,12 @@ class DashboardPage(BasePage):
         # Wait for authenticated state to be stable
         self.page.wait_for_timeout(1000)
 
-        # First check for authentication errors - take screenshot for debugging
-        self.take_screenshot("debug-before-auth-check")
-        page_content = self.page.content()
-        print(
-            f"DEBUG: Page contains 'Authentication error': {'Authentication error' in page_content}"
-        )
-        print(f"DEBUG: Page title: {self.page.title()}")
-
+        # Check for authentication errors
         auth_error = self.page.get_by_text("Authentication error", exact=False)
-        print(f"DEBUG: Checking for auth error, found: {auth_error.count()}")
         if auth_error.is_visible():
             self.take_screenshot("auth-error-detected")
             error_text = auth_error.text_content()
-            print(f"DEBUG: Auth error detected: {error_text}")
             raise AssertionError(f"Authentication failed: {error_text}")
-        else:
-            print("DEBUG: No auth error visible")
 
         # Check for other error indicators
         try_again_button = self.page.locator('button:text("Try Again")')

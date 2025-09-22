@@ -12,8 +12,6 @@ class BasePage:
         """Initialize base page with Playwright page object."""
         self.page = page
         self.base_url = SPA_URL
-        # Debug: Print the actual URL being used
-        print(f"DEBUG: BasePage initialized with base_url: {self.base_url}")
 
     def navigate_to(self, path: str = "") -> None:
         """Navigate to a specific path within the application."""

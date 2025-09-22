@@ -9,16 +9,12 @@ from playwright.sync_api import sync_playwright
 # Use centralized configuration
 try:
     from config import SPA_URL as BASE_URL, API_URL, KEYCLOAK_URL, SPA_HOST
-
-    print("DEBUG: conftest.py is being loaded - config import successful")
-except Exception as e:
-    print(f"DEBUG: conftest.py config import FAILED: {e}")
-    # Fallback values for debugging
+except Exception:
+    # Fallback values
     BASE_URL = "http://spa-e2e:3000"
     API_URL = "http://api-e2e:8000"
     KEYCLOAK_URL = "http://keycloak-e2e:8080"
     SPA_HOST = "spa-e2e:3000"
-    print("DEBUG: using fallback config values")
 
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
 
@@ -309,10 +305,6 @@ def pytest_bdd_step_error(
 def pytest_configure(config):
     """Configure pytest markers for E2E tests."""
     config.addinivalue_line("markers", "smoke: Quick smoke tests")
-    config.addinivalue_line("markers", "auth: Authentication-related tests")
-    config.addinivalue_line("markers", "upload: File upload tests")
-    config.addinivalue_line("markers", "permissions: Permission-related tests")
-    config.addinivalue_line("markers", "slow: Slow-running tests")
     config.addinivalue_line("markers", "e2e: End-to-end tests")
     config.addinivalue_line("markers", "integration: Integration tests")
     config.addinivalue_line("markers", "unit: Unit tests")
