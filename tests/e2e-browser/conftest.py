@@ -175,7 +175,6 @@ def authenticated_page(page):
 @pytest.fixture(scope="session", autouse=True)
 def ensure_services_ready():
     """Ensure all services are ready before running tests."""
-    print("\n=== DEBUG: ensure_services_ready fixture IS RUNNING ===")
     import time
     import httpx
 
@@ -185,134 +184,23 @@ def ensure_services_ready():
         (f"{KEYCLOAK_URL}", "Keycloak"),
     ]
 
-    print("\nChecking service health...")
-    print("DEBUG: Environment URLs:")
-    print(f"  BASE_URL (SPA): {BASE_URL}")
-    print(f"  API_URL: {API_URL}")
-    print(f"  KEYCLOAK_URL: {KEYCLOAK_URL}")
-    print(f"  SPA_HOST: {SPA_HOST}")
-
-    # DEBUG: Check Docker container states
-    try:
-        import subprocess
-
-        result = subprocess.run(
-            [
-                "docker",
-                "ps",
-                "--filter",
-                "name=spa-e2e",
-                "--format",
-                "table {{.Names}}\t{{.Status}}\t{{.Ports}}",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        print("DEBUG: SPA container status:")
-        print(result.stdout)
-
-        # Check if SPA container has health status
-        result = subprocess.run(
-            [
-                "docker",
-                "inspect",
-                "--format",
-                "{{.State.Health.Status}}",
-                "e2e-browser-spa-e2e-1",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        print(f"DEBUG: SPA container health status: {result.stdout.strip()}")
-    except Exception as e:
-        print(f"DEBUG: Failed to check Docker container status: {e}")
+    print("Checking service health...")
 
     for url, name in services:
-        max_retries = 60  # Increased from 30 for CI environment
+        max_retries = 30
         retry_delay = 2
-        print(f"Checking {name} at {url}")
-
-        # DEBUG: DNS resolution test
-        if "spa-e2e" in url:
-            import socket
-
-            try:
-                ip = socket.gethostbyname("spa-e2e")
-                print(f"DEBUG: spa-e2e resolves to IP: {ip}")
-            except Exception as e:
-                print(f"DEBUG: DNS resolution failed for spa-e2e: {e}")
-
-            # DEBUG: Test different URL variations to see which works
-            test_urls = [
-                f"http://{ip}:3000",  # Direct IP
-                "http://127.0.0.1:3000",  # Localhost
-                "http://localhost:3000",  # Localhost hostname
-                url,  # Original spa-e2e:3000
-            ]
-
-            for test_url in test_urls:
-                try:
-                    import httpx
-
-                    with httpx.Client(timeout=2.0) as test_client:
-                        test_response = test_client.get(test_url)
-                        print(
-                            f"DEBUG: Test URL {test_url} -> Status: {test_response.status_code}"
-                        )
-                        if test_response.status_code < 400:
-                            print(
-                                f"DEBUG: SUCCESS! {test_url} works, but {url} doesn't!"
-                            )
-                            break
-                except Exception as e:
-                    print(f"DEBUG: Test URL {test_url} -> Error: {e}")
-
-            # DEBUG: Network connectivity test
-            try:
-                import subprocess
-
-                result = subprocess.run(
-                    ["ping", "-c", "1", "spa-e2e"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                )
-                print(f"DEBUG: ping spa-e2e result: {result.returncode}")
-                if result.returncode != 0:
-                    print(f"DEBUG: ping stderr: {result.stderr}")
-            except Exception as e:
-                print(f"DEBUG: ping test failed: {e}")
 
         for attempt in range(max_retries):
             try:
                 with httpx.Client(timeout=5.0) as client:
-                    print(f"DEBUG: Attempting HTTP GET to {url}")
                     response = client.get(url)
-                    print(f"DEBUG: HTTP response status: {response.status_code}")
-
-                    # Add detailed debugging for 403 responses
-                    if response.status_code == 403:
-                        print(
-                            f"DEBUG: HTTP 403 response headers: {dict(response.headers)}"
-                        )
-                        print(
-                            f"DEBUG: HTTP 403 response body: {response.text[:500]}"
-                        )  # First 500 chars
-                        print(
-                            f"DEBUG: Request headers sent: {dict(client.headers) if hasattr(client, 'headers') else 'N/A'}"
-                        )
-
                     if response.status_code < 400:
-                        print(f"{name} is ready ({url})")
+                        print(f"{name} is ready")
                         break
             except Exception as e:
-                print(f"DEBUG: HTTP request exception type: {type(e).__name__}")
-                print(f"DEBUG: HTTP request exception details: {e}")
                 if attempt < max_retries - 1:
                     print(
-                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries}) - Error: {e}"
+                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries})"
                     )
                     time.sleep(retry_delay)
                 else:
@@ -323,35 +211,6 @@ def ensure_services_ready():
             raise RuntimeError(f"{name} never became ready")
 
     print("All services are ready!")
-
-    # DEBUG: Test Keycloak CORS headers directly from test-runner (bypasses browser CORS)
-    print("\nDEBUG: Testing Keycloak CORS configuration directly...")
-    try:
-        keycloak_url = f"{KEYCLOAK_URL}/realms/stuf/.well-known/openid_configuration"
-        print(f"DEBUG: Testing {keycloak_url}")
-
-        with httpx.Client(timeout=10.0) as client:
-            # Test with explicit Origin header like browser would send
-            headers = {
-                "Origin": BASE_URL,  # This is what browser sends: http://spa-e2e:3000
-                "User-Agent": "Test-Runner-Direct-Request",
-            }
-            response = client.get(keycloak_url, headers=headers)
-            print(f"DEBUG: Keycloak direct response status: {response.status_code}")
-            print(f"DEBUG: Keycloak response headers: {dict(response.headers)}")
-
-            # Check specifically for CORS headers
-            cors_headers = {
-                k: v
-                for k, v in response.headers.items()
-                if "access-control" in k.lower() or "cors" in k.lower()
-            }
-            print(f"DEBUG: Keycloak CORS headers: {cors_headers}")
-
-    except Exception as e:
-        print(f"DEBUG: Keycloak direct test failed: {e}")
-
-    print("=== DEBUG: ensure_services_ready fixture COMPLETED ===")
 
 
 # BDD step fixtures for pytest-bdd
