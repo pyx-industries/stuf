@@ -454,6 +454,9 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "upload: File upload tests")
     config.addinivalue_line("markers", "permissions: Permission-related tests")
     config.addinivalue_line("markers", "slow: Slow-running tests")
+    config.addinivalue_line("markers", "e2e: End-to-end tests")
+    config.addinivalue_line("markers", "integration: Integration tests")
+    config.addinivalue_line("markers", "unit: Unit tests")
 
 
 @pytest.fixture
