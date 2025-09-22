@@ -27,7 +27,7 @@ KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 
 
 @pytest.fixture
-def real_keycloak_token():
+def real_keycloak_token(ensure_services_ready):
     """Get a real token from Keycloak using password grant for a test user"""
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
@@ -59,7 +59,7 @@ def e2e_client():
 
 
 @pytest.fixture
-def limited_keycloak_token():
+def limited_keycloak_token(ensure_services_ready):
     """Get a token for a user with limited permissions"""
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
