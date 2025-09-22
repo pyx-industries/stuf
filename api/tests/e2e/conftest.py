@@ -13,39 +13,10 @@ KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "stuf")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 
 
-def check_keycloak_ready():
-    """Check if Keycloak is ready."""
-    try:
-        # Use same approach as browser E2E - basic connectivity check
-        print(f"DEBUG API E2E: Checking Keycloak at {KEYCLOAK_URL}")
-        response = requests.get(KEYCLOAK_URL, timeout=5)
-        print(f"DEBUG API E2E: Keycloak response: {response.status_code}")
-        # Keycloak returns 302 redirect when accessible
-        return response.status_code < 400
-    except requests.exceptions.RequestException as e:
-        print(f"DEBUG API E2E: Keycloak check failed: {e}")
-        return False
-
-
-def check_minio_ready():
-    """Check if MinIO is ready."""
-    try:
-        # Use HTTP check like browser E2E does, internal Docker network
-        import requests
-
-        response = requests.get(
-            "http://minio-e2e:9000", timeout=5
-        )  # Internal Docker network
-        return response.status_code < 500  # Any response better than server error
-    except Exception:
-        return False
-
-
 @pytest.fixture
 def real_keycloak_token():
     """Get a real token from Keycloak using password grant for a test user"""
-    if not check_keycloak_ready():
-        pytest.skip("Keycloak is not available for E2E tests")
+    # Services are already verified by ensure_services_ready fixture
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 
@@ -72,17 +43,14 @@ def real_keycloak_token():
 @pytest.fixture
 def e2e_client():
     """TestClient for E2E tests - NO MOCKS, depends on real services being up"""
-    if not check_keycloak_ready() or not check_minio_ready():
-        pytest.skip("Required services not available for E2E tests")
-
+    # Services are already verified by ensure_services_ready fixture
     return TestClient(app)
 
 
 @pytest.fixture
 def limited_keycloak_token():
     """Get a token for a user with limited permissions"""
-    if not check_keycloak_ready():
-        pytest.skip("Keycloak is not available for E2E tests")
+    # Services are already verified by ensure_services_ready fixture
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 
