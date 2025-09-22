@@ -7,7 +7,18 @@ import pytest
 from playwright.sync_api import sync_playwright
 
 # Use centralized configuration
-from config import SPA_URL as BASE_URL, API_URL, KEYCLOAK_URL, SPA_HOST
+try:
+    from config import SPA_URL as BASE_URL, API_URL, KEYCLOAK_URL, SPA_HOST
+
+    print("DEBUG: conftest.py is being loaded - config import successful")
+except Exception as e:
+    print(f"DEBUG: conftest.py config import FAILED: {e}")
+    # Fallback values for debugging
+    BASE_URL = "http://spa-e2e:3000"
+    API_URL = "http://api-e2e:8000"
+    KEYCLOAK_URL = "http://keycloak-e2e:8080"
+    SPA_HOST = "spa-e2e:3000"
+    print("DEBUG: using fallback config values")
 
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
 
@@ -164,6 +175,7 @@ def authenticated_page(page):
 @pytest.fixture(scope="session", autouse=True)
 def ensure_services_ready():
     """Ensure all services are ready before running tests."""
+    print("\n=== DEBUG: ensure_services_ready fixture IS RUNNING ===")
     import time
     import httpx
 
@@ -338,6 +350,8 @@ def ensure_services_ready():
 
     except Exception as e:
         print(f"DEBUG: Keycloak direct test failed: {e}")
+
+    print("=== DEBUG: ensure_services_ready fixture COMPLETED ===")
 
 
 # BDD step fixtures for pytest-bdd

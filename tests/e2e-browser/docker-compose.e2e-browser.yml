@@ -110,14 +110,22 @@ services:
   # Test runner - runs Playwright tests inside Docker network
   test-runner:
     build:
-      context: .
-      dockerfile: Dockerfile.test-runner
+      context: ../..  # Build from project root to access both tests/e2e-browser and api
+      dockerfile: tests/e2e-browser/Dockerfile.test-runner
     environment:
       # Use internal Docker network URLs
       - SPA_URL=http://spa-e2e:3000
       - API_URL=http://api-e2e:8000
       - KEYCLOAK_URL=http://keycloak-e2e:8080
       - MINIO_URL=http://minio-e2e:9000
+      # API E2E tests need these for proper JWT validation
+      - KEYCLOAK_ISSUER_URL=http://keycloak-e2e:8080
+      - KEYCLOAK_REALM=stuf
+      - KEYCLOAK_CLIENT_ID=stuf-api
+      # MinIO configuration for API E2E tests
+      - MINIO_ENDPOINT=minio-e2e:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
     depends_on:
       spa-e2e:
         condition: service_healthy
@@ -132,6 +140,10 @@ services:
     volumes:
       - ./reports:/app/reports
       - .:/app
+      # Mount API tests directly for easier access
+      - ../../api/tests/e2e:/app/api_e2e_tests
+      # Mount the entire API directory for imports
+      - ../../api:/app/api
     profiles:
       - testing
 

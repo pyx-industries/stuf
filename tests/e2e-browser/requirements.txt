@@ -22,3 +22,12 @@ pytest-timeout>=2.1.0  # Test timeouts
 
 # Development utilities
 python-dotenv>=1.0.0  # Environment variable management
+
+# API dependencies for API E2E tests
+fastapi>=0.104.0
+uvicorn==0.23.2
+python-jose==3.3.0
+python-multipart==0.0.6
+pydantic==2.3.0
+minio==7.1.15
+requests==2.31.0

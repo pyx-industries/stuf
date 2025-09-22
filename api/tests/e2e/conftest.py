@@ -4,9 +4,11 @@ import requests
 from fastapi.testclient import TestClient
 from api.main import app
 
-# E2E configuration - uses REAL services
-# Use the same external URL that the host machine can reach
-KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://localhost:8080")
+# E2E configuration - uses browser E2E Docker services
+# Use internal Docker network URLs when running in container
+KEYCLOAK_URL = os.environ.get(
+    "KEYCLOAK_URL", "http://keycloak-e2e:8080"
+)  # Internal Docker network
 KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "stuf")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 
@@ -14,22 +16,27 @@ KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 def check_keycloak_ready():
     """Check if Keycloak is ready."""
     try:
-        response = requests.get(f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}", timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
+        # Use same approach as browser E2E - basic connectivity check
+        print(f"DEBUG API E2E: Checking Keycloak at {KEYCLOAK_URL}")
+        response = requests.get(KEYCLOAK_URL, timeout=5)
+        print(f"DEBUG API E2E: Keycloak response: {response.status_code}")
+        # Keycloak returns 302 redirect when accessible
+        return response.status_code < 400
+    except requests.exceptions.RequestException as e:
+        print(f"DEBUG API E2E: Keycloak check failed: {e}")
         return False
 
 
 def check_minio_ready():
     """Check if MinIO is ready."""
     try:
-        import socket
+        # Use HTTP check like browser E2E does, internal Docker network
+        import requests
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(("localhost", 9000))
-        sock.close()
-        return result == 0
+        response = requests.get(
+            "http://minio-e2e:9000", timeout=5
+        )  # Internal Docker network
+        return response.status_code < 500  # Any response better than server error
     except Exception:
         return False
 
