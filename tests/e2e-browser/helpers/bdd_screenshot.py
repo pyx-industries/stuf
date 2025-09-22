@@ -85,8 +85,7 @@ class BDDScreenshotHelper:
             self._video_saved = True
             return str(target_path)
 
-        except Exception as e:
-            print(f"Failed to prepare scenario video: {e}")
+        except Exception:
             return None
 
     def finalize_video(self):
@@ -120,10 +119,10 @@ class BDDScreenshotHelper:
                 else:
                     time.sleep(0.1)
 
-            print(f"Video source not found after waiting: {source_path}")
+            pass  # Video source not found after waiting
 
-        except Exception as e:
-            print(f"Failed to finalize video: {e}")
+        except Exception:
+            pass  # Failed to finalize video
 
     def reset_step_counter(self):
         """Reset step counter for new scenario."""

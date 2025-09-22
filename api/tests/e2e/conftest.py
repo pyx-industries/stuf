@@ -4,6 +4,19 @@ import requests
 from fastapi.testclient import TestClient
 from api.main import app
 
+# Import the shared service readiness fixture
+# This ensures all services are ready before API E2E tests start
+import sys
+from pathlib import Path
+
+# Add the browser E2E helpers to Python path for shared modules
+browser_e2e_path = Path(__file__).parent.parent.parent.parent / "tests" / "e2e-browser"
+if not browser_e2e_path.exists():
+    # In Docker container, the path is /app instead
+    browser_e2e_path = Path("/app")
+
+sys.path.insert(0, str(browser_e2e_path))
+
 # E2E configuration - uses browser E2E Docker services
 # Use internal Docker network URLs when running in container
 KEYCLOAK_URL = os.environ.get(
@@ -16,7 +29,6 @@ KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 @pytest.fixture
 def real_keycloak_token():
     """Get a real token from Keycloak using password grant for a test user"""
-    # Services are already verified by ensure_services_ready fixture
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 
@@ -43,14 +55,12 @@ def real_keycloak_token():
 @pytest.fixture
 def e2e_client():
     """TestClient for E2E tests - NO MOCKS, depends on real services being up"""
-    # Services are already verified by ensure_services_ready fixture
     return TestClient(app)
 
 
 @pytest.fixture
 def limited_keycloak_token():
     """Get a token for a user with limited permissions"""
-    # Services are already verified by ensure_services_ready fixture
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 

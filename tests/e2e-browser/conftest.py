@@ -168,37 +168,7 @@ def authenticated_page(page):
     yield page
 
 
-@pytest.fixture(scope="session", autouse=True)
-def ensure_services_ready():
-    """Ensure all services are ready before running tests."""
-    import time
-    import httpx
-
-    services = [
-        (f"{API_URL}/api/health", "API"),
-        (f"{BASE_URL}", "SPA"),
-        (f"{KEYCLOAK_URL}", "Keycloak"),
-    ]
-
-    for url, name in services:
-        max_retries = 30
-        retry_delay = 2
-
-        for attempt in range(max_retries):
-            try:
-                with httpx.Client(timeout=5.0) as client:
-                    response = client.get(url)
-                    if response.status_code < 400:
-                        break
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    time.sleep(retry_delay)
-                else:
-                    raise RuntimeError(
-                        f"{name} failed to become ready after {max_retries} attempts: {e}"
-                    )
-        else:
-            raise RuntimeError(f"{name} never became ready")
+# Import shared service health check fixture
 
 
 # BDD step fixtures for pytest-bdd
@@ -269,13 +239,7 @@ def test_data():
 def pytest_bdd_step_error(
     request, feature, scenario, step, step_func, step_func_args, exception
 ):
-    """Handle BDD step errors with enhanced debugging."""
-    print("\nBDD Step failed:")
-    print(f"   Feature: {feature.name}")
-    print(f"   Scenario: {scenario.name}")
-    print(f"   Step: {step.name}")
-    print(f"   Exception: {exception}")
-
+    """Handle BDD step errors with screenshot capture."""
     # Take screenshot on step failure if page is available
     if "page" in step_func_args:
         page = step_func_args["page"]
@@ -288,7 +252,6 @@ def pytest_bdd_step_error(
             )
             screenshot_path.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(screenshot_path))
-            print(f"   Screenshot: {screenshot_path}")
         except Exception:
             pass
 

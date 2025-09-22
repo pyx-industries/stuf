@@ -28,73 +28,25 @@ class LoginPage(BasePage):
             timeout=timeout,
         )
 
-        # current_url = self.page.url
-
         # Wait for page to fully load (CSS/JS)
         self.page.wait_for_load_state("networkidle", timeout=15000)
 
         # Give extra time for JavaScript to execute and render form
         self.page.wait_for_timeout(3000)
 
-        # Listen for JavaScript console errors
-        console_messages = []
-        self.page.on(
-            "console", lambda msg: console_messages.append(f"{msg.type}: {msg.text}")
-        )
-        self.page.on(
-            "pageerror", lambda error: console_messages.append(f"PAGE ERROR: {error}")
-        )
-
         # Wait for login form elements
         try:
             self.wait_for_selector(self.USERNAME_INPUT, timeout=15000)
         except Exception as e:
-            print(f"DEBUG: Username input not found. Current URL: {self.page.url}")
-
-            # Check what input fields are actually present
-            all_inputs = self.page.query_selector_all("input")
-            print(f"DEBUG: Found {len(all_inputs)} input elements:")
-            for i, input_elem in enumerate(all_inputs):
-                try:
-                    input_type = input_elem.get_attribute("type")
-                    input_name = input_elem.get_attribute("name")
-                    input_id = input_elem.get_attribute("id")
-                    print(
-                        f"  Input {i}: type='{input_type}', name='{input_name}', id='{input_id}'"
-                    )
-                except Exception:
-                    print(f"  Input {i}: Could not get attributes")
-
-            # Print console errors if any
-            if console_messages:
-                print("DEBUG: Console messages during page load:")
-                for msg in console_messages:
-                    print(f"  {msg}")
-            else:
-                print("DEBUG: No console messages captured")
-
-            # Get the full page content to see the body
-            full_content = self.page.content()
-            print(f"DEBUG: Full page content length: {len(full_content)} characters")
-
-            # Look for body content specifically
-            if "<body" in full_content:
-                body_start = full_content.find("<body")
-                body_content = full_content[body_start : body_start + 2000]
-                print(f"DEBUG: Body content preview: {body_content}...")
-            else:
-                print("DEBUG: No body tag found!")
-                print(f"DEBUG: Page content preview: {full_content[:1500]}...")
-
-            # Try to take a screenshot for debugging
+            # Take a screenshot for debugging if login form fails to load
             try:
                 screenshot_path = "/app/reports/debug-keycloak-login.png"
                 self.page.screenshot(path=screenshot_path)
-                print(f"DEBUG: Screenshot saved to {screenshot_path}")
-            except Exception as screenshot_error:
-                print(f"DEBUG: Could not take screenshot: {screenshot_error}")
-
-            raise e
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Login form failed to load. Current URL: {self.page.url}"
+            ) from e
 
         self.wait_for_selector(self.PASSWORD_INPUT, timeout=10000)
         self.wait_for_selector(self.LOGIN_BUTTON, timeout=10000)
