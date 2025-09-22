@@ -6,7 +6,7 @@
 .PHONY: help docs serve clean spa-dev spa-prod spa-build spa-stop
 
 # Test command variable
-PYTEST = python -m pytest api/tests --tb=short
+PYTEST = python -m pytest api/tests --tb=short -v
 
 # Default target - show help
 help:
