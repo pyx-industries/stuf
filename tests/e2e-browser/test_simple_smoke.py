@@ -51,7 +51,12 @@ class TestBasicConnectivity:
         page.wait_for_load_state("networkidle", timeout=15000)
 
         # The page should load without errors
-        # We can check console messages to see authentication state
+        from config import SPA_HOST
+
+        assert SPA_HOST in page.url
+        assert page.title() == "STUF"
+
+        # Check that we see some evidence of authentication handling
         console_messages = []
         page.on("console", lambda msg: console_messages.append(msg.text))
 
@@ -59,46 +64,17 @@ class TestBasicConnectivity:
         page.reload()
         page.wait_for_load_state("networkidle", timeout=15000)
 
-        # DEBUG: Print all console messages to understand what's actually happening
-        print(f"\nDEBUG: Captured {len(console_messages)} total console messages:")
-        for i, msg in enumerate(console_messages):
-            print(f"  {i+1}: {repr(msg)}")
-
-        # Look for authentication-related console messages - match actual patterns
-        auth_state_messages = [
-            msg for msg in console_messages if "DEBUG OIDC: Auth state:" in msg
-        ]
-        auth_user_messages = [
-            msg for msg in console_messages if "user:" in msg and "DEBUG OIDC" in msg
-        ]
-
-        print(
-            f"\nDEBUG: Found {len(auth_state_messages)} messages containing 'DEBUG OIDC: Auth state:':"
-        )
-        for msg in auth_state_messages:
-            print(f"  - {repr(msg)}")
-
-        print(f"\nDEBUG: Found {len(auth_user_messages)} messages with auth user info:")
-        for msg in auth_user_messages:
-            print(f"  - {repr(msg)}")
-
-        # DEBUG: Check for other auth-related patterns that might exist
-        broad_auth_keywords = ["auth", "login", "token", "user", "oidc", "keycloak"]
-        broad_auth_messages = [
+        # Look for any authentication-related console messages
+        auth_related = [
             msg
             for msg in console_messages
-            if any(keyword.lower() in msg.lower() for keyword in broad_auth_keywords)
+            if any(keyword in msg.lower() for keyword in ["auth", "oidc", "user"])
         ]
-        print(
-            f"\nDEBUG: Found {len(broad_auth_messages)} messages with any auth keywords {broad_auth_keywords}:"
-        )
-        for msg in broad_auth_messages:
-            print(f"  - {repr(msg)}")
 
-        # Assert that we see auth-related messages (either specific auth state or general auth keywords)
+        # Should see some authentication handling in console
         assert (
-            len(auth_state_messages) > 0 or len(broad_auth_messages) > 0
-        ), f"Should see authentication-related console messages. Found {len(console_messages)} total messages, {len(broad_auth_messages)} auth-related, {len(auth_state_messages)} auth state messages"
+            len(auth_related) > 0
+        ), "Should see some authentication-related console activity"
 
     def test_basic_oidc_redirect_available(self, page: Page):
         """Test that OIDC redirect mechanism is available (without full auth)."""
