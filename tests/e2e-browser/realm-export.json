@@ -1,7 +1,7 @@
 {
   "realm": "stuf",
   "enabled": true,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": false,
   "requiredCredentials": [ "password" ],
   "roles": {
