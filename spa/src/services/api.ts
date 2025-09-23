@@ -19,7 +19,6 @@ class ApiService {
 
   async request(endpoint: string, options: RequestOptions = {}): Promise<any> {
     try {
-      // Get fresh token from auth context
       const token = this.auth?.user?.access_token;
       const url = `${API_BASE_URL}${endpoint}`;
       
@@ -87,7 +86,6 @@ class ApiService {
 
     return this.request(`/api/files/${collection}`, {
       method: 'POST',
-      // Don't set any headers for FormData - let browser handle Content-Type
       body: formData
     });
   }

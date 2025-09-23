@@ -20,7 +20,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ collection: propCollection, onU
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
 
-  // If collection is provided as prop, don't show the collection input
   const showCollectionInput = !propCollection;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +47,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ collection: propCollection, onU
       setResult({ success: true, data: response });
       setFile(null);
       setMetadata('');
-      // Reset file input
       e.target.reset();
       if (onUploadSuccess) {
         onUploadSuccess();
