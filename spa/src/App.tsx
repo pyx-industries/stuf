@@ -9,13 +9,6 @@ import { Button } from '@/components/ui/button';
 function App() {
   const auth = useAuth();
 
-  // DEBUG: Log auth state for debugging
-  console.log('DEBUG OIDC: Auth state:', {
-    isLoading: auth.isLoading,
-    isAuthenticated: auth.isAuthenticated,
-    error: auth.error?.message || null,
-    user: auth.user ? 'User object exists' : 'No user',
-  });
 
   // Show loading while auth is initializing
   if (auth.isLoading) {
