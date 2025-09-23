@@ -1,4 +1,4 @@
-"""Smoke tests for SPA to API connectivity."""
+"""Comprehensive smoke tests for SPA to API connectivity and basic functionality."""
 
 import pytest
 import httpx
@@ -6,7 +6,31 @@ from playwright.sync_api import Page
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
-from config import SPA_URL, API_URL, SPA_HOST
+from config import SPA_URL, API_URL, SPA_HOST, KEYCLOAK_URL
+
+
+class TestBasicConnectivity:
+    """Basic connectivity tests without full authentication flow."""
+
+    def test_all_services_responding(self):
+        """Test that all services are responding to basic requests."""
+        # Test API
+        with httpx.Client() as client:
+            response = client.get(f"{API_URL}/api/health", timeout=10.0)
+            assert response.status_code == 200
+            assert "healthy" in response.json().get("status", "")
+
+        # Test SPA
+        with httpx.Client() as client:
+            response = client.get(SPA_URL, timeout=10.0)
+            assert response.status_code == 200
+            assert "STUF" in response.text
+
+        # Test Keycloak basic response
+        with httpx.Client() as client:
+            response = client.get(KEYCLOAK_URL, timeout=10.0)
+            # Keycloak may return various status codes, just ensure it responds
+            assert response.status_code < 500  # Any response better than server error
 
 
 class TestSmokeConnectivity:
@@ -32,11 +56,17 @@ class TestSmokeConnectivity:
                 auth_required.is_visible() or login_button.is_visible()
             ), "Should show either auth required or login option"
 
-    def test_api_health_endpoint_accessible(self):
-        """Test that the API health endpoint is accessible."""
-        with httpx.Client() as client:
-            response = client.get(f"{API_URL}/api/health", timeout=10.0)
-            assert response.status_code == 200
+    def test_spa_loads_in_browser(self, page: Page):
+        """Test that the SPA loads successfully in browser."""
+        # Navigate to SPA
+        page.goto(SPA_URL)
+
+        # Wait for page to load
+        page.wait_for_load_state("networkidle", timeout=15000)
+
+        # Verify we're on the SPA
+        assert SPA_HOST in page.url
+        assert page.title() == "STUF"
 
     def test_oidc_authentication_flow_starts(self, page: Page):
         """Test that OIDC authentication flow can start."""
