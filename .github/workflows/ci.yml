@@ -69,24 +69,12 @@ jobs:
         pip install -r requirements-dev.txt
         pip install -r api/requirements.txt
 
-    - name: Debug SPA directory
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Contents of spa directory:"
-        ls -la spa/
-        echo "Looking for package files:"
-        find . -name "package*.json" -type f
-
     - name: Install SPA dependencies
       working-directory: spa
       run: |
-        echo "Working directory contents:"
-        ls -la
         if [ -f package-lock.json ]; then
           npm ci
         else
-          echo "package-lock.json not found, using npm install"
           npm install
         fi
 
@@ -111,20 +99,9 @@ jobs:
     - name: Run E2E tests
       run: make test-e2e
 
-    - name: Debug Docker containers on failure
+    - name: Show Docker containers on failure
       if: failure()
-      run: |
-        echo "=== Docker containers status ==="
-        docker ps -a
-        echo "=== Docker container logs ==="
-        echo "--- API logs ---"
-        docker logs e2e-browser-api-e2e-1 || echo "API container not found"
-        echo "--- SPA logs ---"
-        docker logs e2e-browser-spa-e2e-1 || echo "SPA container not found"
-        echo "--- Keycloak logs (last 20 lines) ---"
-        docker logs --tail=20 e2e-browser-keycloak-e2e-1 || echo "Keycloak container not found"
-        echo "--- MinIO logs (last 10 lines) ---"
-        docker logs --tail=10 e2e-browser-minio-e2e-1 || echo "MinIO container not found"
+      run: docker ps -a
 
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
