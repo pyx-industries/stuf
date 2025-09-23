@@ -14,7 +14,6 @@ class BasePage:
         self.base_url = SPA_URL
 
     def navigate_to(self, path: str = "") -> None:
-        """Navigate to a specific path within the application."""
         url = f"{self.base_url}{path}"
         self.page.goto(url)
 
