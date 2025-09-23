@@ -1,6 +1,5 @@
 """Shared pytest fixtures for browser E2E tests."""
 
-import os
 from pathlib import Path
 
 import pytest
@@ -8,7 +7,14 @@ from playwright.sync_api import sync_playwright
 
 # Use centralized configuration
 try:
-    from config import SPA_URL as BASE_URL, API_URL, KEYCLOAK_URL, SPA_HOST
+    from config import (
+        SPA_URL as BASE_URL,
+        API_URL,
+        KEYCLOAK_URL,
+        SPA_HOST,
+        PLAYWRIGHT_HEADLESS,
+        PLAYWRIGHT_SLOW_MO,
+    )
 except Exception:
     # Fallback values
     BASE_URL = "http://spa-e2e:3000"
@@ -30,8 +36,8 @@ def playwright():
 def browser(playwright):
     """Session-scoped browser fixture."""
     browser = playwright.chromium.launch(
-        headless=os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() == "true",
-        slow_mo=int(os.getenv("PLAYWRIGHT_SLOW_MO", "0")),
+        headless=PLAYWRIGHT_HEADLESS.lower() == "true",
+        slow_mo=PLAYWRIGHT_SLOW_MO,
     )
     yield browser
     browser.close()

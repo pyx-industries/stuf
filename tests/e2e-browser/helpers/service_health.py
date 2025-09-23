@@ -3,22 +3,19 @@ Shared service health checking functionality for E2E tests.
 This module provides utilities to ensure all services are ready before running tests.
 """
 
-import os
 import time
 import httpx
 import pytest
 
+from config import SPA_URL, API_URL, KEYCLOAK_URL
+
 
 def check_services_ready():
     """Check that all required services are ready for testing."""
-    # Get URLs from environment or defaults
-    BASE_URL = os.environ.get("SPA_URL", "http://spa-e2e:3000")
-    API_URL = os.environ.get("API_URL", "http://api-e2e:8000")
-    KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://keycloak-e2e:8080")
 
     services = [
         (f"{API_URL}/api/health", "API"),
-        (f"{BASE_URL}", "SPA"),
+        (f"{SPA_URL}", "SPA"),
         (f"{KEYCLOAK_URL}", "Keycloak"),
     ]
 
