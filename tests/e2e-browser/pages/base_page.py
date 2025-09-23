@@ -25,7 +25,6 @@ class BasePage:
         self.page.wait_for_selector(selector, timeout=timeout)
 
     def click_element(self, selector: str) -> None:
-        """Click an element by selector."""
         self.page.click(selector)
 
     def fill_input(self, selector: str, value: str) -> None:
