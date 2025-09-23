@@ -256,16 +256,47 @@ run_tests() {
     
     # Global setup removed - tests use live auth via authenticated_page fixture
     
-    # Run tests
+    # Create reports directory if it doesn't exist
+    mkdir -p reports
+
+    # Run tests with multiple report formats
     log_info "Running tests with pytest..."
     pytest \
         --tb=short \
         --html=reports/test-report.html \
         --self-contained-html \
+        --alluredir=reports/allure-results \
         . \
         -v
-    
-    log_success "Tests completed"
+
+    # Generate Allure HTML report if allure-results exist
+    if [ -d "reports/allure-results" ] && command -v allure >/dev/null 2>&1; then
+        log_info "Generating Allure HTML report..."
+        allure generate reports/allure-results -o reports/allure-report --clean
+        log_success "Allure report generated at reports/allure-report/index.html"
+    else
+        log_info "Skipping Allure report (allure CLI not installed or no results)"
+    fi
+
+    # Generate stakeholder presentation report
+    log_info "Generating stakeholder presentation..."
+    if [ -f "generate_presentation_report.py" ]; then
+        python generate_presentation_report.py
+        log_success "Stakeholder presentation generated at reports/stakeholder_presentation.html"
+    else
+        log_warning "Stakeholder presentation generator not found"
+    fi
+
+    log_success "Tests completed - Reports available in reports/ directory"
+    log_info "Reports generated:"
+    log_info "  - HTML Test Report: reports/test-report.html"
+    log_info "  - Stakeholder Presentation: reports/stakeholder_presentation.html"
+    if [ -d "reports/allure-report" ]; then
+        log_info "  - Allure Report: reports/allure-report/index.html"
+    fi
+    if [ -d "../api/htmlcov" ]; then
+        log_info "  - API Coverage Report: ../api/htmlcov/index.html"
+    fi
 }
 
 # Debug mode

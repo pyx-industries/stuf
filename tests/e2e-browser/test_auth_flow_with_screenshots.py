@@ -4,6 +4,7 @@ from playwright.sync_api import Page
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
+from config import SPA_HOST
 
 
 class TestAuthFlowWithScreenshots:
@@ -130,6 +131,4 @@ class TestAuthFlowWithScreenshots:
 
         # Final verification
         current_url = page.url
-        assert (
-            "localhost:3100" in current_url
-        ), f"Should stay at SPA, but URL is: {current_url}"
+        assert SPA_HOST in current_url, f"Should stay at SPA, but URL is: {current_url}"

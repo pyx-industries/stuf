@@ -12,6 +12,14 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // Allow all origins for Docker networking
+    cors: true,
+    // Disable host checking for containers
+    hmr: {
+      clientPort: 3000,
+    },
+    // Allow Docker container hostnames
+    allowedHosts: ['spa-e2e', 'localhost', '127.0.0.1', 'all'],
   },
   build: {
     outDir: 'build',

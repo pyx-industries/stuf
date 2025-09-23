@@ -19,12 +19,11 @@ COPY index.html ./
 
 # Copy source code
 COPY src/ ./src/
-COPY public/ ./public/
 
 EXPOSE 3000
 
 # Use Vite dev server for development
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Production stage
 FROM node:20-alpine as production
@@ -47,7 +46,6 @@ COPY index.html ./
 
 # Copy source code
 COPY src/ ./src/
-COPY public/ ./public/
 
 # Install dev dependencies needed for build
 RUN npm install vite @vitejs/plugin-react --save-dev
@@ -57,4 +55,4 @@ RUN npm run build
 
 # Use Vite preview server for production
 EXPOSE 3000
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]

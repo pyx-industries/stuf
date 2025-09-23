@@ -5,8 +5,10 @@ import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 
+const authority = `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`;
+
 const oidcConfig = {
-  authority: `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`,
+  authority,
   client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'stuf-spa',
   redirect_uri: window.location.origin,
   response_type: 'code',

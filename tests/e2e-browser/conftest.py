@@ -1,15 +1,27 @@
 """Shared pytest fixtures for browser E2E tests."""
 
-import os
 from pathlib import Path
 
 import pytest
 from playwright.sync_api import sync_playwright
 
-# Test configuration - E2E ports
-BASE_URL = "http://localhost:3100"
-API_URL = "http://localhost:8100"
-KEYCLOAK_URL = "http://localhost:8180"
+# Use centralized configuration
+try:
+    from config import (
+        SPA_URL as BASE_URL,
+        API_URL,
+        KEYCLOAK_URL,
+        SPA_HOST,
+        PLAYWRIGHT_HEADLESS,
+        PLAYWRIGHT_SLOW_MO,
+    )
+except Exception:
+    # Fallback values
+    BASE_URL = "http://spa-e2e:3000"
+    API_URL = "http://api-e2e:8000"
+    KEYCLOAK_URL = "http://keycloak-e2e:8080"
+    SPA_HOST = "spa-e2e:3000"
+
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
 
 
@@ -24,8 +36,8 @@ def playwright():
 def browser(playwright):
     """Session-scoped browser fixture."""
     browser = playwright.chromium.launch(
-        headless=os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() == "true",
-        slow_mo=int(os.getenv("PLAYWRIGHT_SLOW_MO", "0")),
+        headless=PLAYWRIGHT_HEADLESS.lower() == "true",
+        slow_mo=PLAYWRIGHT_SLOW_MO,
     )
     yield browser
     browser.close()
@@ -131,7 +143,7 @@ def authenticated_page(page):
         for attempt in range(max_attempts):
             page.wait_for_timeout(1000)
             current_url = page.url
-            if "localhost:3100" in current_url:
+            if SPA_HOST in current_url:
                 break
         else:
             raise RuntimeError(
@@ -162,45 +174,7 @@ def authenticated_page(page):
     yield page
 
 
-@pytest.fixture(scope="session", autouse=True)
-def ensure_services_ready():
-    """Ensure all services are ready before running tests."""
-    import time
-    import httpx
-
-    services = [
-        (f"{API_URL}/api/health", "API"),
-        (f"{BASE_URL}", "SPA"),
-        (f"{KEYCLOAK_URL}", "Keycloak"),
-    ]
-
-    print("\nChecking service health...")
-
-    for url, name in services:
-        max_retries = 30
-        retry_delay = 2
-
-        for attempt in range(max_retries):
-            try:
-                with httpx.Client(timeout=5.0) as client:
-                    response = client.get(url)
-                    if response.status_code < 400:
-                        print(f"{name} is ready ({url})")
-                        break
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(
-                        f"{name} not ready yet, retrying in {retry_delay}s... ({attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(retry_delay)
-                else:
-                    raise RuntimeError(
-                        f"{name} failed to become ready after {max_retries} attempts: {e}"
-                    )
-        else:
-            raise RuntimeError(f"{name} never became ready")
-
-    print("All services are ready!")
+# Import shared service health check fixture
 
 
 # BDD step fixtures for pytest-bdd
@@ -271,13 +245,7 @@ def test_data():
 def pytest_bdd_step_error(
     request, feature, scenario, step, step_func, step_func_args, exception
 ):
-    """Handle BDD step errors with enhanced debugging."""
-    print("\nBDD Step failed:")
-    print(f"   Feature: {feature.name}")
-    print(f"   Scenario: {scenario.name}")
-    print(f"   Step: {step.name}")
-    print(f"   Exception: {exception}")
-
+    """Handle BDD step errors with screenshot capture."""
     # Take screenshot on step failure if page is available
     if "page" in step_func_args:
         page = step_func_args["page"]
@@ -290,7 +258,6 @@ def pytest_bdd_step_error(
             )
             screenshot_path.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(screenshot_path))
-            print(f"   Screenshot: {screenshot_path}")
         except Exception:
             pass
 
@@ -299,10 +266,9 @@ def pytest_bdd_step_error(
 def pytest_configure(config):
     """Configure pytest markers for E2E tests."""
     config.addinivalue_line("markers", "smoke: Quick smoke tests")
-    config.addinivalue_line("markers", "auth: Authentication-related tests")
-    config.addinivalue_line("markers", "upload: File upload tests")
-    config.addinivalue_line("markers", "permissions: Permission-related tests")
-    config.addinivalue_line("markers", "slow: Slow-running tests")
+    config.addinivalue_line("markers", "e2e: End-to-end tests")
+    config.addinivalue_line("markers", "integration: Integration tests")
+    config.addinivalue_line("markers", "unit: Unit tests")
 
 
 @pytest.fixture

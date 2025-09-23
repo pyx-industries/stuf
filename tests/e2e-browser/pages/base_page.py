@@ -2,6 +2,7 @@
 
 from playwright.sync_api import Page, expect
 from typing import Optional
+from config import SPA_URL
 
 
 class BasePage:
@@ -10,15 +11,13 @@ class BasePage:
     def __init__(self, page: Page):
         """Initialize base page with Playwright page object."""
         self.page = page
-        self.base_url = "http://localhost:3100"
+        self.base_url = SPA_URL
 
     def navigate_to(self, path: str = "") -> None:
-        """Navigate to a specific path within the application."""
         url = f"{self.base_url}{path}"
         self.page.goto(url)
 
     def wait_for_page_load(self, timeout: int = 30000) -> None:
-        """Wait for page to fully load."""
         self.page.wait_for_load_state("networkidle", timeout=timeout)
 
     def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:
@@ -26,19 +25,15 @@ class BasePage:
         self.page.wait_for_selector(selector, timeout=timeout)
 
     def click_element(self, selector: str) -> None:
-        """Click an element by selector."""
         self.page.click(selector)
 
     def fill_input(self, selector: str, value: str) -> None:
-        """Fill an input field with a value."""
         self.page.fill(selector, value)
 
     def get_text(self, selector: str) -> str:
-        """Get text content of an element."""
         return self.page.text_content(selector) or ""
 
     def is_visible(self, selector: str) -> bool:
-        """Check if an element is visible on the page."""
         try:
             return self.page.is_visible(selector)
         except Exception:

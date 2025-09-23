@@ -8,7 +8,6 @@ from fastapi import (
     Form,
     HTTPException,
     status,
-    Query,
 )
 from fastapi.responses import StreamingResponse
 
@@ -42,10 +41,10 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/upload", response_model=UploadFileResponse)
+@router.post("/{collection}", response_model=UploadFileResponse)
 async def upload_file(
+    collection: str,
     file: UploadFile = File(...),
-    collection: str = Form(...),
     metadata: str = Form("{}"),
     current_user: User = Depends(get_current_user),
     storage_repo: StorageRepository = Depends(get_storage_repository),
@@ -53,12 +52,12 @@ async def upload_file(
     """
     Upload a file to a specific collection
 
-    - **file**: The file to upload
     - **collection**: The collection to upload to (must have write access)
+    - **file**: The file to upload
     - **metadata**: JSON string with additional metadata
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = UploadFileUseCase(storage_repo)
         request = UploadFileRequest(collection=collection, metadata=metadata)
 
@@ -84,7 +83,7 @@ async def upload_file(
         )
 
 
-@router.get("/list/{collection}", response_model=ListFilesResponse)
+@router.get("/{collection}", response_model=ListFilesResponse)
 async def list_files(
     collection: str,
     current_user: User = Depends(get_current_user),
@@ -96,7 +95,7 @@ async def list_files(
     - **collection**: The collection to list files from (must have read access)
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = ListFilesUseCase(storage_repo)
         request = ListFilesRequest(collection=collection)
 
@@ -116,7 +115,7 @@ async def list_files(
         )
 
 
-@router.get("/download/{collection}/{object_name:path}")
+@router.get("/{collection}/{object_name:path}")
 async def download_file(
     collection: str,
     object_name: str,
@@ -130,7 +129,7 @@ async def download_file(
     - **object_name**: The object name in storage
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = DownloadFileUseCase(storage_repo)
         request = DownloadFileRequest(collection=collection, object_name=object_name)
 
@@ -205,15 +204,14 @@ async def download_file(
 #         )
 
 
-@router.delete("/remove/{collection}")
+@router.delete("/{collection}/{object_name:path}")
 async def delete_file(
     collection: str,
-    object_name: str = Query(..., description="Object path within the collection"),
+    object_name: str,
     current_user: User = Depends(get_current_user),
+    storage_repo: StorageRepository = Depends(get_storage_repository),
 ):
-    """Delete a file from the collection"""
-    from storage.minio_repository import MinioStorageRepository
-    from storage.minio import MinioClient
+    """Delete a file from a specific collection"""
 
     # Check permissions
     if not current_user.has_collection_permission(collection, "delete"):
@@ -223,10 +221,7 @@ async def delete_file(
         )
 
     try:
-        # Create storage repository manually (dependency injection issue)
-        minio_client = MinioClient()
-        storage_repo = MinioStorageRepository(minio_client)
-
+        # Use dependency injection
         # Execute delete operation
         use_case = DeleteFileUseCase(storage_repo)
         delete_request = DeleteFileRequest(
@@ -243,9 +238,4 @@ async def delete_file(
     except FileDeleteError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Delete failed: {str(e)}",
         )

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 function App() {
   const auth = useAuth();
 
-  // Show loading while auth is initializing
+
   if (auth.isLoading) {
     return (
       <div className="p-8 text-center">

@@ -1,12 +1,13 @@
 """Playwright configuration for STUF browser E2E tests."""
 
-import os
 from pathlib import Path
 
-# Test environment URLs - these match the E2E Docker Compose setup
-BASE_URL = "http://localhost:3100"  # React SPA (E2E port)
-API_URL = "http://localhost:8100"  # FastAPI (E2E port)
-KEYCLOAK_URL = "http://localhost:8180"  # Keycloak (E2E port)
+from config import (
+    SPA_URL as BASE_URL,
+    PLAYWRIGHT_HEADLESS,
+    PLAYWRIGHT_WORKERS,
+    PLAYWRIGHT_BASE_URL,
+)
 
 # Test directories
 TESTS_DIR = Path(__file__).parent
@@ -91,17 +92,16 @@ def get_config():
     config = PLAYWRIGHT_CONFIG.copy()
 
     # Override headless mode if requested
-    if os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() == "false":
+    if PLAYWRIGHT_HEADLESS.lower() == "false":
         for project in config["projects"]:
             project["use"]["headless"] = False
 
     # Override worker count for parallel execution
-    workers = os.getenv("PLAYWRIGHT_WORKERS")
-    if workers and workers.isdigit():
-        config["workers"] = int(workers)
+    if PLAYWRIGHT_WORKERS and PLAYWRIGHT_WORKERS.isdigit():
+        config["workers"] = int(PLAYWRIGHT_WORKERS)
 
     # Override base URL if needed
-    base_url = os.getenv("PLAYWRIGHT_BASE_URL")
+    base_url = PLAYWRIGHT_BASE_URL
     if base_url:
         config["base_url"] = base_url
 

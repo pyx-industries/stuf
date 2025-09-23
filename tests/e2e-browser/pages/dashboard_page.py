@@ -3,6 +3,7 @@
 from playwright.sync_api import Page
 from .base_page import BasePage
 from typing import List
+from config import SPA_HOST
 
 
 class DashboardPage(BasePage):
@@ -30,7 +31,7 @@ class DashboardPage(BasePage):
     def wait_for_dashboard_load(self, timeout: int = 10000) -> None:
         """Wait for the dashboard to fully load after authentication."""
         # Wait for the URL to indicate we're in the app (not on auth pages)
-        self.wait_for_url_contains("localhost:3100")
+        self.wait_for_url_contains(SPA_HOST)
 
         # Wait for React app to initialize and process auth state
         self.page.wait_for_timeout(1000)  # Allow React auth context to initialize
@@ -43,23 +44,12 @@ class DashboardPage(BasePage):
         # Wait for authenticated state to be stable
         self.page.wait_for_timeout(1000)
 
-        # First check for authentication errors - take screenshot for debugging
-        self.take_screenshot("debug-before-auth-check")
-        page_content = self.page.content()
-        print(
-            f"DEBUG: Page contains 'Authentication error': {'Authentication error' in page_content}"
-        )
-        print(f"DEBUG: Page title: {self.page.title()}")
-
+        # Check for authentication errors
         auth_error = self.page.get_by_text("Authentication error", exact=False)
-        print(f"DEBUG: Checking for auth error, found: {auth_error.count()}")
         if auth_error.is_visible():
             self.take_screenshot("auth-error-detected")
             error_text = auth_error.text_content()
-            print(f"DEBUG: Auth error detected: {error_text}")
             raise AssertionError(f"Authentication failed: {error_text}")
-        else:
-            print("DEBUG: No auth error visible")
 
         # Check for other error indicators
         try_again_button = self.page.locator('button:text("Try Again")')
@@ -195,7 +185,7 @@ class DashboardPage(BasePage):
         """Assert that we are on the main dashboard page."""
         current_url = self.get_current_url()
         assert (
-            "localhost:3100" in current_url
+            SPA_HOST in current_url
         ), f"Should be on dashboard, but URL is: {current_url}"
 
         # Also check for dashboard-specific elements

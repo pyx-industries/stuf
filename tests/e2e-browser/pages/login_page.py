@@ -2,6 +2,7 @@
 
 from playwright.sync_api import Page
 from .base_page import BasePage
+from config import KEYCLOAK_URL, SPA_HOST
 
 
 class LoginPage(BasePage):
@@ -9,7 +10,7 @@ class LoginPage(BasePage):
 
     def __init__(self, page: Page):
         super().__init__(page)
-        self.keycloak_url = "http://localhost:8180"
+        self.keycloak_url = KEYCLOAK_URL
 
     # Selectors
     USERNAME_INPUT = 'input[name="username"]'
@@ -27,8 +28,26 @@ class LoginPage(BasePage):
             timeout=timeout,
         )
 
+        # Wait for page to fully load (CSS/JS)
+        self.page.wait_for_load_state("networkidle", timeout=15000)
+
+        # Give extra time for JavaScript to execute and render form
+        self.page.wait_for_timeout(3000)
+
         # Wait for login form elements
-        self.wait_for_selector(self.USERNAME_INPUT, timeout=10000)
+        try:
+            self.wait_for_selector(self.USERNAME_INPUT, timeout=15000)
+        except Exception as e:
+            # Take a screenshot for debugging if login form fails to load
+            try:
+                screenshot_path = "/app/reports/debug-keycloak-login.png"
+                self.page.screenshot(path=screenshot_path)
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Login form failed to load. Current URL: {self.page.url}"
+            ) from e
+
         self.wait_for_selector(self.PASSWORD_INPUT, timeout=10000)
         self.wait_for_selector(self.LOGIN_BUTTON, timeout=10000)
 
@@ -54,11 +73,11 @@ class LoginPage(BasePage):
         # Wait for redirect back to the SPA (more flexible)
         try:
             # Wait for navigation away from Keycloak
-            self.page.wait_for_url("*localhost:3100*", timeout=15000)
+            self.page.wait_for_url(f"*{SPA_HOST}*", timeout=15000)
         except Exception:
             # Maybe already redirected - check current URL
             current_url = self.get_current_url()
-            if "localhost:3100" not in current_url:
+            if SPA_HOST not in current_url:
                 raise RuntimeError(
                     f"Login failed - not redirected to SPA. Current URL: {current_url}"
                 )
@@ -135,7 +154,7 @@ class LoginPage(BasePage):
 
     def wait_for_redirect_to_spa(self, timeout: int = 30000) -> None:
         """Wait for redirect back to the SPA after successful login."""
-        self.wait_for_url_contains("localhost:3100", timeout=timeout)
+        self.wait_for_url_contains(SPA_HOST, timeout=timeout)
         # Wait for the page to load completely
         self.wait_for_network_idle()
 

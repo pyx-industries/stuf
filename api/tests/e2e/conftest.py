@@ -1,44 +1,40 @@
 import pytest
 import os
 import requests
+import sys
+from pathlib import Path
 from fastapi.testclient import TestClient
 from api.main import app
 
-# E2E configuration - uses REAL services
-# Use the same external URL that the host machine can reach
-KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://localhost:8080")
+# Import the shared service readiness fixture
+# This ensures all services are ready before API E2E tests start
+
+# Add the browser E2E helpers to Python path for shared modules
+browser_e2e_path = Path(__file__).parent.parent.parent.parent / "tests" / "e2e-browser"
+if not browser_e2e_path.exists():
+    # In Docker container, the helpers are in the current directory
+    browser_e2e_path = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(browser_e2e_path))
+
+# Import shared service health check fixture
+try:
+    from helpers.service_health import ensure_services_ready  # noqa: F401
+except ImportError:
+    # Fallback if import fails
+    ensure_services_ready = None
+
+# E2E configuration - uses browser E2E Docker services
+# Use internal Docker network URLs when running in container
+KEYCLOAK_URL = os.environ.get(
+    "KEYCLOAK_URL", "http://keycloak-e2e:8080"
+)  # Internal Docker network
 KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "stuf")
 KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
 
 
-def check_keycloak_ready():
-    """Check if Keycloak is ready."""
-    try:
-        response = requests.get(f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}", timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
-        return False
-
-
-def check_minio_ready():
-    """Check if MinIO is ready."""
-    try:
-        import socket
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(("localhost", 9000))
-        sock.close()
-        return result == 0
-    except Exception:
-        return False
-
-
 @pytest.fixture
-def real_keycloak_token():
+def real_keycloak_token(ensure_services_ready):  # noqa: F811
     """Get a real token from Keycloak using password grant for a test user"""
-    if not check_keycloak_ready():
-        pytest.skip("Keycloak is not available for E2E tests")
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 
@@ -65,17 +61,12 @@ def real_keycloak_token():
 @pytest.fixture
 def e2e_client():
     """TestClient for E2E tests - NO MOCKS, depends on real services being up"""
-    if not check_keycloak_ready() or not check_minio_ready():
-        pytest.skip("Required services not available for E2E tests")
-
     return TestClient(app)
 
 
 @pytest.fixture
-def limited_keycloak_token():
+def limited_keycloak_token(ensure_services_ready):  # noqa: F811
     """Get a token for a user with limited permissions"""
-    if not check_keycloak_ready():
-        pytest.skip("Keycloak is not available for E2E tests")
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
 
