@@ -57,7 +57,7 @@ async def upload_file(
     - **metadata**: JSON string with additional metadata
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = UploadFileUseCase(storage_repo)
         request = UploadFileRequest(collection=collection, metadata=metadata)
 
@@ -95,7 +95,7 @@ async def list_files(
     - **collection**: The collection to list files from (must have read access)
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = ListFilesUseCase(storage_repo)
         request = ListFilesRequest(collection=collection)
 
@@ -129,7 +129,7 @@ async def download_file(
     - **object_name**: The object name in storage
     """
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         use_case = DownloadFileUseCase(storage_repo)
         request = DownloadFileRequest(collection=collection, object_name=object_name)
 
@@ -221,7 +221,7 @@ async def delete_file(
         )
 
     try:
-        # Use dependency injection - no concrete instantiation!
+        # Use dependency injection
         # Execute delete operation
         use_case = DeleteFileUseCase(storage_repo)
         delete_request = DeleteFileRequest(
