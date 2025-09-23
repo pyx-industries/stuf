@@ -31,7 +31,6 @@ class BasePage:
         self.page.fill(selector, value)
 
     def get_text(self, selector: str) -> str:
-        """Get text content of an element."""
         return self.page.text_content(selector) or ""
 
     def is_visible(self, selector: str) -> bool:
