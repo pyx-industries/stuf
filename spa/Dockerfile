@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies for Vite)
-RUN npm install
+RUN npm ci
 
 # Copy configuration files
 COPY vite.config.ts ./
