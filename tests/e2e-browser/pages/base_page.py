@@ -28,7 +28,6 @@ class BasePage:
         self.page.click(selector)
 
     def fill_input(self, selector: str, value: str) -> None:
-        """Fill an input field with a value."""
         self.page.fill(selector, value)
 
     def get_text(self, selector: str) -> str:
