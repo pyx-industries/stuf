@@ -18,7 +18,6 @@ class BasePage:
         self.page.goto(url)
 
     def wait_for_page_load(self, timeout: int = 30000) -> None:
-        """Wait for page to fully load."""
         self.page.wait_for_load_state("networkidle", timeout=timeout)
 
     def wait_for_selector(self, selector: str, timeout: int = 10000) -> None:
