@@ -19,7 +19,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "vite",
+    "biome:check": "biome check src/",
+    "biome:fix": "biome check src/ --write"
   },
   "type": "module",
   "eslintConfig": {
@@ -41,6 +43,7 @@
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.13",

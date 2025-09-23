@@ -7,3 +7,11 @@ repos:
         types: [python]
       - id: ruff-format
         types: [python]
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check
+        entry: sh -c 'cd spa && npm run biome:fix'
+        language: system
+        files: ^spa/src/.*\.(js|jsx|ts|tsx|css)$
+        pass_filenames: false
