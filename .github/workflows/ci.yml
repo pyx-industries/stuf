@@ -116,17 +116,3 @@ jobs:
       with:
         name: test-reports
         path: tests/e2e-browser/reports/
-
-    - name: Upload screenshots
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-screenshots
-        path: tests/e2e-browser/reports/screenshots/
-
-    - name: Upload videos
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-videos
-        path: tests/e2e-browser/reports/videos/
