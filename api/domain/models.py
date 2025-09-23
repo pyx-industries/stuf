@@ -1,17 +1,5 @@
-# Domain Layer Dependencies:
-#
-# Pydantic is used for domain objects as a clear-headed architectural decision.
-# While alternatives like POPOs (Plain Old Python Objects) or dataclasses were
-# considered, Pydantic provides significant value as a "fancy type" with:
-#
-# 1. Runtime type validation ensuring domain integrity
-# 2. Serialization/deserialization capabilities
-# 3. Field validation and constraints for business rules
-# 4. Immutable-by-default behavior promoting domain object stability
-#
-# Pydantic is NOT a framework but a validation library - it doesn't dictate
-# application structure, routing, or external concerns. It's appropriate for
-# domain layer use as it enhances rather than compromises domain modeling.
+# Using Pydantic for domain objects provides runtime validation,
+# serialization, and immutable behavior without architectural coupling.
 
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
