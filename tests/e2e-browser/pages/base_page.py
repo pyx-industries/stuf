@@ -34,7 +34,6 @@ class BasePage:
         return self.page.text_content(selector) or ""
 
     def is_visible(self, selector: str) -> bool:
-        """Check if an element is visible on the page."""
         try:
             return self.page.is_visible(selector)
         except Exception:
