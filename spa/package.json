@@ -22,7 +22,8 @@
     "start": "vite",
     "lint": "eslint",
     "format:check": "prettier . --check",
-    "format:fix": "prettier . --write"
+    "format:fix": "prettier . --write",
+    "lint-staged": "lint-staged"
   },
   "type": "module",
   "eslintConfig": {
@@ -30,6 +31,10 @@
       "react-app",
       "react-app/jest"
     ]
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "eslint",
+    "*": "prettier --write"
   },
   "browserslist": {
     "production": [
@@ -53,6 +58,7 @@
     "eslint": "^9.36.0",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.4.0",
+    "lint-staged": "^16.2.0",
     "prettier": "3.6.2",
     "tw-animate-css": "^1.3.8",
     "typescript": "^5.9.2",
