@@ -10,9 +10,9 @@ repos:
 
   - repo: local
     hooks:
-      - id: eslint-check
-        name: Lint check
-        entry: sh -c 'cd spa && npm run lint'
+      - id: lint-staged-check
+        name: Lint and format staged files
+        entry: sh -c 'cd spa && npx lint-staged'
         language: system
-        files: ^spa/src/.*\.(js|jsx|ts|tsx|css)$
+        files: ^spa/.*
         pass_filenames: false
