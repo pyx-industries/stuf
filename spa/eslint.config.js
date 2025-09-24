@@ -8,4 +8,20 @@ export default defineConfig([
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,
   pluginReact.configs.flat.recommended,
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
+  },
+  {
+    files: ["tailwind.config.js"],
+    languageOptions: {
+      globals: {
+        require: "readonly"
+      }
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
+  },
 ]);
