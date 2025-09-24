@@ -1,12 +1,15 @@
-import React from 'react';
-import { useAuth } from 'react-oidc-context';
+import React from "react";
+import { useAuth } from "react-oidc-context";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, fallback = null }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  fallback = null,
+}) => {
   const auth = useAuth();
 
   if (auth.isLoading) {
@@ -14,11 +17,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, fallback = nu
   }
 
   if (!auth.isAuthenticated) {
-    return fallback || (
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <h2>Authentication Required</h2>
-        <p>Please log in to access this content.</p>
-      </div>
+    return (
+      fallback || (
+        <div style={{ textAlign: "center", padding: "2rem" }}>
+          <h2>Authentication Required</h2>
+          <p>Please log in to access this content.</p>
+        </div>
+      )
     );
   }
 

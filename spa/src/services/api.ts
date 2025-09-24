@@ -1,6 +1,6 @@
 // TODO: Cleanup any type assertions
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 interface AuthContext {
   user?: {
@@ -23,72 +23,76 @@ class ApiService {
     try {
       const token = this.auth?.user?.access_token;
       const url = `${API_BASE_URL}${endpoint}`;
-      
+
       // Always include Authorization header if we have a token
       const headers: any = {
-        ...(token && { Authorization: `Bearer ${token}` })
+        ...(token && { Authorization: `Bearer ${token}` }),
       };
 
       // Merge in custom headers
       if (options.headers) {
         Object.assign(headers, options.headers);
       }
-      
+
       // Set default Content-Type for JSON requests, but skip for FormData
       const isFormData = options.body instanceof FormData;
-      if (!headers('Content-Type') && !isFormData) {
-        headers['Content-Type'] = 'application/json';
+      if (!headers("Content-Type") && !isFormData) {
+        headers["Content-Type"] = "application/json";
       }
-      
+
       // Remove any headers with null/undefined values that might confuse fetch()
-      Object.keys(headers).forEach(key => {
+      Object.keys(headers).forEach((key) => {
         if (headers[key] === null || headers[key] === undefined) {
           delete headers[key];
         }
       });
-      
+
       const config = {
         headers,
-        ...options
+        ...options,
       };
 
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       // Handle different content types
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         return await response.json();
       } else {
         return response;
       }
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error("API request failed:", error);
       throw error;
     }
   }
 
   // User endpoints
   async getUserInfo() {
-    return this.request('/api/me');
+    return this.request("/api/me");
   }
 
   async getHealth() {
-    return this.request('/api/health');
+    return this.request("/api/health");
   }
 
   // File endpoints
-  async uploadFile(file: File, collection: string, metadata: Record<string, any> = {}) {
+  async uploadFile(
+    file: File,
+    collection: string,
+    metadata: Record<string, any> = {},
+  ) {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('metadata', JSON.stringify(metadata));
+    formData.append("file", file);
+    formData.append("metadata", JSON.stringify(metadata));
 
     return this.request(`/api/files/${collection}`, {
-      method: 'POST',
-      body: formData
+      method: "POST",
+      body: formData,
     });
   }
 
@@ -100,13 +104,19 @@ class ApiService {
     return this.request(`/api/files/${collection}/${objectName}`);
   }
 
-  async getPresignedUrl(collection: string, objectName: string, expires: number = 3600) {
-    return this.request(`/api/files/presigned/${collection}/${objectName}?expires=${expires}`);
+  async getPresignedUrl(
+    collection: string,
+    objectName: string,
+    expires: number = 3600,
+  ) {
+    return this.request(
+      `/api/files/presigned/${collection}/${objectName}?expires=${expires}`,
+    );
   }
 
   async deleteFile(collection: string, objectName: string) {
     return this.request(`/api/files/${collection}/${objectName}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   }
 }
