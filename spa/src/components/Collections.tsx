@@ -13,6 +13,8 @@ import {
 
 // TODO: Cleanup any type assertions
 
+// TODO: Cleanup any type assertions
+
 const Collections = () => {
   const auth = useAuth();
   const api = useApi();
