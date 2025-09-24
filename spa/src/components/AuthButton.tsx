@@ -1,6 +1,6 @@
-import React from 'react';
-import { useAuth } from 'react-oidc-context';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { useAuth } from "react-oidc-context";
+import { Button } from "@/components/ui/button";
 
 const AuthButton: React.FC = () => {
   const auth = useAuth();
@@ -9,7 +9,8 @@ const AuthButton: React.FC = () => {
     return (
       <div className="flex items-center gap-4">
         <span className="text-muted-foreground">
-          Welcome, {auth.user?.profile?.name || auth.user?.profile?.preferred_username}!
+          Welcome,{" "}
+          {auth.user?.profile?.name || auth.user?.profile?.preferred_username}!
         </span>
         <Button variant="outline" onClick={() => auth.signoutRedirect()}>
           Logout
@@ -18,11 +19,7 @@ const AuthButton: React.FC = () => {
     );
   }
 
-  return (
-    <Button onClick={() => auth.signinRedirect()}>
-      Login
-    </Button>
-  );
+  return <Button onClick={() => auth.signinRedirect()}>Login</Button>;
 };
 
 export default AuthButton;

@@ -1,18 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { AuthProvider } from 'react-oidc-context';
-import App from './App';
-import { ThemeProvider } from './contexts/ThemeContext';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { AuthProvider } from "react-oidc-context";
+import App from "./App";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import "./index.css";
 
-const authority = `${process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080'}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || 'stuf'}`;
+const authority = `${process.env.REACT_APP_KEYCLOAK_URL || "http://localhost:8080"}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || "stuf"}`;
 
 const oidcConfig = {
   authority,
-  client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'stuf-spa',
+  client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || "stuf-spa",
   redirect_uri: window.location.origin,
-  response_type: 'code',
-  scope: 'openid stuf:access',
+  response_type: "code",
+  scope: "openid stuf:access",
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
   // Use default storage (localStorage) - works fine for most cases
@@ -22,7 +22,7 @@ const oidcConfig = {
   },
 };
 
-const container = document.getElementById('root');
+const container = document.getElementById("root");
 if (!container) {
   throw new Error("Root container missing in index.html");
 }
@@ -32,5 +32,5 @@ root.render(
     <AuthProvider {...oidcConfig}>
       <App />
     </AuthProvider>
-  </ThemeProvider>
+  </ThemeProvider>,
 );
