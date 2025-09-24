@@ -19,7 +19,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "vite",
+    "lint": "eslint"
   },
   "type": "module",
   "eslintConfig": {
@@ -41,13 +42,18 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.36.0",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.4.0",
     "tw-animate-css": "^1.3.8",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.1",
     "vite": "^7.1.5"
   }
 }

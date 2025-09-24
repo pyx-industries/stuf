@@ -1,3 +1,5 @@
+// TODO: Cleanup any type assertions
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 interface AuthContext {
@@ -23,7 +25,7 @@ class ApiService {
       const url = `${API_BASE_URL}${endpoint}`;
       
       // Always include Authorization header if we have a token
-      const headers = {
+      const headers: any = {
         ...(token && { Authorization: `Bearer ${token}` })
       };
 
@@ -34,7 +36,7 @@ class ApiService {
       
       // Set default Content-Type for JSON requests, but skip for FormData
       const isFormData = options.body instanceof FormData;
-      if (!headers.hasOwnProperty('Content-Type') && !isFormData) {
+      if (!headers('Content-Type') && !isFormData) {
         headers['Content-Type'] = 'application/json';
       }
       

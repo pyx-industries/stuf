@@ -5,14 +5,16 @@ import { useApi } from '../hooks/useApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// TODO: Cleanup any type assertions
+
 const Collections = () => {
   const auth = useAuth();
   const api = useApi();
-  const [selectedCollection, setSelectedCollection] = useState(null);
-  const [userCollections, setUserCollections] = useState([]);
+  const [selectedCollection, setSelectedCollection] = useState<any>(null);
+  const [userCollections, setUserCollections] = useState<any>([]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // --- Effects ---
 
@@ -67,7 +69,7 @@ const Collections = () => {
   
   // --- Helper Functions ---
 
-  const formatUploadDate = (dateString) => {
+  const formatUploadDate = (dateString: string) => {
     if (!dateString) return 'Unknown';
     try {
       // Handle ISO strings with microseconds by truncating to milliseconds
@@ -80,21 +82,21 @@ const Collections = () => {
 
         // Extract milliseconds (first 3 digits) and timezone
         const milliseconds = afterDot.substring(0, 3);
-        const timezoneMatch = afterDot.match(/([+\-]\d{2}:\d{2}|Z)$/);
+        const timezoneMatch = afterDot.match(/([+-]\d{2}:\d{2}|Z)$/);
         const timezone = timezoneMatch ? timezoneMatch[1] : '+00:00';
 
         cleanedDateString = `${beforeDot}.${milliseconds}${timezone}`;
       }
       const date = new Date(cleanedDateString);
       return date.toLocaleString();
-    } catch (e) {
+    } catch {
       return 'Invalid Date';
     }
   };
 
   // --- Handlers ---
 
-  const handleDownload = async (objectName) => {
+  const handleDownload = async (objectName: string) => {
     setError(null);
     try {
       const relativeObjectName = objectName.startsWith(`${selectedCollection.name}/`)
@@ -106,7 +108,7 @@ const Collections = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const filename = objectName.split('/').pop();
+      const filename = objectName.split('/').pop() ?? 'download';
       a.download = filename;
       document.body.appendChild(a);
       a.click();
@@ -118,7 +120,7 @@ const Collections = () => {
     }
   };
 
-  const handleDelete = async (objectName) => {
+  const handleDelete = async (objectName: string) => {
     if (window.confirm(`Are you sure you want to delete ${objectName}? This action cannot be undone.`)) {
       setError(null);
       try {
@@ -128,7 +130,7 @@ const Collections = () => {
 
         await api.deleteFile(selectedCollection.name, relativeObjectName);
         fetchFiles(); // Refresh file list
-      } catch (err) {
+      } catch (err: any) {
         console.error('Delete failed:', err);
         setError(`Failed to delete file. You may not have permission. Error: ${err.message}`);
       }
@@ -176,7 +178,7 @@ const Collections = () => {
                 {loading && <p className="text-muted-foreground">Loading files...</p>}
                 {files.length === 0 && !loading && <p className="text-muted-foreground">No files in this collection.</p>}
                 <div className="space-y-2">
-                  {files.map((file, index) => (
+                  {(files as any[]).map((file, index) => (
                     <Card key={file.object_name || `file-${index}`}>
                       <CardContent className="flex justify-between items-center p-4">
                         <div>
@@ -229,12 +231,12 @@ const Collections = () => {
       {userCollections.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">You don't have access to any collections.</p>
+            <p className="text-muted-foreground">You don&apos;t have access to any collections.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-3">
-          {userCollections.map(collection => (
+          {(userCollections as any[]).map(collection => (
             <Card key={collection.name} className="cursor-pointer hover:bg-accent/50 transition-colors"
                   onClick={() => setSelectedCollection(collection)}>
               <CardContent className="p-6">

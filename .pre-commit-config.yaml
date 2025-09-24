@@ -7,3 +7,12 @@ repos:
         types: [python]
       - id: ruff-format
         types: [python]
+
+  - repo: local
+    hooks:
+      - id: eslint-check
+        name: Lint check
+        entry: sh -c 'cd spa && npm run lint'
+        language: system
+        files: ^spa/src/.*\.(js|jsx|ts|tsx|css)$
+        pass_filenames: false

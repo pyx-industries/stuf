@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, WebStorageStateStore } from 'react-oidc-context';
+import { AuthProvider } from 'react-oidc-context';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
@@ -22,7 +22,11 @@ const oidcConfig = {
   },
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error("Root container missing in index.html");
+}
+const root = ReactDOM.createRoot(container);
 root.render(
   <ThemeProvider defaultTheme="system" storageKey="stuf-ui-theme">
     <AuthProvider {...oidcConfig}>
