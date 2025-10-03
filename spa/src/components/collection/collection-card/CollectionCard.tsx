@@ -61,7 +61,7 @@ export function CollectionCard({
         <div className="flex items-start gap-1">
           <img src="/icons/draft.svg" alt="Files" width={20} height={20} />
           <span
-            className="text-base font-medium leading-5 text-primary-foreground"
+            className="text-base font-medium leading-5 text-primary-text"
             data-testid={`file-count-${testId}`}
           >
             {fileCount}
