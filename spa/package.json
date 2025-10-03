@@ -31,12 +31,6 @@
     "build-storybook": "storybook build"
   },
   "type": "module",
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint",
     "*.{js,jsx,ts,tsx,json,css,md,yml,yaml}": "prettier --write"
