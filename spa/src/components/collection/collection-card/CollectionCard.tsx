@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   Card,
   CardHeader,
@@ -23,22 +22,29 @@ export function CollectionCard({
   onSettingsClick,
   onViewClick,
 }: CollectionCardProps) {
+  const testId = name.toLowerCase().replace(/\s+/g, "-");
+
   return (
     <Card
       className={cn(
         "w-full overflow-hidden rounded-[4px] border border-foreground gap-[44px] shadow-none py-0",
         className,
       )}
+      data-testid={`collection-card-${testId}`}
     >
       <CardHeader className="px-4 pt-4 pb-0 gap-0">
-        <CardTitle className="text-base font-medium leading-5 text-foreground">
+        <CardTitle
+          className="text-base font-medium leading-5 text-foreground"
+          data-testid={`collection-name-${testId}`}
+        >
           {name}
         </CardTitle>
         <CardAction>
           <button
             onClick={onSettingsClick}
             className="cursor-pointer"
-            aria-label="Settings"
+            aria-label={`Settings for ${name}`}
+            data-testid={`settings-button-${testId}`}
           >
             <img
               src="/icons/settings.svg"
@@ -54,14 +60,18 @@ export function CollectionCard({
       <CardFooter className="bg-primary px-4 py-2 justify-between items-start">
         <div className="flex items-start gap-1">
           <img src="/icons/draft.svg" alt="Files" width={20} height={20} />
-          <span className="text-base font-medium leading-5 text-primary-foreground">
+          <span
+            className="text-base font-medium leading-5 text-primary-foreground"
+            data-testid={`file-count-${testId}`}
+          >
             {fileCount}
           </span>
         </div>
         <button
           onClick={onViewClick}
           className="cursor-pointer"
-          aria-label="View collection"
+          aria-label={`View ${name}`}
+          data-testid={`view-button-${testId}`}
         >
           <img
             src="/icons/arrow_right_alt.svg"
