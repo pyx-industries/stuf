@@ -5,12 +5,20 @@
 
 .PHONY: help docs serve clean spa-dev spa-prod spa-build spa-stop
 
+# Virtual environment directory
+VENV_DIR = .venv
+PYTHON = $(VENV_DIR)/bin/python
+PIP = $(VENV_DIR)/bin/pip
+
 # Test command variable
-PYTEST = python -m pytest api/tests --tb=short -v
+PYTEST = $(PYTHON) -m pytest api/tests --tb=short -v
 
 # Default target - show help
 help:
 	@echo "STUF Project - Available Make Targets:"
+	@echo ""
+	@echo "Setup:"
+	@echo "  Virtual environment is automatically created when running test targets"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  docs          Generate documentation from PlantUML and build MkDocs site"
@@ -32,6 +40,24 @@ help:
 	@echo ""
 	@echo "Usage: make <target>"
 	@echo "Example: make spa-dev"
+
+# Create virtual environment and install dependencies
+$(VENV_DIR)/pyvenv.cfg:
+	@echo "Creating Python virtual environment..."
+	@python3 -m venv $(VENV_DIR)
+
+$(VENV_DIR)/api-requirements.stamp: $(VENV_DIR)/pyvenv.cfg api/requirements.txt
+	@echo "Installing API requirements..."
+	@$(PIP) install -r api/requirements.txt
+	@touch $(VENV_DIR)/api-requirements.stamp
+
+$(VENV_DIR)/dev-requirements.stamp: $(VENV_DIR)/api-requirements.stamp requirements-dev.txt
+	@echo "Installing development requirements..."
+	@$(PIP) install -r requirements-dev.txt
+	@touch $(VENV_DIR)/dev-requirements.stamp
+	@echo "Virtual environment created at $(VENV_DIR)"
+
+
 
 # Generate documentation
 docs:
@@ -57,6 +83,7 @@ clean:
 	@rm -rf site/
 	@rm -rf api/htmlcov/
 	@rm -f api/.coverage
+	@rm -rf $(VENV_DIR)
 	@tests/run.sh clean
 	@echo "Clean complete."
 
@@ -64,7 +91,7 @@ clean:
 .PHONY: test test-e2e test-all test-cov
 
 # Run fast tests (unit + integration) - default
-test:
+test: $(VENV_DIR)/dev-requirements.stamp
 	@echo "Running fast tests (unit + integration)..."
 	@$(PYTEST) -m "not e2e"
 
@@ -85,7 +112,7 @@ test-all:
 	@$(MAKE) test-e2e
 
 # Run tests with coverage
-test-cov:
+test-cov: $(VENV_DIR)/dev-requirements.stamp
 	@echo "Running tests with coverage..."
 	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
 

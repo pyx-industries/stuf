@@ -100,7 +100,13 @@ STUF can be run locally using Docker Compose for development and testing purpose
    cd stuf
    ```
 
-2. Create a `.env` file from the example and edit as needed:
+2. Run the test suite to verify setup:
+   ```bash
+   make test
+   ```
+   This will automatically create a Python virtual environment and install dependencies.
+
+3. Create a `.env` file from the example and edit as needed:
    ```bash
    cp .env.example .env
    ```
@@ -108,12 +114,12 @@ STUF can be run locally using Docker Compose for development and testing purpose
    Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs. 
    Edit this file to customize your local development environment.
 
-3. Start the Docker Compose environment:
+4. Start the Docker Compose environment:
    ```bash
    docker-compose up -d
    ```
 
-4. Access the components:
+5. Access the components:
    - SPA (Frontend): http://localhost:3000
    - API: http://localhost:8000
      - Health check: http://localhost:8000/api/health
