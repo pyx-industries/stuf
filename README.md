@@ -104,17 +104,18 @@ STUF can be run locally using Docker Compose for development and testing purpose
    ```bash
    cp .env.example .env
    ```
-   
-   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs. 
+
+   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs.
    Edit this file to customize your local development environment.
 
 3. Start the Docker Compose environment:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 4. Access the components:
    - SPA (Frontend): http://localhost:3000
+     - Login with admin/password or other test users from realm-export.json
    - API: http://localhost:8000
      - Health check: http://localhost:8000/api/health
      - API info: http://localhost:8000/api/info
@@ -126,7 +127,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
 ### Environment Components
 
 - **Keycloak**: Authentication and authorization server
-  - Default admin credentials: admin/admin
+  - Development-only admin credentials: admin/admin
   - Configured with realm: stuf
   - Clients:
     - stuf-spa: Public client for the SPA
