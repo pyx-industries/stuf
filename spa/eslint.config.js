@@ -6,6 +6,10 @@ import pluginReact from "eslint-plugin-react";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
+  // Ignore patterns
+  {
+    ignores: ["build/**"],
+  },
   // JavaScript
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
