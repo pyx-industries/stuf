@@ -16,8 +16,7 @@ services:
       - "9990:9000" # Management port for health checks
     command: start-dev --import-realm --health-enabled=true
     volumes:
-      - keycloak_data:/opt/keycloak/data/h2
-      - keycloak_logs:/opt/keycloak/data/transaction-logs
+      - ./docker/keycloak/data:/opt/keycloak/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 10s
@@ -79,6 +78,4 @@ services:
       - api
 
 volumes:
-  keycloak_data:
-  keycloak_logs:
   minio_data:

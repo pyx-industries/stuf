@@ -24,9 +24,7 @@ COPY --from=builder /opt/keycloak/ /opt/keycloak/
 # In production, external monitoring tools would handle health checks
 COPY --from=curl-installer /mnt/rootfs /
 
-# Create import directory and copy realm configuration
-RUN mkdir -p /opt/keycloak/data/import
-COPY --chown=keycloak:keycloak realm-export.json /opt/keycloak/data/import/realm-export.json
+
 
 # Use the standard Keycloak entrypoint
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
