@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export interface SortOption {
   value: string;
-  label: string;
+  label: string | React.ReactNode;
 }
 
 export interface TableSortProps {

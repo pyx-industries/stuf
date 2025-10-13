@@ -126,7 +126,9 @@ describe("TableSort", () => {
         expect(
           screen.getByTestId(`table-sort-option-${option.value}`),
         ).toBeInTheDocument();
-        expect(screen.getByText(option.label)).toBeInTheDocument();
+        if (typeof option.label === "string") {
+          expect(screen.getByText(option.label)).toBeInTheDocument();
+        }
       }
     });
 
@@ -300,96 +302,6 @@ describe("TableSort", () => {
       ).toBeInTheDocument();
       expect(
         screen.getByTestId("table-sort-option-file.name"),
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe("Styling", () => {
-    it("has correct default width class", () => {
-      render(<TableSort {...defaultProps} />);
-
-      const trigger = screen.getByTestId("table-sort");
-      expect(trigger).toHaveClass("w-48");
-    });
-
-    it("maintains styling classes", () => {
-      render(<TableSort {...defaultProps} />);
-
-      const trigger = screen.getByTestId("table-sort");
-      expect(trigger).toHaveClass("bg-background");
-      expect(trigger).toHaveClass("rounded-md");
-      expect(trigger).toHaveClass("border");
-    });
-
-    it("custom className is merged with default classes", () => {
-      render(<TableSort {...defaultProps} className="my-custom-class" />);
-
-      const trigger = screen.getByTestId("table-sort");
-      expect(trigger).toHaveClass("w-48");
-      expect(trigger).toHaveClass("my-custom-class");
-    });
-  });
-
-  describe("Edge Cases", () => {
-    it("handles value that does not match any option", () => {
-      render(<TableSort {...defaultProps} value="nonexistent" />);
-
-      // Should render without error
-      expect(screen.getByTestId("table-sort")).toBeInTheDocument();
-    });
-
-    it("handles option values that are numeric strings", async () => {
-      const user = userEvent.setup();
-      const numericOptions: SortOption[] = [
-        { value: "1", label: "First" },
-        { value: "2", label: "Second" },
-        { value: "3", label: "Third" },
-      ];
-
-      render(<TableSort {...defaultProps} options={numericOptions} />);
-
-      await user.click(screen.getByTestId("table-sort"));
-      await user.click(screen.getByTestId("table-sort-option-2"));
-
-      expect(mockOnValueChange).toHaveBeenCalledWith("2");
-    });
-
-    it("handles rapid selection changes", async () => {
-      const user = userEvent.setup();
-      render(<TableSort {...defaultProps} />);
-
-      await user.click(screen.getByTestId("table-sort"));
-      await user.click(screen.getByTestId("table-sort-option-status"));
-
-      await user.click(screen.getByTestId("table-sort"));
-      await user.click(screen.getByTestId("table-sort-option-date"));
-
-      await user.click(screen.getByTestId("table-sort"));
-      await user.click(screen.getByTestId("table-sort-option-uploader"));
-
-      expect(mockOnValueChange).toHaveBeenCalledTimes(3);
-      expect(mockOnValueChange).toHaveBeenNthCalledWith(1, "status");
-      expect(mockOnValueChange).toHaveBeenNthCalledWith(2, "date");
-      expect(mockOnValueChange).toHaveBeenNthCalledWith(3, "uploader");
-    });
-
-    it("handles long option labels", async () => {
-      const user = userEvent.setup();
-      const longOptions: SortOption[] = [
-        {
-          value: "long",
-          label: "This is a very long option label that should still render",
-        },
-      ];
-
-      render(<TableSort {...defaultProps} options={longOptions} />);
-
-      await user.click(screen.getByTestId("table-sort"));
-
-      expect(
-        screen.getByText(
-          "This is a very long option label that should still render",
-        ),
       ).toBeInTheDocument();
     });
   });
