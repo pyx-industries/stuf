@@ -35,3 +35,7 @@ spa/dist/
 api/htmlcov/
 api/.coverage
 .coverage
+
+# Keycloak data directory (created by container)
+docker/keycloak/data/h2/
+docker/keycloak/data/transaction-logs/
