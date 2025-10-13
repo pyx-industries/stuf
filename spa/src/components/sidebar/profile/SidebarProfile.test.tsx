@@ -1,9 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { SidebarProfile } from "./SidebarProfile";
+import { UserRole, type User } from "@/types";
+
+const mockUser: User = {
+  name: "John Doe",
+  email: "john@example.com",
+  roles: [UserRole.User],
+};
 
 describe("SidebarProfile", () => {
   it("renders name and email", () => {
-    render(<SidebarProfile name="John Doe" email="john@example.com" />);
+    render(<SidebarProfile user={mockUser} />);
 
     expect(screen.getByTestId("sidebar-profile-name")).toHaveTextContent(
       "John Doe",
@@ -14,7 +21,7 @@ describe("SidebarProfile", () => {
   });
 
   it("renders fallback with initials when avatarUrl is not provided", () => {
-    render(<SidebarProfile name="John Doe" email="john@example.com" />);
+    render(<SidebarProfile user={mockUser} />);
 
     expect(
       screen.getByTestId("sidebar-profile-avatar-fallback"),
@@ -24,8 +31,11 @@ describe("SidebarProfile", () => {
   it("truncates long names", () => {
     render(
       <SidebarProfile
-        name="Dr. Christopher Alexander Montgomery Wellington III"
-        email="short@example.com"
+        user={{
+          name: "Dr. Christopher Alexander Montgomery Wellington III",
+          email: "short@example.com",
+          roles: [UserRole.User],
+        }}
       />,
     );
 
@@ -36,8 +46,11 @@ describe("SidebarProfile", () => {
   it("truncates long emails", () => {
     render(
       <SidebarProfile
-        name="Jane Doe"
-        email="very.long.email.address@corporate-company-domain.com"
+        user={{
+          name: "Jane Doe",
+          email: "very.long.email.address@corporate-company-domain.com",
+          roles: [UserRole.User],
+        }}
       />,
     );
 
@@ -46,13 +59,7 @@ describe("SidebarProfile", () => {
   });
 
   it("renders with custom className", () => {
-    render(
-      <SidebarProfile
-        name="John Doe"
-        email="john@example.com"
-        className="custom-class"
-      />,
-    );
+    render(<SidebarProfile user={mockUser} className="custom-class" />);
 
     const profile = screen.getByTestId("sidebar-profile");
     expect(profile).toHaveClass("custom-class");

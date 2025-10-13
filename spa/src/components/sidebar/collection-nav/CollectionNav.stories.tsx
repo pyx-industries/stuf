@@ -159,3 +159,52 @@ export const Expanded: Story = {
     selectedCollectionId: "collection-b",
   },
 };
+
+export const ScrollableWithSelected: Story = {
+  args: {
+    collections: [],
+  },
+  render: () => {
+    const ScrollableNav = () => {
+      const [selectedId, setSelectedId] = useState<string | null>(
+        "collection-10",
+      );
+      const [homeSelected, setHomeSelected] = useState(false);
+
+      const manyCollections = Array.from({ length: 20 }, (_, i) => ({
+        id: `collection-${i + 1}`,
+        name: `Collection ${i + 1}`,
+      }));
+
+      const handleCollectionSelect = (id: string) => {
+        setSelectedId(id);
+        setHomeSelected(false);
+      };
+
+      const handleHomeClick = () => {
+        setSelectedId(null);
+        setHomeSelected(true);
+      };
+
+      return (
+        <CollectionNav
+          collections={manyCollections}
+          selectedCollectionId={selectedId}
+          onCollectionSelect={handleCollectionSelect}
+          onHomeClick={handleHomeClick}
+          isHomeSelected={homeSelected}
+        />
+      );
+    };
+
+    return <ScrollableNav />;
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates scrollable behavior with 20 collections. The list has a max height of 256px with scrollbar. Click any collection to see it automatically scroll into view.",
+      },
+    },
+  },
+};

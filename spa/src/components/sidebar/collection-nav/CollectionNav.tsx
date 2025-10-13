@@ -1,11 +1,10 @@
 import { cn } from "@/lib/utils";
 import { CollectionItem } from "./CollectionItem";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { Collection } from "@/types";
 
-export interface Collection {
-  id: string;
-  name: string;
-}
+// Maximum height for scrollable collections list (256px)
+const COLLECTIONS_MAX_HEIGHT = "max-h-64";
 
 interface CollectionNavProps {
   collections: Collection[];
@@ -29,6 +28,8 @@ export function CollectionNav({
   className,
 }: CollectionNavProps) {
   const [internalIsExpanded, setInternalIsExpanded] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedItemRef = useRef<HTMLButtonElement>(null);
 
   // Use controlled state if provided, otherwise use internal state
   const isExpanded =
@@ -43,6 +44,36 @@ export function CollectionNav({
       setInternalIsExpanded(!internalIsExpanded);
     }
   };
+
+  // Auto-scroll to selected collection when it changes or when expanded
+  useEffect(() => {
+    if (
+      isExpanded &&
+      selectedCollectionId &&
+      selectedItemRef.current &&
+      containerRef.current
+    ) {
+      const container = containerRef.current;
+      const selectedItem = selectedItemRef.current;
+
+      // Get the positions
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = selectedItem.getBoundingClientRect();
+
+      // Check if item is already fully visible
+      const isVisible =
+        itemRect.top >= containerRect.top &&
+        itemRect.bottom <= containerRect.bottom;
+
+      // Only scroll if not visible
+      if (!isVisible) {
+        selectedItem.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [selectedCollectionId, isExpanded]);
 
   return (
     <div
@@ -93,10 +124,21 @@ export function CollectionNav({
 
         {/* Collections list */}
         {isExpanded && (
-          <div className="self-stretch pl-9 flex flex-col justify-start items-start gap-2 min-w-0">
+          <div
+            ref={containerRef}
+            className={cn(
+              "self-stretch pl-9 flex flex-col justify-start items-start gap-2 min-w-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent",
+              COLLECTIONS_MAX_HEIGHT,
+            )}
+          >
             {collections.map((collection) => (
               <CollectionItem
                 key={collection.id}
+                ref={
+                  selectedCollectionId === collection.id
+                    ? selectedItemRef
+                    : undefined
+                }
                 id={collection.id}
                 name={collection.name}
                 isSelected={selectedCollectionId === collection.id}
