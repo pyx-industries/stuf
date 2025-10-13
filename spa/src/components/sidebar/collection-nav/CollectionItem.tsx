@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { forwardRef } from "react";
 
 interface CollectionItemProps {
   id: string;
@@ -8,17 +9,18 @@ interface CollectionItemProps {
   className?: string;
 }
 
-export function CollectionItem({
-  id,
-  name,
-  isSelected = false,
-  onClick,
-  className,
-}: CollectionItemProps) {
+export const CollectionItem = forwardRef<
+  HTMLButtonElement,
+  CollectionItemProps
+>(function CollectionItem(
+  { id, name, isSelected = false, onClick, className },
+  ref,
+) {
   const testId = id.toLowerCase().replace(/\s+/g, "-");
 
   return (
     <button
+      ref={ref}
       onClick={onClick}
       className={cn(
         "w-full px-3 py-2 rounded inline-flex justify-start items-center gap-3 text-left transition-colors min-w-0 cursor-pointer",
@@ -46,4 +48,6 @@ export function CollectionItem({
       </span>
     </button>
   );
-}
+});
+
+CollectionItem.displayName = "CollectionItem";

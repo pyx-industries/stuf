@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CollectionNav } from "./CollectionNav";
-import type { Collection } from "./CollectionNav";
+import type { Collection } from "@/types";
 
 const mockCollections: Collection[] = [
   { id: "collection-a", name: "Collections A" },
@@ -278,5 +278,47 @@ describe("CollectionNav", () => {
     expect(screen.getByText("Collection 0")).toBeInTheDocument();
     expect(screen.getByText("Collection 10")).toBeInTheDocument();
     expect(screen.getByText("Collection 19")).toBeInTheDocument();
+  });
+
+  it("applies scrollable styles with many collections", () => {
+    const manyCollections: Collection[] = Array.from(
+      { length: 20 },
+      (_, i) => ({
+        id: `collection-${i}`,
+        name: `Collection ${i}`,
+      }),
+    );
+
+    render(<CollectionNav collections={manyCollections} />);
+
+    // Find the collections container
+    const collectionsContainer = screen
+      .getByText("Collection 0")
+      .closest(".pl-9");
+
+    expect(collectionsContainer).toHaveClass("max-h-64");
+    expect(collectionsContainer).toHaveClass("overflow-y-auto");
+  });
+
+  it("assigns ref to selected collection item", () => {
+    const manyCollections: Collection[] = Array.from(
+      { length: 20 },
+      (_, i) => ({
+        id: `collection-${i}`,
+        name: `Collection ${i}`,
+      }),
+    );
+
+    render(
+      <CollectionNav
+        collections={manyCollections}
+        selectedCollectionId="collection-10"
+      />,
+    );
+
+    // Verify selected collection is rendered
+    const selectedItem = screen.getByTestId("collection-item-collection-10");
+    expect(selectedItem).toBeInTheDocument();
+    expect(selectedItem).toHaveClass("bg-primary");
   });
 });
