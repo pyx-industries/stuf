@@ -13,7 +13,9 @@ MINIO_SECRET_KEY = os.environ.get("MINIO_ROOT_PASSWORD", "minioadmin")
 MINIO_SECURE = os.environ.get("MINIO_SECURE", "false").lower() == "true"
 
 # Default bucket name
-DEFAULT_BUCKET = "stuf-uploads"
+# DEFAULT_BUCKET = "stuf-uploads"
+DEFAULT_BUCKET = os.environ.get("MINIO_BUCKET_NAME", "stuf-uploads")
+
 
 logger = logging.getLogger(__name__)
 
