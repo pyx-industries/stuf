@@ -25,7 +25,7 @@ class ApiService {
       const url = `${API_BASE_URL}${endpoint}`;
 
       // Always include Authorization header if we have a token
-      const headers: any = {
+      const headers: Record<string, string> = {
         ...(token && { Authorization: `Bearer ${token}` }),
       };
 
@@ -36,7 +36,7 @@ class ApiService {
 
       // Set default Content-Type for JSON requests, but skip for FormData
       const isFormData = options.body instanceof FormData;
-      if (!headers("Content-Type") && !isFormData) {
+      if (!headers["Content-Type"] && !isFormData) {
         headers["Content-Type"] = "application/json";
       }
 
