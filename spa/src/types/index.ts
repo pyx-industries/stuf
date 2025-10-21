@@ -4,6 +4,21 @@
 export interface Collection {
   id: string;
   name: string;
+  fileCount?: number;
+}
+
+/**
+ * Represents a file in the system
+ */
+export interface File {
+  object_name: string;
+  collection: string;
+  owner: string;
+  original_filename: string;
+  upload_time: string;
+  content_type: string;
+  size?: number;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -11,8 +26,8 @@ export interface Collection {
  */
 export enum UserRole {
   Admin = "admin",
-  User = "user",
-  Limited = "limited",
+  TrustArchitect = "trust-architect",
+  ProjectParticipant = "project-participant",
 }
 
 /**
@@ -21,8 +36,17 @@ export enum UserRole {
 export interface User {
   name: string;
   email: string;
-  roles: UserRole[];
   avatarUrl?: string;
+  roles: UserRole[];
+  collections: Record<string, string[]>;
+}
+
+/**
+ * Unified service error format consumed by UI
+ */
+export interface ServiceError {
+  message: string;
+  action: string;
 }
 
 /**
