@@ -82,3 +82,108 @@ For detailed information on deploying and using STUF, please refer to:
 ## Vision and Roadmap
 
 STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](docs/vision_and_roadmap.md).
+
+## Local Development with Docker Compose
+
+STUF can be run locally using Docker Compose for development and testing purposes.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Git for cloning the repository
+
+### Setup Instructions
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/pyx-industries/stuf.git
+   cd stuf
+   ```
+
+2. Run the test suite to verify setup:
+   ```bash
+   make test
+   ```
+   This will automatically create a Python virtual environment and install dependencies.
+   If you want to run tests individually, say for the api service, you can activate
+   the virtualenv in your console manually with `source .venv/bin/activate` and run
+   tests with `pytest api/`, for example.
+
+3. Create a `.env` file from the example and edit as needed:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs.
+   Edit this file to customize your local development environment.
+
+4. Start the Docker Compose environment:
+   ```bash
+   docker compose up -d
+   ```
+
+5. Access the components:
+   - SPA (Frontend): http://localhost:3000
+     - Login with admin/password or other test users from realm-export.json
+   - API: http://localhost:8000
+     - Health check: http://localhost:8000/api/health
+     - API info: http://localhost:8000/api/info
+   - Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
+   - MinIO:
+     - API endpoint: http://localhost:9000
+     - Web console: http://localhost:9001 (minioadmin/minioadmin)
+
+### Environment Components
+
+- **Keycloak**: Authentication and authorization server
+  - Development-only admin credentials: admin/admin
+  - Configured with realm: stuf
+  - Clients:
+    - stuf-spa: Public client for the SPA
+    - stuf-api: Confidential client with service account
+  - Roles:
+    - admin: Administrator role with full access
+    - collection-*: Collection-specific access roles
+  - Test users:
+    - admin@example.com / password (admin role)
+- **MinIO**: S3-compatible object storage
+- **API**: FastAPI backend service
+- **SPA**: React frontend application
+
+### Development Tools
+
+#### Pre-commit Hooks
+
+This project uses pre-commit hooks with ruff for code formatting and linting:
+
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+2. Install pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
+
+The hooks will automatically run ruff formatting and linting on changed files during commits. You can also run them manually:
+
+```bash
+# Run on all files
+pre-commit run --all-files
+
+# Run on staged files only
+pre-commit run
+```
+
+### Stopping the Environment
+
+To stop the Docker Compose environment:
+```bash
+docker-compose down
+```
+
+To stop and remove volumes (will delete all data):
+```bash
+docker-compose down -v
+```

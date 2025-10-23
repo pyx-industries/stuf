@@ -1,0 +1,81 @@
+services:
+  keycloak:
+    build:
+      context: ./docker/keycloak
+      dockerfile: Dockerfile
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - KEYCLOAK_SPA_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
+      - KEYCLOAK_API_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
+      - KEYCLOAK_API_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
+      - KEYCLOAK_ADMIN_ROLE=${KEYCLOAK_ADMIN_ROLE:-admin}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+      - "9990:9000" # Management port for health checks
+    command: start-dev --import-realm --health-enabled=true
+    volumes:
+      - ./docker/keycloak/data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 45s
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ISSUER_URL=http://localhost:8080
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+      minio:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  spa:
+    build:
+      context: ./spa
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "${SPA_PORT:-3000}:3000"
+    environment:
+      - REACT_APP_API_URL=${API_URL:-http://localhost:8000}
+      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
+      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
+    depends_on:
+      - api
+
+volumes:
+  minio_data:

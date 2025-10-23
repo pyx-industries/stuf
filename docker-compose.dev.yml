@@ -1,0 +1,35 @@
+# Development composition - use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Provides fast hot-reloading development environment
+services:
+  api:
+    volumes:
+      # Mount API source code for hot reloading
+      - ./api:/app:cached
+      # Exclude Python cache and virtual environment files
+      - /app/__pycache__
+    environment:
+      # Enable auto-reload for development
+      - PYTHONPATH=/app
+
+  spa:
+    build:
+      context: ./spa
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      # Mount source code for hot reloading
+      - ./spa/src:/app/src:cached
+      - ./spa/public:/app/public:cached
+      - ./spa/index.html:/app/index.html:cached
+      - ./spa/vite.config.ts:/app/vite.config.ts:cached
+      - ./spa/tailwind.config.js:/app/tailwind.config.js:cached
+      - ./spa/components.json:/app/components.json:cached
+      - ./spa/tsconfig.json:/app/tsconfig.json:cached
+      - ./spa/tsconfig.node.json:/app/tsconfig.node.json:cached
+      # Exclude node_modules to avoid conflicts
+      - /app/node_modules
+    environment:
+      # Enable file watching in Docker
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_HMRPORT=3000
+    command: npm run dev

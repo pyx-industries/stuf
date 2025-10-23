@@ -1,37 +1,34 @@
 # Integration Guide
 
-## Zulip Integration
+## Identity Provider Integration
+
+1. **Authentication Setup**
+   - Configure identity provider settings
+   - Set up authentication flows
+   - Configure user management
+
+2. **User Provisioning**
+   - Configure user provisioning
+   - Set up group mappings
+   - Manage access permissions
+
+## Notification Integration
 
 1. **Notification Setup**
-   - Configure notification streams in Zulip
+   - Configure notification settings
+   - Set up delivery channels
    - Customize notification formats
-   - Set up filters and alerts
 
-2. **Bot Integration**
-   - Configure STUF bot permissions
-   - Use bot commands for quick actions
-   - Set up automated responses
+2. **Event Handling**
+   - Configure event subscriptions
+   - Set up event filtering
+   - Implement event handlers
 
-3. **Webhook Integration**
-   - Configure external webhooks
-   - Map events to webhook calls
-   - Test webhook delivery
+## Storage Integration
 
-## Custom Integrations
+1. **Storage Configuration**
+   - Configure storage provider settings
+   - Set up bucket policies
+   - Configure encryption settings
 
-1. **Event Hooks**
-   - Configure custom event handlers
-   - Implement post-upload processing
-   - Set up notification routing
-
-2. **Custom Authentication**
-   - Integrate with existing identity providers
-   - Configure custom authentication flows
-   - Map external identities to STUF users
-
-3. **Data Export**
-   - Configure automatic exports
-   - Set up file transfer to external systems
-   - Implement data transformation hooks
-
-> Note: API integration features are planned for future releases. See the project roadmap for details.
+> Note: Additional integration features may be implemented in future releases. See the future_sprints directory for ideas that are out of scope for the current work.

@@ -1,0 +1,153 @@
+# Docker Compose for Browser E2E Testing Environment
+# This file contains ONLY the services needed for browser E2E tests
+# Test runner executes on the host, services run in Docker
+# 
+# Port mapping to avoid conflicts with main docker-compose:
+# Main:    Keycloak:8080, MinIO:9000/9001, API:8000, SPA:3000
+# E2E:     Keycloak:8180, MinIO:9100/9101, API:8100, SPA:3100
+
+networks:
+  stuf-e2e-test-net:
+    driver: bridge
+
+services:
+  # Keycloak - Identity Provider
+  keycloak-e2e:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8180:8080"  # Different port to avoid conflict
+      - "9191:9000"  # Management port (different from main 9990)
+    command: start-dev --import-realm
+    volumes:
+      - keycloak_e2e_data:/opt/keycloak/data
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json
+    networks:
+      - stuf-e2e-test-net
+
+  # MinIO - Object Storage
+  minio-e2e:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9100:9000"  # Different API port
+      - "9101:9001"  # Different Console port
+    volumes:
+      - minio_e2e_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - stuf-e2e-test-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+      start_period: 10s
+
+  # FastAPI Backend
+  api-e2e:
+    build:
+      context: ../../api
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8000"  # Different port
+    environment:
+      # Keycloak configuration (internal network)
+      - KEYCLOAK_URL=http://keycloak-e2e:8080
+      - KEYCLOAK_ISSUER_URL=http://keycloak-e2e:8080  # Internal Docker network URL
+      - KEYCLOAK_REALM=stuf
+      - KEYCLOAK_CLIENT_ID=stuf-api
+      - KEYCLOAK_CLIENT_SECRET=test-secret-e2e
+      
+      # MinIO configuration (internal network)
+      - MINIO_ENDPOINT=minio-e2e:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      
+      # CORS configuration for browser testing
+      - CORS_ORIGINS=http://spa-e2e:3000
+    depends_on:
+      - minio-e2e
+      - keycloak-e2e
+    networks:
+      - stuf-e2e-test-net
+
+  # React SPA Frontend
+  spa-e2e:
+    build:
+      context: ../../spa
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3100:3000"  # Different port
+    environment:
+      # API configuration (internal Docker network URL)
+      - REACT_APP_API_URL=http://api-e2e:8000
+
+      # Keycloak configuration (internal Docker network URL)
+      - REACT_APP_KEYCLOAK_URL=http://keycloak-e2e:8080
+      - REACT_APP_KEYCLOAK_REALM=stuf
+      - REACT_APP_KEYCLOAK_CLIENT_ID=stuf-spa
+
+      # Development settings
+      - REACT_APP_NODE_ENV=development
+    depends_on:
+      - api-e2e
+    networks:
+      - stuf-e2e-test-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request('http://127.0.0.1:3000', res => process.exit(0)); req.on('error', () => process.exit(1)); req.end();"]
+      interval: 5s
+      timeout: 2s
+      retries: 15
+      start_period: 15s
+
+  # Test runner - runs Playwright tests inside Docker network
+  test-runner:
+    build:
+      context: ../..  # Build from project root to access both tests/e2e-browser and api
+      dockerfile: tests/e2e-browser/Dockerfile.test-runner
+    environment:
+      # Use internal Docker network URLs
+      - SPA_URL=http://spa-e2e:3000
+      - API_URL=http://api-e2e:8000
+      - KEYCLOAK_URL=http://keycloak-e2e:8080
+      - MINIO_URL=http://minio-e2e:9000
+      # API E2E tests need these for proper JWT validation
+      - KEYCLOAK_ISSUER_URL=http://keycloak-e2e:8080
+      - KEYCLOAK_REALM=stuf
+      - KEYCLOAK_CLIENT_ID=stuf-api
+      # MinIO configuration for API E2E tests
+      - MINIO_ENDPOINT=minio-e2e:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    depends_on:
+      spa-e2e:
+        condition: service_healthy
+      api-e2e:
+        condition: service_started
+      keycloak-e2e:
+        condition: service_started
+      minio-e2e:
+        condition: service_healthy
+    networks:
+      - stuf-e2e-test-net
+    volumes:
+      - ./reports:/app/reports
+      - .:/app
+      # Mount the entire API directory for imports and tests
+      - ../../api:/app/api
+    profiles:
+      - testing
+
+# Named volumes for E2E test data (separate from main volumes)
+volumes:
+  keycloak_e2e_data:
+    driver: local
+  minio_e2e_data:
+    driver: local

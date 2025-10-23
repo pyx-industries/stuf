@@ -5,3 +5,37 @@ docs/img/*.png
 
 # Ignore generated MkDocs site
 site/
+
+# Environment variables
+.env
+__pycache__/
+.coverage
+\#*\#
+.claude/
+
+# Python virtual environment
+.venv/
+
+# macOS system files
+.DS_Store
+
+# Editor backup files
+*~
+
+# Browser E2E test artifacts
+tests/e2e-browser/reports/
+tests/e2e-browser/auth-storage-state.json
+tests/.venv/
+
+# SPA build artifacts
+spa/build/
+spa/dist/
+
+# Coverage reports
+api/htmlcov/
+api/.coverage
+.coverage
+
+# Keycloak data directory (created by container)
+docker/keycloak/data/h2/
+docker/keycloak/data/transaction-logs/

@@ -1,0 +1,145 @@
+#+TITLE: Fixme: Test Suite Refactoring and Improvements
+#+STARTUP: overview
+
+This document outlines prioritized changes to improve the test suite's organization, maintainability, idiomatic adherence, and professionalism.
+
+**Prioritization Legend:**
+*   **Critical (P1)**: Immediate fix required; addresses dead code, severe inconsistencies, or potential for major bugs.
+*   **High (P2)**: Improves test reliability, robustness, and stability, especially for integration/E2E tests.
+*   **Medium (P3)**: Enhances organization, reduces clutter, and makes the test suite easier to navigate.
+*   **Low (P4)**: Improves code quality, maintainability, and adheres to best practices.
+
+**Strategy Note:** The test suite was in a broken state prior to this refactoring effort. The current strategy is to complete the planned structural and quality improvements first, and then perform a final stabilization pass to get all tests to a "green" state. Individual tasks may not result in a fully passing test suite.
+
+** NEXT Refactor E2E Test Setup using Pytest-Docker (P2)
+This task focuses on improving the reliability and maintainability of end-to-end tests by integrating `pytest-docker` for seamless Docker service management. This will replace the brittle manual `subprocess.run` and `time.sleep` calls with a more robust and idiomatic approach, ensuring services are properly started, healthy, and torn down.
+
+*** Files to create/modify
+- `requirements-dev.txt`: Add `pytest-docker==2.0.0` (or latest stable version).
+- `api/tests/e2e/conftest.py`: Refactor fixtures to use `pytest-docker` for Keycloak and MinIO service management.
+
+*** Completion Criteria
+- [ ] `pytest-docker` is added to `requirements-dev.txt`.
+- [ ] `api/tests/e2e/conftest.py` is refactored to use `pytest-docker` services.
+- [ ] The `pytest-docker` integration is implemented, managing service lifecycle.
+- [ ] Manual `docker-compose up/down` and `sleep` commands are removed from test setup.
+
+** DONE Clean up Test Suite Organization (P3)
+This section addresses structural and organizational improvements across the test suite. It includes removing unused BDD-related files, standardizing `pytest` invocation via the `Makefile`, and correcting import paths for better maintainability.
+
+*** DONE Remove unused BDD-related files and directories
+This task removes unused BDD feature files, step definition files, and their containing directories to reduce clutter and streamline the test suite. The existing BDD framework setup appears incomplete or abandoned, and these files contribute to unnecessary complexity.
+
+**** Files to create/modify
+- `api/tests/step_defs/__init__.py`: Delete file.
+- `api/tests/step_defs/test_auth_flow.py`: Delete file.
+- `api/tests/features/auth_flow.feature`: Delete file.
+- `api/tests/features/api_functionality.feature`: Delete file.
+- `api/tests/step_defs/`: Delete directory.
+- `api/tests/features/`: Delete directory.
+
+**** Completion Criteria
+- [X] All specified BDD feature files are deleted.
+- [X] All specified BDD step definition files are deleted.
+- [X] `api/tests/step_defs/` directory is removed.
+- [X] `api/tests/features/` directory is removed.
+- [X] The project structure is cleaner and less cluttered by unused BDD artifacts.
+
+*** DONE Refactor `Makefile` for consistent `pytest` invocation
+This task standardizes how `pytest` is invoked across all test targets in the `Makefile`. By running `pytest` from the project root and specifying the `api/tests` directory, import resolution is simplified, and integration with tools like `pytest-docker` becomes more seamless.
+
+**** Files to create/modify
+- `Makefile`: Update `test-unit`, `test-integration`, `test-e2e`, `test`, `test-all`, `test-cov` targets.
+
+**** Completion Criteria
+- [X] All specified `Makefile` targets are updated to invoke `pytest` from the root, targeting `api/tests`.
+- [X] `cd api` commands are removed from `pytest` invocations in the `Makefile`.
+- [X] The invocation logic is standardized across all test targets.
+
+*** DONE Remove `sys.path.insert` and adjust relative import in `api/tests/conftest.py`
+With `pytest` being run from the project root, the manual manipulation of `sys.path` in `api/tests/conftest.py` becomes redundant and can lead to issues. This task removes the unnecessary `sys.path.insert` and adjusts internal imports to be relative within the `api.tests` package.
+
+**** Files to create/modify
+- `api/tests/conftest.py`: Remove `sys.path.insert` and adjust a relative import.
+
+**** Completion Criteria
+- [X] `sys.path.insert` lines are removed from `api/tests/conftest.py`.
+- [X] The import for `SAMPLE_METADATA`, `SAMPLE_FILES`, `SAMPLE_USERS` is adjusted to a relative import.
+- [X] The `sys.path` manipulation is removed and imports are corrected.
+
+** TODO Improve Code Quality and Maintainability (P4)
+This section covers enhancements to code quality and maintainability in the `api` module, focusing on standard practices for logging and configuration.
+
+*** DONE Implement `logging` in `api/storage/minio.py`
+This task replaces `print` statements in `api/storage/minio.py` with calls to Python's standard `logging` module. This provides a more robust and configurable way to handle messages, crucial for debugging and monitoring in production environments.
+
+**** Files to create/modify
+- `api/storage/minio.py`: Add `import logging` and replace `print` calls with `logger.warning` or `logger.error`.
+
+**** Completion Criteria
+- [X] `api/storage/minio.py` imports the `logging` module.
+- [X] All `print` statements in `api/storage/minio.py` are replaced with appropriate `logger` calls (`info`, `warning`, `error`).
+- [X] The application's MinIO operations continue to function as expected, with logs now being properly handled by the logging system.
+
+*** TODO Make `DEFAULT_BUCKET` configurable in `api/storage/minio.py`
+This task makes the default MinIO bucket name configurable via an environment variable. Hardcoding the bucket name limits flexibility for different deployment environments or test setups, making it harder to manage separate buckets for development, staging, and production.
+
+**** Files to create/modify
+- `api/storage/minio.py`: Update `DEFAULT_BUCKET` to use `os.environ.get('MINIO_BUCKET_NAME', 'stuf-uploads')`.
+
+**** Completion Criteria
+- [ ] `DEFAULT_BUCKET` in `api/storage/minio.py` is configured to read from the `MINIO_BUCKET_NAME` environment variable.
+- [ ] The MinIO client can successfully connect to and use a bucket specified by `MINIO_BUCKET_NAME`.
+- [ ] Existing functionality using the default bucket name remains operational if `MINIO_BUCKET_NAME` is not set.
+
+** TODO Finalize Test Suite Stabilization (P1)
+This is the final step after all other refactoring is complete. This task will address all remaining test failures across the unit, integration, and E2E suites to bring the test pipeline back to a stable, "green" state.
+
+*** Files to create/modify
+- `api/tests/integration/test_files_api.py`: Fix failing assertions and logic.
+- `api/tests/e2e/test_complete_workflow.py`: Fix any failures related to the new E2E setup.
+- Any other test files with reported failures.
+
+*** Completion Criteria
+- [ ] All integration tests pass.
+- [ ] All E2E tests pass.
+- [ ] The `make test-all` command completes successfully with no failures.
+
+** DONE Refactor MinioClient for Dependency Injection (P1)
+This is a critical refactoring to address the fundamental design problem that makes testing so difficult. The root cause of our mocking issues is the line `app.dependency_overrides[MinioClient] = lambda: MinioClient()` in `api/main.py`. This sets a "default" dependency override when the `app` module is imported, which the test fixtures then have to fight to overwrite.
+
+The "holy grail" solution is to remove this line from `main.py` and let FastAPI handle the creation of the `MinioClient` dependency automatically. This will:
+- Eliminate the module-level side-effect that complicates testing.
+- Allow test fixtures to cleanly and reliably override the `MinioClient` dependency without unexpected behavior.
+- Align the application's design with FastAPI best practices for testability.
+
+*** Files to create/modify
+- `api/main.py`: Remove the `app.dependency_overrides[MinioClient] = lambda: MinioClient()` line. The application should rely on standard `Depends(MinioClient)` resolution.
+- `api/storage/minio.py`: Ensure the `MinioClient` class is a standard, injectable class. The `ensure_bucket=True` default in its `__init__` is correct for production use.
+- `api/tests/integration/conftest.py`: Simplify the MinIO mocking. With the fix in `main.py`, the fixture will no longer need to fight the default override and can be made cleaner.
+- `api/tests/unit/conftest.py`: Adjust `mock_minio_client` fixture if necessary to align with the cleaner override pattern.
+
+*** Completion Criteria
+- [X] The `app.dependency_overrides[MinioClient]` line in `api/main.py` is removed.
+- [X] `api/routers/files.py` endpoints continue to correctly use `Depends(MinioClient)`.
+- [X] Integration and unit test fixtures cleanly override the `MinioClient` dependency.
+- [X] The core refactoring of dependency injection is complete.
+- [X] The application remains functional when run normally
+  (e.g., via `uvicorn` or `docker-compose`),
+   with the real `MinioClient` being created by FastAPI's dependency injection system.
+** DONE Stabilize Integration Test Suite (P0)
+This is the highest priority task to get the test suite back to a green, stable state. Recent debugging has revealed significant issues in the test fixtures that prevent tests from running correctly, including syntax errors and flawed dependency mocking logic. This task must be completed before any refactoring of the application code.
+
+*** Files to create/modify
+- `api/tests/integration/conftest.py`: Fix the `integration_client` fixture by removing syntax errors (duplicate `yield`), correcting teardown logic, and ensuring the `MinioClient` dependency override works reliably for the `TestClient`.
+- `api/tests/unit/conftest.py`: Fix any copy-paste errors or inconsistencies found during the stabilization process.
+- `api/routers/files.py`: Remove any temporary debugging `logger` calls.
+- `api/tests/integration/test_files_api.py`: Clean up duplicated assertions and any other test code rot.
+
+*** Completion Criteria
+- [X] The `integration_client` fixture in `api/tests/integration/conftest.py` is fixed and correctly injects all mocks.
+- [X] All `ERROR`s during test teardown are resolved.
+- [X] All previously failing integration tests in `test_files_api.py` (upload, list, download) are passing.
+- [X] The test suite is stable and provides a reliable baseline for further refactoring.
+** DONE Remove `api/auth/keycloak.py` (P1)
+Removed the redundant and incompatible `api/auth/keycloak.py` file, which contained Flask-specific code and was not used by the FastAPI application. This eliminated dead code and reduced confusion in the codebase.
