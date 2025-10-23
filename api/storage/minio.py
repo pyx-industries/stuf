@@ -13,8 +13,7 @@ MINIO_SECRET_KEY = os.environ.get("MINIO_ROOT_PASSWORD", "minioadmin")
 MINIO_SECURE = os.environ.get("MINIO_SECURE", "false").lower() == "true"
 
 # Default bucket name
-# DEFAULT_BUCKET = "stuf-uploads"
-DEFAULT_BUCKET = os.environ.get("MINIO_BUCKET_NAME", "stuf-uploads")
+MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME", "stuf-uploads")
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +43,7 @@ class MinioClient:
             # Only ensure bucket if the flag was set during MinioClient instantiation
             if self._should_ensure_bucket:
                 try:
-                    self._ensure_bucket_exists(DEFAULT_BUCKET)
+                    self._ensure_bucket_exists(MINIO_BUCKET_NAME)
                 except Exception as e:
                     logger.warning(
                         f"Could not ensure bucket exists during lazy init: {e}"
@@ -70,7 +69,7 @@ class MinioClient:
         object_name: str,
         content_type: str,
         metadata: dict = None,
-        bucket_name: str = DEFAULT_BUCKET,
+        bucket_name: str = MINIO_BUCKET_NAME,
     ) -> str:
         """Upload a file to MinIO storage"""
         client = self._ensure_client()  # Get the client instance
@@ -96,7 +95,7 @@ class MinioClient:
             raise
 
     def download_file(
-        self, object_name: str, bucket_name: str = DEFAULT_BUCKET
+        self, object_name: str, bucket_name: str = MINIO_BUCKET_NAME
     ) -> tuple:
         """Download a file from MinIO storage"""
         client = self._ensure_client()  # Get the client instance
@@ -114,7 +113,7 @@ class MinioClient:
             raise
 
     def get_presigned_url(
-        self, object_name: str, expires: int = 3600, bucket_name: str = DEFAULT_BUCKET
+        self, object_name: str, expires: int = 3600, bucket_name: str = MINIO_BUCKET_NAME
     ) -> str:
         """Generate a presigned URL for object download"""
         client = self._ensure_client()  # Get the client instance
@@ -129,7 +128,7 @@ class MinioClient:
             raise
 
     def list_objects(
-        self, prefix: str = "", bucket_name: str = DEFAULT_BUCKET
+        self, prefix: str = "", bucket_name: str = MINIO_BUCKET_NAME
     ) -> List[dict]:
         """List objects in the bucket with optional prefix"""
         client = self._ensure_client()  # Get the client instance
@@ -148,7 +147,7 @@ class MinioClient:
             raise
 
     def delete_object(
-        self, object_name: str, bucket_name: str = DEFAULT_BUCKET
+        self, object_name: str, bucket_name: str = MINIO_BUCKET_NAME
     ) -> bool:
         """Delete an object from the bucket"""
         client = self._ensure_client()  # Get the client instance

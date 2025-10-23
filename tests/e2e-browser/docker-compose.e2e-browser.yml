@@ -68,6 +68,7 @@ services:
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_BUCKET_NAME=stuf-uploads-e2e
       
       # CORS configuration for browser testing
       - CORS_ORIGINS=http://spa-e2e:3000
@@ -126,6 +127,7 @@ services:
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_BUCKET_NAME=stuf-uploads-e2e
     depends_on:
       spa-e2e:
         condition: service_healthy
