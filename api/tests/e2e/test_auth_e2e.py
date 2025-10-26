@@ -25,7 +25,7 @@ class TestAuthenticationE2E:
 
         # This should work with a real token from the fixture
         token_info = verify_jwt_token(real_keycloak_token)
-
+        
         assert token_info is not None
         # JWT tokens have standard claims, not "active" like introspection
         assert "iss" in token_info  # Issuer is always present
