@@ -19,6 +19,7 @@ interface SidebarProps {
   user: User;
   onLogout: () => void;
   isLoading?: boolean;
+  hideHeader?: boolean;
   className?: string;
 }
 
@@ -32,22 +33,23 @@ export function Sidebar({
   user,
   onLogout,
   isLoading = false,
+  hideHeader = false,
   className,
 }: SidebarProps) {
   if (isLoading) {
-    return <SidebarSkeleton className={className} />;
+    return <SidebarSkeleton hideHeader={hideHeader} className={className} />;
   }
 
   return (
     <aside
       className={cn(
-        "w-72 h-screen bg-sidebar px-6 py-7 flex flex-col justify-between items-start overflow-hidden",
+        "w-72 h-full bg-sidebar px-6 py-7 flex flex-col justify-between items-start overflow-hidden",
         className,
       )}
       data-testid="sidebar"
     >
       <div className="self-stretch flex flex-col justify-start items-start gap-6">
-        <SidebarHeader />
+        {!hideHeader && <SidebarHeader />}
 
         <div className="self-stretch flex flex-col justify-start items-start gap-2">
           <CollectionNav

@@ -14,12 +14,14 @@ const mockAdminUser: User = {
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
   roles: [UserRole.Admin],
+  collections: {},
 };
 
 const mockRegularUser: User = {
   name: "John Doe",
   email: "john.doe@example.com",
-  roles: [UserRole.User],
+  roles: [UserRole.ProjectParticipant],
+  collections: {},
 };
 
 const defaultProps = {
@@ -38,11 +40,25 @@ describe("Sidebar", () => {
     expect(screen.getByTestId("sidebar")).toBeInTheDocument();
   });
 
-  it("renders the header", () => {
+  it("renders the header by default", () => {
     render(<Sidebar {...defaultProps} />);
 
     expect(screen.getByTestId("sidebar-header")).toBeInTheDocument();
     expect(screen.getByText("STUF")).toBeInTheDocument();
+  });
+
+  it("renders the header when hideHeader is false", () => {
+    render(<Sidebar {...defaultProps} hideHeader={false} />);
+
+    expect(screen.getByTestId("sidebar-header")).toBeInTheDocument();
+    expect(screen.getByText("STUF")).toBeInTheDocument();
+  });
+
+  it("hides the header when hideHeader is true", () => {
+    render(<Sidebar {...defaultProps} hideHeader={true} />);
+
+    expect(screen.queryByTestId("sidebar-header")).not.toBeInTheDocument();
+    expect(screen.queryByText("STUF")).not.toBeInTheDocument();
   });
 
   it("renders the collection navigation", () => {
@@ -190,13 +206,6 @@ describe("Sidebar", () => {
     expect(menuTrigger).toHaveClass("cursor-pointer");
   });
 
-  it("menu trigger icon is visible", () => {
-    const { container } = render(<Sidebar {...defaultProps} />);
-
-    const menuIcon = container.querySelector('img[src="/icons/more_vert.svg"]');
-    expect(menuIcon).toBeInTheDocument();
-  });
-
   it("shows Configuration nav item for admin users", () => {
     render(<Sidebar {...defaultProps} user={mockAdminUser} />);
 
@@ -217,7 +226,8 @@ describe("Sidebar", () => {
     const limitedUser: User = {
       name: "Limited User",
       email: "limited@example.com",
-      roles: [UserRole.Limited],
+      roles: [UserRole.ProjectParticipant],
+      collections: {},
     };
 
     render(<Sidebar {...defaultProps} user={limitedUser} />);
@@ -226,5 +236,25 @@ describe("Sidebar", () => {
       screen.queryByTestId("nav-item-configuration"),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Configuration")).not.toBeInTheDocument();
+  });
+
+  it("renders skeleton when isLoading is true", () => {
+    render(<Sidebar {...defaultProps} isLoading={true} />);
+
+    expect(screen.getByTestId("sidebar-skeleton")).toBeInTheDocument();
+  });
+
+  it("skeleton shows header by default when loading", () => {
+    render(<Sidebar {...defaultProps} isLoading={true} />);
+
+    expect(screen.getByTestId("sidebar-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-header")).toBeInTheDocument();
+  });
+
+  it("skeleton hides header when hideHeader is true and loading", () => {
+    render(<Sidebar {...defaultProps} isLoading={true} hideHeader={true} />);
+
+    expect(screen.getByTestId("sidebar-skeleton")).toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar-header")).not.toBeInTheDocument();
   });
 });

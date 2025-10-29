@@ -3,10 +3,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarHeader } from "./header/SidebarHeader";
 
 interface SidebarSkeletonProps {
+  hideHeader?: boolean;
   className?: string;
 }
 
-export function SidebarSkeleton({ className }: SidebarSkeletonProps) {
+export function SidebarSkeleton({
+  hideHeader = false,
+  className,
+}: SidebarSkeletonProps) {
   // Primary color for both light and dark modes
   const skeletonClass = "bg-primary/30 dark:bg-primary/20";
 
@@ -20,8 +24,8 @@ export function SidebarSkeleton({ className }: SidebarSkeletonProps) {
     >
       {/* Top section */}
       <div className="self-stretch flex flex-col justify-start items-start gap-6 w-full">
-        {/* Real header - always visible */}
-        <SidebarHeader />
+        {/* Real header - conditionally visible */}
+        {!hideHeader && <SidebarHeader />}
 
         {/* Navigation skeleton */}
         <div className="self-stretch flex flex-col justify-start items-start gap-2 w-full">

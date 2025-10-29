@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MobileSidebar } from "./MobileSidebar";
 import { UserRole, type Collection, type User } from "@/types";
@@ -13,6 +13,7 @@ const mockUser: User = {
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
   roles: [UserRole.Admin],
+  collections: {},
 };
 
 const defaultProps = {
@@ -25,6 +26,19 @@ const defaultProps = {
 };
 
 describe("MobileSidebar", () => {
+  it("renders the mobile navbar", () => {
+    render(<MobileSidebar {...defaultProps} />);
+
+    expect(screen.getByTestId("mobile-navbar")).toBeInTheDocument();
+  });
+
+  it("renders the STUF logo in navbar", () => {
+    render(<MobileSidebar {...defaultProps} />);
+
+    expect(screen.getByTestId("mobile-navbar-logo")).toBeInTheDocument();
+    expect(screen.getByText("STUF")).toBeInTheDocument();
+  });
+
   it("renders the hamburger button", () => {
     render(<MobileSidebar {...defaultProps} />);
 
@@ -160,10 +174,51 @@ describe("MobileSidebar", () => {
     expect(sidebar).toHaveClass("-translate-x-full");
   });
 
-  it("renders with custom className on toggle button", () => {
+  it("renders with custom className on navbar", () => {
     render(<MobileSidebar {...defaultProps} className="custom-class" />);
 
+    const navbar = screen.getByTestId("mobile-navbar");
+    expect(navbar).toHaveClass("custom-class");
+  });
+
+  it("hides sidebar header since logo is in navbar", async () => {
+    const user = userEvent.setup();
+    render(<MobileSidebar {...defaultProps} />);
+
+    // Open sidebar
     const toggleButton = screen.getByTestId("mobile-sidebar-toggle");
-    expect(toggleButton).toHaveClass("custom-class");
+    await user.click(toggleButton);
+
+    // Header should not be in the sidebar (hideHeader={true})
+    const sidebar = screen.getByTestId("mobile-sidebar");
+    expect(sidebar).toBeInTheDocument();
+
+    // Since the header is hidden, we check that STUF only appears once (in navbar)
+    const stufElements = screen.getAllByText("STUF");
+    expect(stufElements).toHaveLength(1); // Only in navbar, not in sidebar
+  });
+
+  it("closes sidebar when window is resized to desktop size", async () => {
+    const user = userEvent.setup();
+    render(<MobileSidebar {...defaultProps} />);
+
+    // Open sidebar
+    const toggleButton = screen.getByTestId("mobile-sidebar-toggle");
+    await user.click(toggleButton);
+
+    let sidebar = screen.getByTestId("mobile-sidebar");
+    expect(sidebar).toHaveClass("translate-x-0");
+
+    // Simulate window resize to desktop size (>= 1024px)
+    act(() => {
+      global.innerWidth = 1024;
+      global.dispatchEvent(new Event("resize"));
+    });
+
+    // Wait for the state update
+    await waitFor(() => {
+      sidebar = screen.getByTestId("mobile-sidebar");
+      expect(sidebar).toHaveClass("-translate-x-full");
+    });
   });
 });

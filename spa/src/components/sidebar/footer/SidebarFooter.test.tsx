@@ -7,7 +7,8 @@ import { UserRole, type User } from "@/types";
 const mockUser: User = {
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
-  roles: [UserRole.User],
+  roles: [UserRole.ProjectParticipant],
+  collections: {},
 };
 
 describe("SidebarFooter", () => {

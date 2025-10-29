@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { faker } from "@faker-js/faker";
 import { SidebarProfile } from "./SidebarProfile";
-import { UserRole } from "@/types";
 
 const meta = {
   title: "Components/Sidebar/SidebarProfile",
@@ -40,8 +39,9 @@ export const Default: Story = {
     user: {
       name: faker.person.fullName(),
       email: faker.internet.email(),
-      roles: [UserRole.User],
+      roles: [],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
@@ -51,7 +51,8 @@ export const WithPlaceholder: Story = {
     user: {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
-      roles: [UserRole.User],
+      roles: [],
+      collections: {},
     },
   },
 };
@@ -61,8 +62,9 @@ export const TruncatedName: Story = {
     user: {
       name: "Dr. Christopher Alexander Montgomery Wellington III",
       email: "c.montgomery@example.com",
-      roles: [UserRole.User],
+      roles: [],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
@@ -73,8 +75,9 @@ export const TruncatedEmail: Story = {
       name: "Jane Doe",
       email:
         "jane.doe.with.a.very.long.email.address@corporate-company-domain.com",
-      roles: [UserRole.User],
+      roles: [],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
@@ -84,8 +87,9 @@ export const BothTruncated: Story = {
     user: {
       name: "Dr. Alexander Christopher Montgomery Wellington",
       email: "alexander.christopher.montgomery@very-long-corporate-domain.com",
-      roles: [UserRole.User],
+      roles: [],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
