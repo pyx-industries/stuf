@@ -135,12 +135,12 @@ class MinioStorageRepository:
 
     def file_exists(self, object_name: str) -> bool:
         """Check if a file exists in MinIO storage"""
-        from .minio import DEFAULT_BUCKET
+        from .minio import MINIO_BUCKET_NAME
 
         try:
             # Use stat_object to check existence
             client = self._client._ensure_client()
-            client.stat_object(DEFAULT_BUCKET, object_name)
+            client.stat_object(MINIO_BUCKET_NAME, object_name)
             return True
         except Exception:
             # Any exception means file doesn't exist or isn't accessible
