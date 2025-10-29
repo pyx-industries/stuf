@@ -7,6 +7,13 @@ import { useState } from "react";
 const meta = {
   title: "Components/Sidebar/Sidebar",
   component: Sidebar,
+  decorators: [
+    (Story) => (
+      <div style={{ height: "100vh" }}>
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     layout: "fullscreen",
     design: {
@@ -49,6 +56,18 @@ const meta = {
       action: "logout clicked",
       description: "Callback when logout is clicked",
     },
+    isLoading: {
+      control: "boolean",
+      description: "Whether the sidebar is in loading state",
+    },
+    hideHeader: {
+      control: "boolean",
+      description: "Whether to hide the sidebar header",
+    },
+    className: {
+      control: "text",
+      description: "Additional CSS classes",
+    },
   },
 } satisfies Meta<typeof Sidebar>;
 
@@ -67,6 +86,7 @@ export const AdminUser: Story = {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -86,7 +106,8 @@ export const RegularUser: Story = {
     user: {
       name: "John Doe",
       email: "john.doe@example.com",
-      roles: [UserRole.User],
+      roles: [UserRole.ProjectParticipant],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -117,6 +138,7 @@ export const WithAvatar: Story = {
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
@@ -128,6 +150,7 @@ export const EmptyCollections: Story = {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -143,6 +166,7 @@ export const ManyCollections: Story = {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -192,6 +216,7 @@ export const ManyCollections: Story = {
             name: "Cindy Reardon",
             email: "c.reardon@emailadress.com",
             roles: [UserRole.Admin],
+            collections: {},
           }}
         />
       );
@@ -215,6 +240,7 @@ export const LongUserInfo: Story = {
       name: "Christina Marie Reardon-Smith",
       email: "christina.marie.reardon-smith@verylongemailaddress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
   },
 };
@@ -229,6 +255,37 @@ export const Loading: Story = {
       description: {
         story:
           "Loading state with skeleton placeholders. This is shown while user data or collections are being fetched.",
+      },
+    },
+  },
+};
+
+export const HiddenHeader: Story = {
+  args: {
+    ...AdminUser.args,
+    hideHeader: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Sidebar with header hidden. Useful for embedded or mobile views where the header is shown elsewhere.",
+      },
+    },
+  },
+};
+
+export const LoadingWithHiddenHeader: Story = {
+  args: {
+    ...AdminUser.args,
+    isLoading: true,
+    hideHeader: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Loading state with header hidden. Shows skeleton without the header section.",
       },
     },
   },

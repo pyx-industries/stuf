@@ -1,11 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { SidebarProfile } from "./SidebarProfile";
-import { UserRole, type User } from "@/types";
+import type { User } from "@/types";
 
 const mockUser: User = {
   name: "John Doe",
   email: "john@example.com",
-  roles: [UserRole.User],
+  roles: [],
+  collections: {},
 };
 
 describe("SidebarProfile", () => {
@@ -34,7 +35,8 @@ describe("SidebarProfile", () => {
         user={{
           name: "Dr. Christopher Alexander Montgomery Wellington III",
           email: "short@example.com",
-          roles: [UserRole.User],
+          roles: [],
+          collections: {},
         }}
       />,
     );
@@ -49,7 +51,8 @@ describe("SidebarProfile", () => {
         user={{
           name: "Jane Doe",
           email: "very.long.email.address@corporate-company-domain.com",
-          roles: [UserRole.User],
+          roles: [],
+          collections: {},
         }}
       />,
     );

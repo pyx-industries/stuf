@@ -44,7 +44,8 @@ export const Default: Story = {
     user: {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
-      roles: [UserRole.User],
+      roles: [UserRole.ProjectParticipant],
+      collections: {},
     },
     onLogout: () => console.log("Logout clicked"),
   },
@@ -55,8 +56,9 @@ export const WithAvatar: Story = {
     user: {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
-      roles: [UserRole.User],
+      roles: [UserRole.ProjectParticipant],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
     onLogout: () => console.log("Logout clicked"),
   },
@@ -67,7 +69,8 @@ export const LongUserInfo: Story = {
     user: {
       name: "Christina Marie Reardon-Smith",
       email: "christina.marie.reardon-smith@verylongemailaddress.com",
-      roles: [UserRole.User],
+      roles: [UserRole.ProjectParticipant],
+      collections: {},
     },
     onLogout: () => console.log("Logout clicked"),
   },

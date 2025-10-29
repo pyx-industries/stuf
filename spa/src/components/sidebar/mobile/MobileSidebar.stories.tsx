@@ -52,6 +52,14 @@ const meta = {
       action: "logout clicked",
       description: "Callback when logout is clicked",
     },
+    isLoading: {
+      control: "boolean",
+      description: "Whether the sidebar is in loading state",
+    },
+    className: {
+      control: "text",
+      description: "Additional CSS classes for the mobile navbar",
+    },
   },
 } satisfies Meta<typeof MobileSidebar>;
 
@@ -70,6 +78,7 @@ export const AdminUser: Story = {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -89,7 +98,8 @@ export const RegularUser: Story = {
     user: {
       name: "John Doe",
       email: "john.doe@example.com",
-      roles: [UserRole.User],
+      roles: [UserRole.ProjectParticipant],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -113,6 +123,7 @@ export const WithAvatar: Story = {
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
       avatarUrl: faker.image.avatar(),
+      collections: {},
     },
   },
 };
@@ -124,6 +135,7 @@ export const ManyCollections: Story = {
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
+      collections: {},
     },
     onCollectionSelect: () => console.log("Collection selected"),
     onHomeClick: () => console.log("Home clicked"),
@@ -173,6 +185,7 @@ export const ManyCollections: Story = {
             name: "Cindy Reardon",
             email: "c.reardon@emailadress.com",
             roles: [UserRole.Admin],
+            collections: {},
           }}
         />
       );
