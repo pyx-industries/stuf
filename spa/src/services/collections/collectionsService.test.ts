@@ -20,6 +20,7 @@ describe("CollectionsService", () => {
   describe("getCollections", () => {
     it("returns collections with file counts when all requests succeed", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -51,6 +52,7 @@ describe("CollectionsService", () => {
 
     it("handles partial failures gracefully", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -82,6 +84,7 @@ describe("CollectionsService", () => {
 
     it("returns all collections with zero counts when all requests fail", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -114,6 +117,7 @@ describe("CollectionsService", () => {
 
     it("handles NotFoundError with correct action", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -135,6 +139,7 @@ describe("CollectionsService", () => {
 
     it("handles ForbiddenError with correct action", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -156,6 +161,7 @@ describe("CollectionsService", () => {
 
     it("returns empty arrays for user with no collections", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -171,6 +177,7 @@ describe("CollectionsService", () => {
 
     it("handles user with undefined collections", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -186,6 +193,7 @@ describe("CollectionsService", () => {
 
     it("handles response with no files array", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -205,6 +213,7 @@ describe("CollectionsService", () => {
 
     it("handles response with empty files array", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -224,6 +233,7 @@ describe("CollectionsService", () => {
 
     it("handles unexpected error", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],
@@ -249,6 +259,7 @@ describe("CollectionsService", () => {
 
     it("makes correct API calls for each collection", async () => {
       const mockUser: User = {
+        username: "testuser",
         name: "Test User",
         email: "test@example.com",
         roles: [],

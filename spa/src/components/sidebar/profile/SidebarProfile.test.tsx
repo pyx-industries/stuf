@@ -3,6 +3,7 @@ import { SidebarProfile } from "./SidebarProfile";
 import type { User } from "@/types";
 
 const mockUser: User = {
+  username: "john.doe",
   name: "John Doe",
   email: "john@example.com",
   roles: [],
@@ -33,6 +34,7 @@ describe("SidebarProfile", () => {
     render(
       <SidebarProfile
         user={{
+          username: "c.montgomery",
           name: "Dr. Christopher Alexander Montgomery Wellington III",
           email: "short@example.com",
           roles: [],
@@ -49,6 +51,7 @@ describe("SidebarProfile", () => {
     render(
       <SidebarProfile
         user={{
+          username: "jane.doe",
           name: "Jane Doe",
           email: "very.long.email.address@corporate-company-domain.com",
           roles: [],

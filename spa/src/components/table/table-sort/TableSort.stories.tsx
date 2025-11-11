@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { TableSort, SortOption } from "./TableSort";
+import { SortOption, TableSort } from "./TableSort";
 
 const meta: Meta<typeof TableSort> = {
   title: "Components/Table/TableSort",
@@ -22,6 +22,36 @@ const meta: Meta<typeof TableSort> = {
     },
   ],
   tags: ["autodocs"],
+  argTypes: {
+    value: {
+      control: "text",
+      description: "Currently selected sort value",
+    },
+    onValueChange: {
+      action: "value changed",
+      description: "Callback when sort value changes",
+    },
+    options: {
+      control: "object",
+      description: "Array of sort options with value and label",
+    },
+    placeholder: {
+      control: "text",
+      description: "Placeholder text when no value is selected",
+    },
+    className: {
+      control: "text",
+      description: "Additional CSS classes to apply to the trigger",
+    },
+    testId: {
+      control: "text",
+      description: "Test ID for the component (default: 'table-sort')",
+    },
+    isLoading: {
+      control: "boolean",
+      description: "Whether the component is in a loading state",
+    },
+  },
 };
 
 export default meta;

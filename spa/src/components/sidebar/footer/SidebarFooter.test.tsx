@@ -5,6 +5,7 @@ import { SidebarFooter } from "./SidebarFooter";
 import { UserRole, type User } from "@/types";
 
 const mockUser: User = {
+  username: "c.reardon",
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
   roles: [UserRole.ProjectParticipant],

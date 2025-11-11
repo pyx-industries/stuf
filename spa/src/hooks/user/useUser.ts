@@ -15,11 +15,14 @@ export function useUser(): User | null {
     }
 
     const profile = auth.user.profile as Record<string, unknown>;
+    const username = (profile?.preferred_username as string) || "";
+
     return {
+      username, // Keycloak preferred_username - matches backend user.username
       name:
         profile?.given_name && profile?.family_name
           ? `${profile.given_name} ${profile.family_name}`
-          : (profile?.preferred_username as string) || "Unknown User",
+          : username || "Unknown User",
       email: (profile?.email as string) || "",
       collections: profile?.collections as Record<string, string[]>,
       roles: [], // Roles not currently used - permissions are collection-based
