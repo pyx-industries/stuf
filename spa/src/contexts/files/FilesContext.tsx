@@ -194,7 +194,16 @@ export function FilesProvider({ children }: { children: React.ReactNode }) {
           objectName,
         );
 
-        const blob = await response.blob();
+        // Handle case where response was already parsed as JSON (for .json files)
+        let blob: Blob;
+        if (response instanceof Response) {
+          blob = await response.blob();
+        } else {
+          // Response was parsed as JSON, convert it back to a blob
+          const jsonString = JSON.stringify(response, null, 2);
+          blob = new Blob([jsonString], { type: "application/json" });
+        }
+
         const filename = objectName.split("/").pop() || "download";
         downloadBlob(blob, filename);
       } catch (error) {
