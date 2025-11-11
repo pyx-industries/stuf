@@ -2,6 +2,7 @@ import { DataTable } from "@/components/table/data-table";
 import { FileActions } from "@/components/table/file-actions";
 import { TableSort } from "@/components/table/table-sort";
 import { sortOptions, useFilesSort } from "@/hooks/file/useFilesSort";
+import { formatDateTime, formatFileSize } from "@/lib/utils";
 import type { File } from "@/types";
 import type { FileSortField } from "@/types/services/files";
 import { ColumnDef } from "@tanstack/react-table";
@@ -36,23 +37,9 @@ export function RecentFilesTable({
     {
       accessorKey: "upload_time",
       header: "Upload date and time",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("upload_time"));
-        return (
-          <div>
-            {date.toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })}{" "}
-            {date.toLocaleTimeString("en-GB", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div>{formatDateTime(row.getValue("upload_time"))}</div>
+      ),
     },
     {
       accessorKey: "owner",
@@ -63,8 +50,7 @@ export function RecentFilesTable({
       header: "Size (mb)",
       cell: ({ row }) => {
         const size = row.getValue("size") as number | undefined;
-        if (!size) return "-";
-        return (size / (1024 * 1024)).toFixed(1);
+        return formatFileSize(size);
       },
     },
     {
