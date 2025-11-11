@@ -51,6 +51,7 @@ function renderWithProvider() {
 
 describe("FilesContext", () => {
   const mockUser: User = {
+    username: "testuser",
     name: "Test User",
     email: "test@example.com",
     collections: {

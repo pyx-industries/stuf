@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SignIn } from "./SignIn";
 import { AuthProvider } from "react-oidc-context";
 import { MemoryRouter } from "react-router-dom";
+import { SignIn } from "./SignIn";
 
 const meta = {
-  title: "Pages/SignIn/SignIn",
+  title: "Pages/SignIn",
   component: SignIn,
   parameters: {
     layout: "fullscreen",

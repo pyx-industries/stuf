@@ -1,6 +1,10 @@
 import type { Preview } from "@storybook/react-vite";
 import { withThemeByClassName } from "@storybook/addon-themes";
+import { initialize, mswLoader } from "msw-storybook-addon";
 import "../src/index.css";
+
+// Initialize MSW
+initialize();
 
 const preview: Preview = {
   tags: ["autodocs"],
@@ -28,6 +32,7 @@ const preview: Preview = {
       defaultTheme: "light",
     }),
   ],
+  loaders: [mswLoader],
 };
 
 export default preview;

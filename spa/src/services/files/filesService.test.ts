@@ -294,6 +294,7 @@ describe("FilesService", () => {
 
   describe("getRecentFiles", () => {
     const mockUser: User = {
+      username: "testuser",
       name: "Test User",
       email: "test@example.com",
       roles: [],

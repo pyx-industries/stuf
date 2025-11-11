@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export interface SortOption {
@@ -19,6 +20,7 @@ export interface TableSortProps {
   placeholder?: string;
   className?: string;
   testId?: string;
+  isLoading?: boolean;
 }
 
 export function TableSort({
@@ -28,12 +30,17 @@ export function TableSort({
   placeholder = "Sort by",
   className,
   testId = "table-sort",
+  isLoading = false,
 }: TableSortProps) {
+  if (isLoading) {
+    return <Skeleton className="h-10 w-48" />;
+  }
+
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger
         className={cn(
-          "w-48 px-3 py-2 bg-background rounded-md border border-input inline-flex justify-start items-center gap-2.5 focus:ring-0 focus:ring-offset-0 shadow-none [&_svg]:opacity-100 [&_svg]:text-foreground [&_svg]:stroke-[2.5] h-auto [&>span]:text-foreground [&>span]:text-sm [&>span]:font-normal [&>span]:font-['Inter'] [&>span]:leading-normal [&>span]:flex-1 [&>span]:text-left",
+          "w-48 px-3 py-2 bg-background rounded-md border border-input inline-flex justify-start items-center gap-2.5 focus:ring-0 focus:ring-offset-0 shadow-none [&_svg]:opacity-100 [&_svg]:text-foreground [&_svg]:stroke-[2.5] h-auto [&>span]:text-foreground [&>span]:text-sm [&>span]:font-normal [&>span]:leading-normal [&>span]:flex-1 [&>span]:text-left",
           className,
         )}
         data-testid={testId}
@@ -50,7 +57,7 @@ export function TableSort({
               key={option.value}
               value={option.value}
               className={cn(
-                "w-full px-2 py-1.5 flex justify-start items-center gap-2 rounded-none cursor-pointer focus:bg-accent hover:bg-accent border-0 outline-none text-sm font-medium font-['Inter'] leading-tight text-muted-foreground focus:text-muted-foreground data-[state=checked]:text-foreground [&>span.absolute]:hidden pr-2",
+                "w-full px-2 py-1.5 flex justify-start items-center gap-2 rounded-none cursor-pointer focus:bg-accent hover:bg-accent border-0 outline-none text-sm font-medium leading-tight text-muted-foreground focus:text-muted-foreground data-[state=checked]:text-foreground [&>span.absolute]:hidden pr-2",
                 index === 0 ? "mt-[5px]" : "",
                 index === options.length - 1 ? "mb-[5px]" : "",
               )}

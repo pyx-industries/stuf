@@ -10,6 +10,7 @@ const mockCollections: Collection[] = [
 ];
 
 const mockUser: User = {
+  username: "c.reardon",
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
   roles: [UserRole.Admin],

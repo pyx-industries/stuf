@@ -83,6 +83,7 @@ export const AdminUser: Story = {
       { id: "collection-d", name: "Collections D" },
     ],
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
@@ -104,6 +105,7 @@ export const RegularUser: Story = {
       { id: "collection-d", name: "Collections D" },
     ],
     user: {
+      username: "john.doe",
       name: "John Doe",
       email: "john.doe@example.com",
       roles: [UserRole.ProjectParticipant],
@@ -134,6 +136,7 @@ export const WithAvatar: Story = {
   args: {
     ...AdminUser.args,
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
@@ -147,6 +150,7 @@ export const EmptyCollections: Story = {
   args: {
     collections: [],
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
@@ -163,6 +167,7 @@ export const ManyCollections: Story = {
   args: {
     collections: [],
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.Admin],
@@ -213,6 +218,7 @@ export const ManyCollections: Story = {
           onConfigClick={handleConfigClick}
           onLogout={handleLogout}
           user={{
+            username: "c.reardon",
             name: "Cindy Reardon",
             email: "c.reardon@emailadress.com",
             roles: [UserRole.Admin],
@@ -237,6 +243,7 @@ export const LongUserInfo: Story = {
   args: {
     ...AdminUser.args,
     user: {
+      username: "christina.marie.reardon-smith",
       name: "Christina Marie Reardon-Smith",
       email: "christina.marie.reardon-smith@verylongemailaddress.com",
       roles: [UserRole.Admin],
