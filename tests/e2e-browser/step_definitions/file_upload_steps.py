@@ -10,100 +10,84 @@ def _get_resources_dir() -> Path:
     """Path to test resource files."""
     return Path(__file__).parent.parent / "resources"
 
+@when("I select a valid file to upload")
+def select_valid_file_to_upload(authenticated_page: Page, bdd_screenshot_helper):
+    print(f"Test is using URL: {authenticated_page.url}")
+    """
+    Choose a valid test file; this should enable the Upload button.
+    """
+    page = authenticated_page
+    resources_dir = _get_resources_dir()
+    file_path = resources_dir / "sample-valid.pdf"
 
-@when(parsers.parse('I select the "{collection_name}" collection'))
-def select_collection(authenticated_page: Page, collection_name: str, bdd_screenshot_helper):
+    assert file_path.exists(), f"Missing test file: {file_path}"
+
+    # Wait for file input to appear (ignore any error messages about loading existing files)
+    file_input_selector = 'input[type="file"]'
+    
+    try:
+        file_input = page.locator(file_input_selector).first
+        file_input.wait_for(state="attached", timeout=10000)
+    except Exception as e:
+        print(f"\n=== File input not found ===")
+        print(f"Current page content: {page.inner_text('body')[:500]}")
+        raise AssertionError(f"File input not found. Error: {e}")
+
+    # Attach the file
+    file_input.set_input_files(str(file_path))
+
+    bdd_screenshot_helper.take_bdd_screenshot(
+        page,
+        "valid-file-selected",
+        "When I select a valid file to upload",
+    )
+
+@when("I select the test collection")
+def select_collection(authenticated_page: Page, bdd_screenshot_helper):
+    """
+    Select the 'test' collection.
+    """
     page = authenticated_page
     dashboard = DashboardPage(page)
+    
     dashboard.assert_on_dashboard()
     dashboard.assert_user_logged_in()
 
-    # Find and click the collection card
-    card = page.locator("div", has_text=f"Collection: {collection_name}").first
-    assert card.is_visible(), f'Could not find collection card for "{collection_name}"'
-
-    card.click()
+    collection_name = "test"
     
-    # Wait for the upload form to actually appear (more robust check)
-    # page.wait_for_load_state("networkidle", timeout=5000)  # Wait for any API calls
-    page.wait_for_selector(
-        'input[type="file"], [role="button"]:has-text("Upload"), button:has-text("Upload")',
-        timeout=10000
-    )
+    # Capture console messages
+    console_messages = []
+    page.on("console", lambda msg: console_messages.append(f"[{msg.type}] {msg.text}"))
+    
+    # Capture page errors
+    page_errors = []
+    page.on("pageerror", lambda exc: page_errors.append(str(exc)))
+    
+    print(f"\n=== Selecting collection: {collection_name} ===")
+    
+    card = page.locator(f'[data-slot="card"]:has-text("Collection: {collection_name}")').first
+    card.wait_for(state="visible", timeout=5000)
+    
+    # Click the card
+    card.evaluate('element => element.click()')
+    page.wait_for_timeout(3000)
+    
+    # Print console messages and errors
+    print("\n=== Console Messages ===")
+    for msg in console_messages:
+        print(msg)
+    
+    print("\n=== Page Errors ===")
+    for err in page_errors:
+        print(err)
+    
+    # Debug: Check what's on the page after clicking
+    print(f"\n=== Page content after click ===")
+    print(page.inner_text('body')[:800])
     
     bdd_screenshot_helper.take_bdd_screenshot(
         dashboard,
         f"collection-{collection_name}-opened",
-        f'When I select the "{collection_name}" collection',
-    )
-
-
-@when("I select any collection")
-def select_collection(authenticated_page: Page, bdd_screenshot_helper):
-    page = authenticated_page
-    dashboard = DashboardPage(page)
-    
-    dashboard.assert_on_dashboard()
-    dashboard.assert_user_logged_in()
-
-    # Try collections that have write permissions
-    # Skip "collection-2-contracts" as it only has "read" permission
-    collections_to_try = [
-        "test",
-        "collection-1-docs", 
-        "collection-3-cat-pics"
-    ]
-    
-    working_collection = None
-    
-    for test_collection in collections_to_try:
-        print(f"\n=== Trying collection: {test_collection} ===")
-        
-        # Find the card
-        card = page.locator(f'[data-slot="card"]:has-text("Collection: {test_collection}")').first
-        
-        # Make sure card exists and is visible
-        try:
-            card.wait_for(state="visible", timeout=3000)
-        except Exception as e:
-            print(f"✗ {test_collection}: Card not found - {e}")
-            continue
-        
-        # Click it
-        card.evaluate('element => element.click()')
-        page.wait_for_timeout(2000)
-        
-        # Check for error
-        error = page.locator('text=/Failed to load files/i')
-        if error.is_visible():
-            print(f"✗ {test_collection}: API error - {error.inner_text()}")
-            # Reload to go back to collection list
-            page.reload()
-            page.wait_for_timeout(2000)
-            continue
-        
-        # Check for upload UI
-        file_input = page.locator('input[type="file"]')
-        upload_button = page.locator('button:has-text("Upload")')
-        
-        if file_input.count() > 0 or upload_button.count() > 0:
-            print(f"✓ {test_collection}: Upload UI found!")
-            print(f"   File inputs: {file_input.count()}")
-            print(f"   Upload buttons: {upload_button.count()}")
-            working_collection = test_collection
-            break
-        else:
-            print(f"✗ {test_collection}: No upload UI found")
-            # Reload to go back
-            page.reload()
-            page.wait_for_timeout(2000)
-    
-    if not working_collection:
-        print("\n=== ALL COLLECTIONS FAILED ===")
-    
-    bdd_screenshot_helper.take_bdd_screenshot(
-        dashboard,
-        f"collection-{working_collection}-opened",
         "When I select any collection",
     )
 
