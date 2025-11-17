@@ -173,12 +173,11 @@ def authenticated_page(page):
             page.wait_for_selector('text="File Management"', timeout=10000)
             print("✅ Successfully authenticated!")
             
-            yield page
-            return
         else:
             raise RuntimeError("Sign in button not found")
     except Exception as e:
         raise RuntimeError(f"Failed to start login flow: {e}")
+    
 
     # Fill in login form
     try:
