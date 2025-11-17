@@ -47,14 +47,14 @@ class TestSmokeConnectivity:
         # Should either see the dashboard (if authenticated) or login prompt
         try:
             # Check if we're authenticated
-            page.wait_for_selector('text="File Management"', timeout=5000)
+            page.wait_for_selector('text="Recent files"', timeout=5000)
         except Exception:
             # If not authenticated, should see auth required or be redirected
             auth_required = page.locator('text="Authentication Required"')
             login_button = page.locator('button:text("Login")')
-            assert (
-                auth_required.is_visible() or login_button.is_visible()
-            ), "Should show either auth required or login option"
+            assert auth_required.is_visible() or login_button.is_visible(), (
+                "Should show either auth required or login option"
+            )
 
     def test_spa_loads_in_browser(self, page: Page):
         """Test that the SPA loads successfully in browser."""
@@ -91,9 +91,9 @@ class TestSmokeConnectivity:
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
         dashboard.take_screenshot("01-unauthenticated-state")
         login_button = page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show login button when unauthenticated"
+        assert login_button.is_visible(), (
+            "Should show login button when unauthenticated"
+        )
 
         # Click login to start OIDC flow
         login_button.click()
@@ -139,7 +139,7 @@ class TestSmokeConnectivity:
         login_page.login_with_admin_user()
 
         # Should be back at SPA and authenticated
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
         dashboard.take_screenshot("05-authenticated-dashboard")
         dashboard.assert_user_logged_in()
 
@@ -166,14 +166,14 @@ class TestSmokeConnectivity:
 
         # Check if still authenticated (auth might not persist across reload)
         try:
-            authenticated_page.wait_for_selector('text="File Management"', timeout=5000)
+            authenticated_page.wait_for_selector('text="Recent files"', timeout=5000)
         except Exception:
             # If not authenticated, that's also a valid test outcome
             # Just verify we're still at the SPA
             current_url = authenticated_page.url
-            assert (
-                SPA_HOST in current_url
-            ), f"Should stay at SPA, but URL is: {current_url}"
+            assert SPA_HOST in current_url, (
+                f"Should stay at SPA, but URL is: {current_url}"
+            )
 
         # Check for authentication or API-related errors
         api_errors = [
@@ -236,6 +236,6 @@ class TestBasicFunctionality:
         except Exception:
             # Alternative: should show login button
             login_button = authenticated_page.locator('button:text("Login")')
-            assert (
-                login_button.is_visible()
-            ), "Should show either auth required or login button after logout"
+            assert login_button.is_visible(), (
+                "Should show either auth required or login button after logout"
+            )

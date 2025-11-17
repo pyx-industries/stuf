@@ -98,7 +98,7 @@ def authenticated_page(page):
     # Check if we're already authenticated
     try:
         # Look for signs of successful authentication
-        page.wait_for_selector('text="File Management"', timeout=3000)
+        page.wait_for_selector('text="Recent files"', timeout=3000)
         # Also check we don't see the "Authentication Required" message
         auth_required = page.locator('text="Authentication Required"')
         if not auth_required.is_visible():
@@ -111,7 +111,7 @@ def authenticated_page(page):
 
     # Trigger login by clicking the login button
     try:
-        login_button = page.locator('button:text("Login")')
+        login_button = page.locator('button:text("Sign in")')
         if login_button.is_visible():
             login_button.click()
 
@@ -121,7 +121,7 @@ def authenticated_page(page):
                 timeout=10000,
             )
         else:
-            raise RuntimeError("Login button not found")
+            raise RuntimeError("Sign in button not found")
     except Exception as e:
         raise RuntimeError(f"Failed to start login flow: {e}")
 
@@ -159,7 +159,7 @@ def authenticated_page(page):
     # Wait for authentication to complete
     try:
         # Wait for authenticated content to appear
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
 
         # Verify we don't see authentication required
         auth_required = page.locator('text="Authentication Required"')

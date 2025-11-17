@@ -59,7 +59,7 @@ def logged_in_as_admin(authenticated_page: Page, bdd_screenshot_helper):
     """Use the authenticated_page fixture which handles login."""
     dashboard = DashboardPage(authenticated_page)
     # Use the same approach as working smoke tests - wait for content, not URL
-    authenticated_page.wait_for_selector('text="File Management"', timeout=10000)
+    authenticated_page.wait_for_selector('text="Recent files"', timeout=10000)
     dashboard.assert_user_logged_in()
     bdd_screenshot_helper.take_bdd_screenshot(
         dashboard, "logged-in-as-admin", "Given I am logged in as an admin user"
@@ -86,7 +86,7 @@ def redirected_to_login(page: Page, bdd_screenshot_helper):
         # Look for authentication required state
         page.wait_for_selector('text="Authentication Required"', timeout=5000)
         # Click login button to trigger redirect
-        login_button = page.locator('button:text("Login")')
+        login_button = page.locator('button:text("Sign in")')
         login_button.click()
     except Exception:
         # Might already be redirected or in a different state
@@ -167,12 +167,12 @@ def click_login_button(page: Page, bdd_screenshot_helper):
     """Click the SPA login button to start OIDC flow."""
     dashboard = DashboardPage(page)
 
-    # Should be at SPA showing authentication required
-    page.wait_for_selector('text="Authentication Required"', timeout=10000)
+    # Should be at SPA sign-in page
+    page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
 
-    # Click the SPA Login button
-    login_button = page.locator('button:text("Login")')
-    assert login_button.is_visible(), "SPA Login button should be visible"
+    # Click the SPA Sign in button
+    login_button = page.locator('button:text("Sign in")')
+    assert login_button.is_visible(), "SPA Sign in button should be visible"
     login_button.click()
 
     bdd_screenshot_helper.take_bdd_screenshot(
@@ -212,10 +212,10 @@ def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
     page.wait_for_timeout(2000)  # Let React load
 
     try:
-        # Look for authentication required state
-        page.wait_for_selector('text="Authentication Required"', timeout=5000)
-        # Click login button to trigger redirect
-        login_button = page.locator('button:text("Login")')
+        # Look for sign-in page
+        page.wait_for_selector('text="Sign in to STUF"', timeout=5000)
+        # Click sign in button to trigger redirect
+        login_button = page.locator('button:text("Sign in")')
         login_button.click()
     except Exception:
         # Might already be redirected or in a different state
@@ -295,7 +295,7 @@ def see_dashboard(page: Page, bdd_screenshot_helper):
 
     # Use the same approach as the working smoke tests
     # Wait for the actual dashboard content, not URL navigation
-    page.wait_for_selector('text="File Management"', timeout=10000)
+    page.wait_for_selector('text="Recent files"', timeout=10000)
     bdd_screenshot_helper.take_bdd_screenshot(
         dashboard, "dashboard-loaded", "And I should see the dashboard"
     )
@@ -346,15 +346,13 @@ def should_be_logged_out(authenticated_page: Page, bdd_screenshot_helper):
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should now show unauthenticated state
     try:
-        authenticated_page.wait_for_selector(
-            'text="Authentication Required"', timeout=10000
-        )
+        authenticated_page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
     except Exception:
-        # Alternative: should show login button
-        login_button = authenticated_page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show either auth required or login button after logout"
+        # Alternative: should show sign in button
+        login_button = authenticated_page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show either sign in page or sign in button after logout"
+        )
 
     bdd_screenshot_helper.take_bdd_screenshot(
         dashboard, "logout-verified", "Then I should be logged out"
@@ -369,11 +367,11 @@ def redirected_to_login_page(page: Page, bdd_screenshot_helper):
     try:
         page.wait_for_selector('text="Authentication Required"', timeout=10000)
     except Exception:
-        # Alternative: should show login button
-        login_button = page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show either auth required or login button when redirected to login"
+        # Alternative: should show sign in button
+        login_button = page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show either auth required or sign in button when redirected to login"
+        )
 
     from pages.dashboard_page import DashboardPage
 
@@ -397,9 +395,11 @@ def redirected_to_login_when_accessing_protected(
             'text="Authentication Required"', timeout=10000
         )
     except Exception:
-        # Alternative: should show login button
-        login_button = authenticated_page.locator('button:text("Login")')
-        assert login_button.is_visible(), "Should show either auth required or login button when accessing protected content"
+        # Alternative: should show sign in button
+        login_button = authenticated_page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show either auth required or sign in button when accessing protected content"
+        )
 
     dashboard = DashboardPage(authenticated_page)
     bdd_screenshot_helper.take_bdd_screenshot(
@@ -421,7 +421,7 @@ def see_login_form(page: Page, bdd_screenshot_helper):
     """Verify login form is visible."""
     # If we're at the SPA authentication required state, click Login to go to Keycloak
     try:
-        login_button = page.locator('button:text("Login")')
+        login_button = page.locator('button:text("Sign in")')
         if login_button.is_visible():
             login_button.click()
             # Wait for redirect to Keycloak
@@ -445,7 +445,7 @@ def successfully_authenticated(page: Page, bdd_screenshot_helper):
     """Verify successful authentication."""
     dashboard = DashboardPage(page)
     # Use the same approach as working smoke tests - wait for content, not URL
-    page.wait_for_selector('text="File Management"', timeout=10000)
+    page.wait_for_selector('text="Recent files"', timeout=10000)
     dashboard.assert_user_logged_in()
 
     # Take screenshot after successful authentication is verified

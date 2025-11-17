@@ -13,10 +13,8 @@ class DashboardPage(BasePage):
         super().__init__(page)
 
     # Common UI selectors - these may need adjustment based on actual SPA implementation
-    USER_MENU = '[data-testid="user-menu"], .user-info, [aria-label*="user"], [aria-label*="User"]'
-    LOGOUT_BUTTON = (
-        '[data-testid="logout"], button:has-text("Logout"), button:has-text("Sign out")'
-    )
+    USER_MENU = '[data-testid="sidebar-menu-trigger"]'
+    LOGOUT_BUTTON = '[data-testid="sidebar-menu-option-0-0"]'
     UPLOAD_BUTTON = (
         '[data-testid="upload"], button:has-text("Upload"), input[type="file"]'
     )
@@ -59,26 +57,26 @@ class DashboardPage(BasePage):
                 "Authentication failed - 'Try Again' button is visible"
             )
 
-        # Positive check: we should see authenticated content (like "File Management")
+        # Positive check: we should see authenticated content (like "Recent files")
         try:
-            self.page.wait_for_selector('text="File Management"', timeout=5000)
+            self.page.wait_for_selector('text="Recent files"', timeout=5000)
         except Exception:
             # If we don't see the expected authenticated content, capture current state
             self.take_screenshot("auth-verification-failed")
             raise AssertionError(
-                "User is not logged in - cannot find 'File Management' content"
+                "User is not logged in - cannot find 'Recent files' content"
             )
 
         # Negative checks: we should not see authentication required states
         auth_required = self.page.locator('text="Authentication Required"')
-        assert (
-            not auth_required.is_visible()
-        ), "User is not logged in - still seeing authentication required message"
+        assert not auth_required.is_visible(), (
+            "User is not logged in - still seeing authentication required message"
+        )
 
         login_button = self.page.locator('button:text("Login")')
-        assert (
-            not login_button.is_visible()
-        ), "User is not logged in - still seeing login button"
+        assert not login_button.is_visible(), (
+            "User is not logged in - still seeing login button"
+        )
 
     def get_current_user_info(self) -> str:
         """Get current user information if displayed."""
@@ -87,12 +85,16 @@ class DashboardPage(BasePage):
         return "User info not available"
 
     def click_logout(self) -> None:
-        """Click the logout button."""
-        # First try to find and click user menu to reveal logout
-        if self.is_visible(self.USER_MENU):
-            self.click_element(self.USER_MENU)
+        """Click the logout button via More options menu."""
+        # Click the More options button
+        self.wait_for_selector(self.USER_MENU, timeout=5000)
+        self.click_element(self.USER_MENU)
 
-        # Then click logout
+        # Wait for dropdown menu to appear
+        dropdown_content = '[data-testid="sidebar-menu-content"]'
+        self.page.wait_for_selector(dropdown_content, timeout=5000)
+
+        # Click the logout option
         self.wait_for_selector(self.LOGOUT_BUTTON, timeout=5000)
         self.click_element(self.LOGOUT_BUTTON)
 
@@ -184,9 +186,9 @@ class DashboardPage(BasePage):
     def assert_on_dashboard(self) -> None:
         """Assert that we are on the main dashboard page."""
         current_url = self.get_current_url()
-        assert (
-            SPA_HOST in current_url
-        ), f"Should be on dashboard, but URL is: {current_url}"
+        assert SPA_HOST in current_url, (
+            f"Should be on dashboard, but URL is: {current_url}"
+        )
 
         # Also check for dashboard-specific elements
         self.assert_user_logged_in()

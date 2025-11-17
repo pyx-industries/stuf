@@ -89,7 +89,7 @@ class TestAuthFlowWithScreenshots:
         page.wait_for_timeout(1000)  # Wait for navigation
 
         # Step 7: Back at SPA and authenticated
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
         dashboard.assert_user_logged_in()
         dashboard.take_screenshot(
             "back-at-spa-authenticated",
@@ -112,7 +112,7 @@ class TestAuthFlowWithScreenshots:
         page.reload()
         page.wait_for_timeout(3000)
         try:
-            page.wait_for_selector('text="File Management"', timeout=5000)
+            page.wait_for_selector('text="Recent files"', timeout=5000)
             dashboard.take_screenshot(
                 "session-persisted-after-reload",
                 scenario_name,
