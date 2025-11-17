@@ -40,6 +40,47 @@ class BDDScreenshotHelper:
         self._step_counter += 1
         scenario_name = self.get_scenario_name() or "Unknown Scenario"
 
+         # Check if it's a Playwright Page object (doesn't have take_screenshot method)
+        if hasattr(page_obj, 'screenshot') and not hasattr(page_obj, 'take_screenshot'):
+            # It's a Playwright Page - handle it directly
+            from pathlib import Path
+            import re
+            
+            # Create screenshot directory structure
+            base_screenshots_dir = (
+                Path(__file__).parent.parent / "reports" / "screenshots" / "bdd"
+            )
+            
+            # Clean scenario name for directory
+            clean_scenario = scenario_name.lower().replace(" ", "-")
+            clean_scenario = re.sub(r"[^a-z0-9-]", "", clean_scenario)
+            clean_scenario = re.sub(r"-+", "-", clean_scenario).strip("-")
+            
+            scenario_dir = base_screenshots_dir / clean_scenario
+            scenario_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create filename with step number
+            clean_name = screenshot_name.lower().replace(" ", "-")
+            clean_name = re.sub(r"[^a-z0-9-]", "", clean_name)
+            filename = f"{self._step_counter:02d}_{clean_name}.png"
+            
+            screenshot_path = scenario_dir / filename
+            
+            # Take the screenshot
+            page_obj.screenshot(path=str(screenshot_path))
+            
+            print(f"✓ Screenshot saved: {screenshot_path}")
+            return str(screenshot_path)
+        else:
+            # It's a custom page object with take_screenshot method
+            return page_obj.take_screenshot(
+                name=screenshot_name,
+                scenario_name=scenario_name,
+                step_index=self._step_counter,
+                step_text=step_text,
+                test_type="bdd",
+            )
+
         # Use the page object's take_screenshot method with BDD context
         return page_obj.take_screenshot(
             name=screenshot_name,

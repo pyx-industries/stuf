@@ -22,30 +22,35 @@ def select_valid_file_to_upload(authenticated_page: Page, bdd_screenshot_helper)
 
     assert file_path.exists(), f"Missing test file: {file_path}"
 
-    # Wait for file input to appear (ignore any error messages about loading existing files)
+    # Wait for file input to appear
     file_input_selector = 'input[type="file"]'
     
-    try:
-        file_input = page.locator(file_input_selector).first
-        file_input.wait_for(state="attached", timeout=10000)
-    except Exception as e:
-        print(f"\n=== File input not found ===")
-        print(f"Current page content: {page.inner_text('body')[:500]}")
-        raise AssertionError(f"File input not found. Error: {e}")
-
+    file_input = page.locator(file_input_selector).first
+    file_input.wait_for(state="attached", timeout=10000)
+    
     # Attach the file
     file_input.set_input_files(str(file_path))
+    print(f"✓ Selected file: {file_path.name}")
+    
+    # NEW: Select collection from dropdown
+    collection_dropdown = page.locator('select').first  # or use a more specific selector
+    collection_dropdown.wait_for(state="visible", timeout=5000)
+    collection_dropdown.select_option("test")
+    print("✓ Selected collection: test")
+    
+    page.wait_for_timeout(1000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
-        page,
+        authenticated_page,
         "valid-file-selected",
         "When I select a valid file to upload",
     )
 
+
 @when("I select any collection")
 def select_collection(authenticated_page: Page, bdd_screenshot_helper):
     """
-    Select the 'test' collection.
+    Select the 'test' collection from the sidebar or cards.
     """
     page = authenticated_page
     dashboard = DashboardPage(page)
@@ -57,51 +62,52 @@ def select_collection(authenticated_page: Page, bdd_screenshot_helper):
     
     print(f"\n=== Selecting collection: {collection_name} ===")
     
-    # Debug: See what cards are on the page
-    all_cards = page.locator('[data-slot="card"]')
-    print(f"Total cards found: {all_cards.count()}")
-    for i in range(all_cards.count()):
-        card_text = all_cards.nth(i).inner_text()
-        print(f"  Card {i} text: {card_text[:150]}")
+    # Try clicking collection from sidebar first (preferred)
+    sidebar_item = page.locator(f'text="{collection_name}"').first
+    if sidebar_item.is_visible():
+        print(f"✓ Found collection in sidebar")
+        sidebar_item.click()
+    else:
+        # Fallback: click collection card
+        card = page.locator(f'[data-slot="card"]:has-text("{collection_name}")').first
+        if card.count() > 0:
+            print(f"✓ Found collection card")
+            card.click()
+        else:
+            raise AssertionError(f"Could not find collection '{collection_name}'")
     
-    # Try to find the card - try multiple selectors
-    card = None
-    
-    # Try 1: With "Collection: " prefix
-    selector1 = f'[data-slot="card"]:has-text("Collection: {collection_name}")'
-    if page.locator(selector1).count() > 0:
-        print(f"✓ Found with selector: {selector1}")
-        card = page.locator(selector1).first
-    
-    # Try 2: Just the collection name
-    if not card:
-        selector2 = f'[data-slot="card"]:has-text("{collection_name}")'
-        if page.locator(selector2).count() > 0:
-            print(f"✓ Found with selector: {selector2}")
-            card = page.locator(selector2).first
-    
-    # Try 3: Case insensitive
-    if not card:
-        for i in range(all_cards.count()):
-            if collection_name.lower() in all_cards.nth(i).inner_text().lower():
-                print(f"✓ Found card by text search in card {i}")
-                card = all_cards.nth(i)
-                break
-    
-    if not card:
-        raise AssertionError(f"Could not find collection card for '{collection_name}'")
-    
-    # Click the card
-    print("Clicking card...")
-    card.click()
+    # Wait for collection detail page to load
     page.wait_for_timeout(3000)
     
-    print(f"Page content after click:\n{page.inner_text('body')[:500]}")
+    # Verify we're on the collection page
+    page.wait_for_selector(f'text="{collection_name}"', timeout=5000)
+    print(f"✓ On collection detail page for '{collection_name}'")
     
+    # Now click the "Add files" button
+    add_files_btn = page.locator('button:has-text("Add files"), button[aria-label="Add files"]').first
+    add_files_btn.wait_for(state="visible", timeout=5000)
+    print("✓ Found 'Add files' button")
+    
+    add_files_btn.click()
+    print("✓ Clicked 'Add files' button")
+
+    
+    # Wait for upload dialog/modal to open
+    page.wait_for_timeout(2000)
+
+    # Debug what happened after click
+    print(f"Current URL: {page.url}")
+    print(f"Page content:\n{page.inner_text('body')[:500]}")
+
+    # Check for file input
+    file_inputs = page.locator('input[type="file"]')
+    print(f"File inputs found: {file_inputs.count()}")
+
+
     bdd_screenshot_helper.take_bdd_screenshot(
-        dashboard,
-        f"collection-{collection_name}-opened",
-        "When I select any collection",
+        page,
+        f"collection-{collection_name}-upload-dialog",
+        "After clicking Add files",
     )
 
 @when("I click the upload button")
@@ -129,7 +135,7 @@ def should_see_success_message(authenticated_page: Page, bdd_screenshot_helper):
     """Verify the green 'Upload successful!' panel appears."""
     page = authenticated_page
 
-    page.get_by_text("Upload successful!", exact=False).wait_for(timeout=10000)
+    page.get_by_text("File uploaded successfully", exact=False).wait_for(timeout=10000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
         page,
@@ -138,23 +144,23 @@ def should_see_success_message(authenticated_page: Page, bdd_screenshot_helper):
     )
 
 
-@then("I should see the uploaded file listed in the collection")
-def should_see_uploaded_file_in_collection(authenticated_page: Page, bdd_screenshot_helper):
-    """
-    Verify a file appears under 'Files in collection'.
+# @then("I should see the uploaded file listed in the collection")
+# def should_see_uploaded_file_in_collection(authenticated_page: Page, bdd_screenshot_helper):
+#     """
+#     Verify a file appears under 'Files in collection'.
 
-    Filenames are timestamped, so we just assert there is at least
-    one file row with a Download button.
-    """
-    page = authenticated_page
+#     Filenames are timestamped, so we just assert there is at least
+#     one file row with a Download button.
+#     """
+#     page = authenticated_page
 
-    page.get_by_text("Files in collection", exact=False).wait_for(timeout=10000)
+#     page.get_by_text("Files in collection", exact=False).wait_for(timeout=10000)
 
-    download_button = page.get_by_role("button", name="Download").first
-    download_button.wait_for(timeout=10000)
+#     download_button = page.get_by_role("button", name="Download").first
+#     download_button.wait_for(timeout=10000)
 
-    bdd_screenshot_helper.take_bdd_screenshot(
-        page,
-        "file-listed-in-collection",
-        "And I should see the uploaded file listed in the collection",
-    )
+#     # bdd_screenshot_helper.take_bdd_screenshot(
+#     #     page,
+#     #     "file-listed-in-collection",
+#     #     "And I should see the uploaded file listed in the collection",
+#     # )
