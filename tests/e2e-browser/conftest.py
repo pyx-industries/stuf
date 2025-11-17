@@ -114,8 +114,7 @@ def authenticated_page(page):
     # Check if we're already authenticated
     try:
         # Look for signs of successful authentication
-        page.wait_for_selector('text="File Management"', timeout=5000)
-        
+        page.wait_for_selector('text="Recent files"', timeout=3000)
         # Also check we don't see the "Authentication Required" message
         auth_required = page.locator('text="Authentication Required"')
         
@@ -141,35 +140,8 @@ def authenticated_page(page):
     print("\n=== Starting login flow ===")
     
     try:
-        # Wait a bit more for page to fully render
-        page.wait_for_timeout(2000)
-        
-        # Look for login button
-        login_button = page.locator('button:has-text("Login")')
-        
-        print(f"Login buttons found: {login_button.count()}")
-        
-        if login_button.count() == 0:
-            # No login button - maybe we need to wait for auth state
-            print("No login button found, checking page state...")
-            print(f"All buttons: {page.locator('button').count()}")
-            
-            # List all buttons
-            all_buttons = page.locator('button')
-            for i in range(min(all_buttons.count(), 10)):
-                btn = all_buttons.nth(i)
-                if btn.is_visible():
-                    print(f"  Button {i}: '{btn.inner_text()}'")
-            
-            # Take screenshot
-            page.screenshot(path="/app/debug_no_login.png")
-            
-            # Maybe the app is still loading?
-            page.wait_for_timeout(3000)
-            login_button = page.locator('button:has-text("Login")')
-        
-        if login_button.count() > 0 and login_button.is_visible():
-            print("✅ Found login button, clicking...")
+        login_button = page.locator('button:text("Sign in")')
+        if login_button.is_visible():
             login_button.click()
             
             # Wait for redirect to Keycloak
@@ -204,19 +176,58 @@ def authenticated_page(page):
             yield page
             return
         else:
-            # Still no login button
-            print("\n❌ Login button still not found")
-            print(f"Console messages: {console_messages}")
-            page.screenshot(path="/app/debug_auth_failed.png")
-            raise RuntimeError("Login button not found after multiple attempts")
-            
+            raise RuntimeError("Sign in button not found")
     except Exception as e:
-        print(f"\n❌ Authentication failed: {e}")
-        print(f"Current URL: {page.url}")
-        print(f"Page content: {page.inner_text('body')[:800]}")
-        print(f"Console messages: {console_messages}")
-        page.screenshot(path="/app/debug_auth_exception.png")
-        raise RuntimeError(f"Failed to authenticate: {e}")
+        raise RuntimeError(f"Failed to start login flow: {e}")
+
+    # Fill in login form
+    try:
+        # Wait for login form
+        page.wait_for_selector('input[name="username"]', timeout=10000)
+        page.wait_for_selector('input[name="password"]', timeout=5000)
+
+        # Fill credentials
+        page.fill('input[name="username"]', "admin@example.com")
+        page.fill('input[name="password"]', "password")
+
+        # Submit
+        page.click('button[type="submit"]')
+
+        # Wait for redirect back to SPA (more flexible)
+        max_attempts = 15
+        for attempt in range(max_attempts):
+            page.wait_for_timeout(1000)
+            current_url = page.url
+            if SPA_HOST in current_url:
+                break
+        else:
+            raise RuntimeError(
+                f"Not redirected to SPA after login. Current URL: {page.url}"
+            )
+
+        # Give time for React to process the auth callback
+        page.wait_for_timeout(3000)
+
+    except Exception as e:
+        raise RuntimeError(f"Login flow failed: {e}")
+
+    # Wait for authentication to complete
+    try:
+        # Wait for authenticated content to appear
+        page.wait_for_selector('text="Recent files"', timeout=10000)
+
+        # Verify we don't see authentication required
+        auth_required = page.locator('text="Authentication Required"')
+        if auth_required.is_visible():
+            raise RuntimeError(
+                "Authentication failed - still seeing auth required message"
+            )
+
+    except Exception as e:
+        raise RuntimeError(f"Authentication verification failed: {e}")
+
+    yield page
+
 
 # Import shared service health check fixture
 

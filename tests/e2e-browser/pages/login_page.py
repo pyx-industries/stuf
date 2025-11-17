@@ -1,8 +1,9 @@
 """Login Page Object Model for Keycloak authentication."""
 
-from playwright.sync_api import Page
-from .base_page import BasePage
 from config import KEYCLOAK_URL, SPA_HOST
+from playwright.sync_api import Page
+
+from .base_page import BasePage
 
 
 class LoginPage(BasePage):
@@ -118,9 +119,9 @@ class LoginPage(BasePage):
     def assert_on_keycloak_page(self) -> None:
         """Assert that we are on a Keycloak page."""
         current_url = self.get_current_url()
-        assert (
-            self.keycloak_url in current_url
-        ), f"Should be on Keycloak page, but URL is: {current_url}"
+        assert self.keycloak_url in current_url, (
+            f"Should be on Keycloak page, but URL is: {current_url}"
+        )
 
     def is_login_form_visible(self) -> bool:
         """Check if the login form is currently visible."""

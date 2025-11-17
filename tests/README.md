@@ -436,3 +436,30 @@ tests/e2e-browser/reports/
 6. **Clean Repository**: Test artifacts are gitignored (generated files, not source code)
 
 This comprehensive browser-based E2E testing infrastructure will ensure that when we say "E2E tests pass," we can be confident that the complete user experience works as expected, eliminating the gap between automated testing and real-world usage.
+
+## Current Status for development
+
+Running the e2e browser tests from the host seems to be broken currently, so instead run the tests interactively in development you can:
+
+1. Run `bash` in a `test-runner` container:
+
+```bash
+docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm -it test-runner bash
+```
+
+2. Then run individual bdd tests:
+
+```bash
+root@6e3f0efa1420:/app# pytest /app/test_authentication_bdd.py
+=============================== test session starts ================================
+platform linux -- Python 3.10.19, pytest-8.4.2, pluggy-1.6.0
+rootdir: /app
+plugins: timeout-2.4.0, xdist-3.8.0, html-4.1.1, anyio-4.11.0, bdd-8.1.0, asyncio-1.2.0, allure-pytest-2.15.0, metadata-3.1.1
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+test_authentication_bdd.py .....                                             [100%]
+
+=========================== 5 passed in 67.72s (0:01:07) ===========================
+root@6e3f0efa1420:/app#
+```

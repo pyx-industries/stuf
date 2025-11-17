@@ -86,6 +86,9 @@ clean:
 	@rm -f api/.coverage
 	@rm -rf $(VENV_DIR)
 	@tests/run.sh clean
+	@echo "Cleaning Keycloak database..."
+	@rm -rf docker/keycloak/data/h2
+	@rm -rf docker/keycloak/data/transaction-logs
 	@echo "Clean complete."
 
 # Test targets
@@ -142,3 +145,6 @@ spa-build:
 spa-stop:
 	@echo "Stopping SPA services..."
 	@docker compose down
+	@echo "Cleaning Keycloak database..."
+	@rm -rf docker/keycloak/data/h2
+	@rm -rf docker/keycloak/data/transaction-logs
