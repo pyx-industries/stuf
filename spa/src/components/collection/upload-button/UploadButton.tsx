@@ -18,7 +18,7 @@ export function UploadButton({ className, onClick }: UploadButtonProps) {
       data-testid="upload-button"
     >
       <img src="/icons/cloud_upload.svg" alt="Upload" width={24} height={24} />
-      <span className="text-primary-text text-sm font-medium font-['Inter'] leading-normal">
+      <span className="text-primary-text text-sm font-medium leading-normal">
         Add files
       </span>
     </Button>

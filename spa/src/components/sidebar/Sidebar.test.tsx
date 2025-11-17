@@ -11,6 +11,7 @@ const mockCollections: Collection[] = [
 ];
 
 const mockAdminUser: User = {
+  username: "c.reardon",
   name: "Cindy Reardon",
   email: "c.reardon@emailadress.com",
   roles: [UserRole.Admin],
@@ -18,6 +19,7 @@ const mockAdminUser: User = {
 };
 
 const mockRegularUser: User = {
+  username: "john.doe",
   name: "John Doe",
   email: "john.doe@example.com",
   roles: [UserRole.ProjectParticipant],
@@ -224,6 +226,7 @@ describe("Sidebar", () => {
 
   it("hides Configuration nav item for limited users", () => {
     const limitedUser: User = {
+      username: "limiteduser",
       name: "Limited User",
       email: "limited@example.com",
       roles: [UserRole.ProjectParticipant],

@@ -37,6 +37,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     user: {
+      username: "storyuser",
       name: faker.person.fullName(),
       email: faker.internet.email(),
       roles: [],
@@ -49,6 +50,7 @@ export const Default: Story = {
 export const WithPlaceholder: Story = {
   args: {
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [],
@@ -60,6 +62,7 @@ export const WithPlaceholder: Story = {
 export const TruncatedName: Story = {
   args: {
     user: {
+      username: "c.montgomery",
       name: "Dr. Christopher Alexander Montgomery Wellington III",
       email: "c.montgomery@example.com",
       roles: [],
@@ -72,6 +75,7 @@ export const TruncatedName: Story = {
 export const TruncatedEmail: Story = {
   args: {
     user: {
+      username: "jane.doe",
       name: "Jane Doe",
       email:
         "jane.doe.with.a.very.long.email.address@corporate-company-domain.com",
@@ -85,6 +89,7 @@ export const TruncatedEmail: Story = {
 export const BothTruncated: Story = {
   args: {
     user: {
+      username: "alexander.montgomery",
       name: "Dr. Alexander Christopher Montgomery Wellington",
       email: "alexander.christopher.montgomery@very-long-corporate-domain.com",
       roles: [],

@@ -42,6 +42,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.ProjectParticipant],
@@ -54,6 +55,7 @@ export const Default: Story = {
 export const WithAvatar: Story = {
   args: {
     user: {
+      username: "c.reardon",
       name: "Cindy Reardon",
       email: "c.reardon@emailadress.com",
       roles: [UserRole.ProjectParticipant],
@@ -67,6 +69,7 @@ export const WithAvatar: Story = {
 export const LongUserInfo: Story = {
   args: {
     user: {
+      username: "christina.marie.reardon-smith",
       name: "Christina Marie Reardon-Smith",
       email: "christina.marie.reardon-smith@verylongemailaddress.com",
       roles: [UserRole.ProjectParticipant],

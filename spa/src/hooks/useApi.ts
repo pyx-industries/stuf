@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
-import apiService from "../services/api";
+import apiClient from "../services/api";
 import type { AuthContext } from "@/types/services/api";
 
 export const useApi = () => {
@@ -18,8 +18,8 @@ export const useApi = () => {
     };
 
     // Provide auth context to API service
-    apiService.setAuth(authContext);
+    apiClient.setAuth(authContext);
   }, [auth.user]);
 
-  return apiService;
+  return apiClient;
 };

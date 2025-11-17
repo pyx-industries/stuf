@@ -53,6 +53,7 @@ describe("useUser", () => {
       vi.mocked(useAuth).mockReturnValue(
         createMockAuth({
           profile: {
+            preferred_username: "johndoe",
             given_name: "John",
             family_name: "Doe",
             email: "john.doe@example.com",
@@ -67,6 +68,7 @@ describe("useUser", () => {
       const { result } = renderHook(() => useUser());
 
       expect(result.current).toEqual({
+        username: "johndoe",
         name: "John Doe",
         email: "john.doe@example.com",
         collections: {
@@ -91,6 +93,7 @@ describe("useUser", () => {
 
       const { result } = renderHook(() => useUser());
 
+      expect(result.current?.username).toBe("johndoe");
       expect(result.current?.name).toBe("johndoe");
     });
 
@@ -108,6 +111,7 @@ describe("useUser", () => {
 
       const { result } = renderHook(() => useUser());
 
+      expect(result.current?.username).toBe("johndoe");
       expect(result.current?.name).toBe("johndoe");
     });
 
@@ -124,6 +128,7 @@ describe("useUser", () => {
 
       const { result } = renderHook(() => useUser());
 
+      expect(result.current?.username).toBe("johndoe");
       expect(result.current?.name).toBe("johndoe");
     });
 
@@ -139,6 +144,7 @@ describe("useUser", () => {
 
       const { result } = renderHook(() => useUser());
 
+      expect(result.current?.username).toBe("");
       expect(result.current?.name).toBe("Unknown User");
     });
 
