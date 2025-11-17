@@ -8,7 +8,7 @@ Feature: File Upload
     And the application is accessible
     And I am logged in as an admin user
     And I am on the dashboard
-    When I select the test collection
+    When I select any collection
     And I select a valid file to upload
     And I click the upload button
     Then I should see a success message

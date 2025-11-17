@@ -89,90 +89,134 @@ def page(context):
 @pytest.fixture(scope="function")
 def authenticated_page(page):
     """Page fixture that ensures user is authenticated via live login."""
+    
+    # Capture console messages for debugging
+    console_messages = []
+    page.on("console", lambda msg: console_messages.append(f"[{msg.type}] {msg.text}"))
+    
+    failed_requests = []
+    def on_response(response):
+        if response.status >= 400:
+            failed_requests.append(f"{response.status} {response.url}")
+    page.on("response", on_response)
+
     # Navigate to the SPA
     page.goto(BASE_URL)
-
+    
     # Wait for React app to load
-    page.wait_for_timeout(2000)
-
+    page.wait_for_timeout(3000)
+    
+    print(f"\n=== DEBUG: Authentication Fixture ===")
+    print(f"URL: {page.url}")
+    print(f"Title: {page.title()}")
+    print(f"Page content: {page.inner_text('body')[:500]}")
+    
     # Check if we're already authenticated
     try:
         # Look for signs of successful authentication
-        page.wait_for_selector('text="File Management"', timeout=3000)
+        page.wait_for_selector('text="File Management"', timeout=5000)
+        
         # Also check we don't see the "Authentication Required" message
         auth_required = page.locator('text="Authentication Required"')
-        if not auth_required.is_visible():
+        
+        # Check for Welcome message (sign of being logged in)
+        welcome_msg = page.locator('text=/Welcome,/i')
+        
+        if welcome_msg.is_visible() and not auth_required.is_visible():
             # Already authenticated
+            print("✅ Already authenticated!")
             yield page
             return
-    except Exception:
+    except Exception as e:
         # Not authenticated, need to perform login
+        print(f"Not authenticated: {e}")
         pass
+       
+       # Print console and failed requests for debugging
+    print(f"\n=== CONSOLE MESSAGES ===")
+    for msg in console_messages:
+        print(msg)
 
-    # Trigger login by clicking the login button
+    # Need to authenticate - trigger login flow
+    print("\n=== Starting login flow ===")
+    
     try:
-        login_button = page.locator('button:text("Login")')
-        if login_button.is_visible():
+        # Wait a bit more for page to fully render
+        page.wait_for_timeout(2000)
+        
+        # Look for login button
+        login_button = page.locator('button:has-text("Login")')
+        
+        print(f"Login buttons found: {login_button.count()}")
+        
+        if login_button.count() == 0:
+            # No login button - maybe we need to wait for auth state
+            print("No login button found, checking page state...")
+            print(f"All buttons: {page.locator('button').count()}")
+            
+            # List all buttons
+            all_buttons = page.locator('button')
+            for i in range(min(all_buttons.count(), 10)):
+                btn = all_buttons.nth(i)
+                if btn.is_visible():
+                    print(f"  Button {i}: '{btn.inner_text()}'")
+            
+            # Take screenshot
+            page.screenshot(path="/app/debug_no_login.png")
+            
+            # Maybe the app is still loading?
+            page.wait_for_timeout(3000)
+            login_button = page.locator('button:has-text("Login")')
+        
+        if login_button.count() > 0 and login_button.is_visible():
+            print("✅ Found login button, clicking...")
             login_button.click()
-
+            
             # Wait for redirect to Keycloak
+            print("Waiting for Keycloak redirect...")
             page.wait_for_url(
                 f"{KEYCLOAK_URL}/realms/stuf/protocol/openid-connect/auth*",
                 timeout=10000,
             )
+            print("✅ Redirected to Keycloak")
+            
+            # Fill in credentials
+            print("Filling in credentials...")
+            page.wait_for_selector('input[name="username"]', timeout=5000)
+            page.fill('input[name="username"]', "testuser")
+            page.fill('input[name="password"]', "password")
+            
+            # Click login button on Keycloak
+            print("Clicking Keycloak Sign In button...")
+            keycloak_login_btn = page.get_by_role("button", name="Sign In")
+            keycloak_login_btn.wait_for(state="visible", timeout=5000)
+            keycloak_login_btn.click()
+
+            
+            # Wait for redirect back to SPA
+            print("Waiting for redirect back to SPA...")
+            page.wait_for_timeout(3000)
+            
+            # Wait for successful authentication
+            page.wait_for_selector('text="File Management"', timeout=10000)
+            print("✅ Successfully authenticated!")
+            
+            yield page
+            return
         else:
-            raise RuntimeError("Login button not found")
+            # Still no login button
+            print("\n❌ Login button still not found")
+            print(f"Console messages: {console_messages}")
+            page.screenshot(path="/app/debug_auth_failed.png")
+            raise RuntimeError("Login button not found after multiple attempts")
+            
     except Exception as e:
-        raise RuntimeError(f"Failed to start login flow: {e}")
-
-    # Fill in login form
-    try:
-        # Wait for login form
-        page.wait_for_selector('input[name="username"]', timeout=10000)
-        page.wait_for_selector('input[name="password"]', timeout=5000)
-
-        # Fill credentials
-        page.fill('input[name="username"]', "admin@example.com")
-        page.fill('input[name="password"]', "password")
-
-        # Submit
-        page.click('button[type="submit"]')
-
-        # Wait for redirect back to SPA (more flexible)
-        max_attempts = 15
-        for attempt in range(max_attempts):
-            page.wait_for_timeout(1000)
-            current_url = page.url
-            if SPA_HOST in current_url:
-                break
-        else:
-            raise RuntimeError(
-                f"Not redirected to SPA after login. Current URL: {page.url}"
-            )
-
-        # Give time for React to process the auth callback
-        page.wait_for_timeout(3000)
-
-    except Exception as e:
-        raise RuntimeError(f"Login flow failed: {e}")
-
-    # Wait for authentication to complete
-    try:
-        # Wait for authenticated content to appear
-        page.wait_for_selector('text="File Management"', timeout=10000)
-
-        # Verify we don't see authentication required
-        auth_required = page.locator('text="Authentication Required"')
-        if auth_required.is_visible():
-            raise RuntimeError(
-                "Authentication failed - still seeing auth required message"
-            )
-
-    except Exception as e:
-        raise RuntimeError(f"Authentication verification failed: {e}")
-
-    yield page
-
+        print(f"\n❌ Authentication failed: {e}")
+        print(f"Current URL: {page.url}")
+        print(f"Page content: {page.inner_text('body')[:800]}")
+        print(f"Console messages: {console_messages}")
+        page.screenshot(path="/app/debug_auth_exception.png")
+        raise RuntimeError(f"Failed to authenticate: {e}")
 
 # Import shared service health check fixture
 

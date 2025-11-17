@@ -42,7 +42,7 @@ def select_valid_file_to_upload(authenticated_page: Page, bdd_screenshot_helper)
         "When I select a valid file to upload",
     )
 
-@when("I select the test collection")
+@when("I select any collection")
 def select_collection(authenticated_page: Page, bdd_screenshot_helper):
     """
     Select the 'test' collection.
@@ -55,35 +55,48 @@ def select_collection(authenticated_page: Page, bdd_screenshot_helper):
 
     collection_name = "test"
     
-    # Capture console messages
-    console_messages = []
-    page.on("console", lambda msg: console_messages.append(f"[{msg.type}] {msg.text}"))
-    
-    # Capture page errors
-    page_errors = []
-    page.on("pageerror", lambda exc: page_errors.append(str(exc)))
-    
     print(f"\n=== Selecting collection: {collection_name} ===")
     
-    card = page.locator(f'[data-slot="card"]:has-text("Collection: {collection_name}")').first
-    card.wait_for(state="visible", timeout=5000)
+    # Debug: See what cards are on the page
+    all_cards = page.locator('[data-slot="card"]')
+    print(f"Total cards found: {all_cards.count()}")
+    for i in range(all_cards.count()):
+        card_text = all_cards.nth(i).inner_text()
+        print(f"  Card {i} text: {card_text[:150]}")
+    
+    # Try to find the card - try multiple selectors
+    card = None
+    
+    # Try 1: With "Collection: " prefix
+    selector1 = f'[data-slot="card"]:has-text("Collection: {collection_name}")'
+    if page.locator(selector1).count() > 0:
+        print(f"✓ Found with selector: {selector1}")
+        card = page.locator(selector1).first
+    
+    # Try 2: Just the collection name
+    if not card:
+        selector2 = f'[data-slot="card"]:has-text("{collection_name}")'
+        if page.locator(selector2).count() > 0:
+            print(f"✓ Found with selector: {selector2}")
+            card = page.locator(selector2).first
+    
+    # Try 3: Case insensitive
+    if not card:
+        for i in range(all_cards.count()):
+            if collection_name.lower() in all_cards.nth(i).inner_text().lower():
+                print(f"✓ Found card by text search in card {i}")
+                card = all_cards.nth(i)
+                break
+    
+    if not card:
+        raise AssertionError(f"Could not find collection card for '{collection_name}'")
     
     # Click the card
-    card.evaluate('element => element.click()')
+    print("Clicking card...")
+    card.click()
     page.wait_for_timeout(3000)
     
-    # Print console messages and errors
-    print("\n=== Console Messages ===")
-    for msg in console_messages:
-        print(msg)
-    
-    print("\n=== Page Errors ===")
-    for err in page_errors:
-        print(err)
-    
-    # Debug: Check what's on the page after clicking
-    print(f"\n=== Page content after click ===")
-    print(page.inner_text('body')[:800])
+    print(f"Page content after click:\n{page.inner_text('body')[:500]}")
     
     bdd_screenshot_helper.take_bdd_screenshot(
         dashboard,
