@@ -95,11 +95,15 @@ jobs:
           echo "=== Docker containers ==="
           docker ps -a
           echo "=== Docker compose services ==="
-          cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml ps
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml ps
           echo "=== Keycloak logs ==="
-          cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml logs keycloak-e2e || echo "No Keycloak logs available"
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml logs keycloak-e2e || echo "No Keycloak logs available"
           echo "=== API logs ==="
-          cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml logs api-e2e || echo "No API logs available"
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml logs api-e2e || echo "No API logs available"
+          echo "=== MinIO logs ==="
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml logs minio-e2e || echo "No MinIO logs available"
+          echo "=== SPA logs ==="
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml logs spa-e2e || echo "No SPA logs available"
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
