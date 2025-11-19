@@ -86,6 +86,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare Keycloak data directories
+        run: |
+          sudo mkdir -p docker/keycloak/data/h2
+          sudo chmod -R 777 docker/keycloak/data
+
       - name: Run E2E tests
         run: make test-e2e
 
