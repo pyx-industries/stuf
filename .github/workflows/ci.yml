@@ -112,14 +112,16 @@ jobs:
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: coverage-report
           path: api/htmlcov/
+          retention-days: 3
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: test-reports
           path: tests/e2e-browser/reports/
+          retention-days: 3
