@@ -24,12 +24,6 @@ COPY --from=builder /opt/keycloak/ /opt/keycloak/
 # In production, external monitoring tools would handle health checks
 COPY --from=curl-installer /mnt/rootfs /
 
-# Ensure proper permissions for data directory
-USER root
-RUN mkdir -p /opt/keycloak/data/h2 && \
-    chown -R keycloak:keycloak /opt/keycloak/data && \
-    chmod -R 755 /opt/keycloak/data
-USER keycloak
 
 
 
