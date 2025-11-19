@@ -1,9 +1,11 @@
 """Dashboard Page Object Model for STUF application main interface."""
 
-from playwright.sync_api import Page
-from .base_page import BasePage
 from typing import List
+
 from config import SPA_HOST
+from playwright.sync_api import Page
+
+from .base_page import BasePage
 
 
 class DashboardPage(BasePage):
@@ -68,14 +70,14 @@ class DashboardPage(BasePage):
             )
 
         # Negative checks: we should not see authentication required states
-        auth_required = self.page.locator('text="Authentication Required"')
+        auth_required = self.page.locator('text="Sign in to STUF"')
         assert not auth_required.is_visible(), (
-            "User is not logged in - still seeing authentication required message"
+            "User is not logged in - still seeing sign in page"
         )
 
-        login_button = self.page.locator('button:text("Login")')
+        login_button = self.page.locator('button:text("Sign in")')
         assert not login_button.is_visible(), (
-            "User is not logged in - still seeing login button"
+            "User is not logged in - still seeing sign in button"
         )
 
     def get_current_user_info(self) -> str:

@@ -1,10 +1,9 @@
 """Direct authentication flow test with screenshot generation (bypassing BDD for now)."""
 
-from playwright.sync_api import Page
-
+from config import SPA_HOST
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
-from config import SPA_HOST
+from playwright.sync_api import Page
 
 
 class TestAuthFlowWithScreenshots:
@@ -37,11 +36,11 @@ class TestAuthFlowWithScreenshots:
         page.wait_for_timeout(2000)
 
         # Step 2: Should show unauthenticated state (ready to click login)
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
-        login_button = page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show login button when unauthenticated"
+        page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
+        login_button = page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show login button when unauthenticated"
+        )
         dashboard.take_screenshot(
             "ready-to-click-login",
             scenario_name,

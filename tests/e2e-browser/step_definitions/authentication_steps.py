@@ -1,11 +1,10 @@
 """Authentication step definitions for BDD tests."""
 
-from pytest_bdd import given, when, then, parsers
-from playwright.sync_api import Page
-
-from pages.login_page import LoginPage
-from pages.dashboard_page import DashboardPage
 from config import SPA_HOST
+from pages.dashboard_page import DashboardPage
+from pages.login_page import LoginPage
+from playwright.sync_api import Page
+from pytest_bdd import given, parsers, then, when
 
 
 @given("the STUF services are running")
@@ -83,8 +82,8 @@ def redirected_to_login(page: Page, bdd_screenshot_helper):
     page.wait_for_timeout(2000)  # Let React load
 
     try:
-        # Look for authentication required state
-        page.wait_for_selector('text="Authentication Required"', timeout=5000)
+        # Look for sign-in page state
+        page.wait_for_selector('text="Sign in to STUF"', timeout=5000)
         # Click login button to trigger redirect
         login_button = page.locator('button:text("Sign in")')
         login_button.click()
@@ -120,8 +119,8 @@ def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
         () => {
             const usernameInput = document.querySelector('input[name="username"]');
             const passwordInput = document.querySelector('input[name="password"]');
-            return usernameInput && passwordInput && 
-                   usernameInput.value.length > 0 && 
+            return usernameInput && passwordInput &&
+                   usernameInput.value.length > 0 &&
                    passwordInput.value.length > 0;
         }
     """)
@@ -151,8 +150,8 @@ def enter_invalid_credentials(page: Page, bdd_screenshot_helper):
         () => {
             const usernameInput = document.querySelector('input[name="username"]');
             const passwordInput = document.querySelector('input[name="password"]');
-            return usernameInput && passwordInput && 
-                   usernameInput.value.length > 0 && 
+            return usernameInput && passwordInput &&
+                   usernameInput.value.length > 0 &&
                    passwordInput.value.length > 0;
         }
     """)
@@ -365,12 +364,12 @@ def redirected_to_login_page(page: Page, bdd_screenshot_helper):
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should show unauthenticated state indicating need to login
     try:
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
+        page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
     except Exception:
         # Alternative: should show sign in button
         login_button = page.locator('button:text("Sign in")')
         assert login_button.is_visible(), (
-            "Should show either auth required or sign in button when redirected to login"
+            "Should show either sign in page or sign in button when redirected to login"
         )
 
     from pages.dashboard_page import DashboardPage
@@ -391,9 +390,7 @@ def redirected_to_login_when_accessing_protected(
     # Use the same approach as working smoke tests - wait for content, not URL
     # Should show unauthenticated state indicating need to login
     try:
-        authenticated_page.wait_for_selector(
-            'text="Authentication Required"', timeout=10000
-        )
+        authenticated_page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
     except Exception:
         # Alternative: should show sign in button
         login_button = authenticated_page.locator('button:text("Sign in")')

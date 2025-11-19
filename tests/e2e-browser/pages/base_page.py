@@ -1,8 +1,9 @@
 """Base Page Object Model for STUF Browser E2E Tests."""
 
-from playwright.sync_api import Page, expect
 from typing import Optional
+
 from config import SPA_URL
+from playwright.sync_api import Page, expect
 
 
 class BasePage:
@@ -86,8 +87,12 @@ class BasePage:
             screenshot_path = fallback_dir / filename
 
         # Take full page screenshot instead of just viewport
-        self.page.screenshot(path=str(screenshot_path), full_page=True)
-        return str(screenshot_path)
+        try:
+            self.page.screenshot(path=str(screenshot_path), full_page=True)
+            return str(screenshot_path)
+        except Exception as e:
+            print(f"Warning: Failed to take screenshot '{name}': {e}")
+            return None
 
     def _clean_name_for_path(self, name: str) -> str:
         """Clean a name for use in file paths - no spaces, safe characters only."""

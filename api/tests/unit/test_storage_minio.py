@@ -1,9 +1,10 @@
-import pytest
-from unittest.mock import patch, MagicMock
 import io
+from unittest.mock import MagicMock, patch
+
+import pytest
 from minio.error import S3Error
 
-from api.storage.minio import MinioClient
+from api.storage.minio import MINIO_BUCKET_NAME, MinioClient
 
 
 @pytest.mark.unit
@@ -117,5 +118,5 @@ class TestMinioClient:
 
             assert result is True
             mock_client.remove_object.assert_called_once_with(
-                "stuf-uploads", "test/file.txt"
+                MINIO_BUCKET_NAME, "test/file.txt"
             )

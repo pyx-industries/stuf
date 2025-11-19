@@ -21,13 +21,19 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_HEALTH_ENABLED=true
     ports:
-      - "8180:8080"  # Different port to avoid conflict
-      - "9191:9000"  # Management port (different from main 9990)
+      - "8180:8080" # Different port to avoid conflict
+      - "9191:9000" # Management port (different from main 9990)
     command: start-dev --import-realm
     volumes:
       - ../../docker/keycloak/data:/opt/keycloak/data
     networks:
       - stuf-e2e-test-net
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -s http://127.0.0.1:8080/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   # MinIO - Object Storage
   minio-e2e:
@@ -74,10 +80,24 @@ services:
       # CORS configuration for browser testing
       - CORS_ORIGINS=http://spa-e2e:3000
     depends_on:
-      - minio-e2e
-      - keycloak-e2e
+      minio-e2e:
+        condition: service_healthy
+      keycloak-e2e:
+        condition: service_healthy
     networks:
       - stuf-e2e-test-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   # React SPA Frontend
   spa-e2e:
@@ -139,9 +159,9 @@ services:
       spa-e2e:
         condition: service_healthy
       api-e2e:
-        condition: service_started
+        condition: service_healthy
       keycloak-e2e:
-        condition: service_started
+        condition: service_healthy
       minio-e2e:
         condition: service_healthy
     networks:
