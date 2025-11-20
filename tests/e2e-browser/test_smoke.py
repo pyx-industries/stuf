@@ -1,12 +1,11 @@
 """Comprehensive smoke tests for SPA to API connectivity and basic functionality."""
 
-import pytest
 import httpx
-from playwright.sync_api import Page
-
+import pytest
+from config import API_URL, KEYCLOAK_URL, SPA_HOST, SPA_URL
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
-from config import SPA_URL, API_URL, SPA_HOST, KEYCLOAK_URL
+from playwright.sync_api import Page
 
 
 class TestBasicConnectivity:
@@ -47,14 +46,14 @@ class TestSmokeConnectivity:
         # Should either see the dashboard (if authenticated) or login prompt
         try:
             # Check if we're authenticated
-            page.wait_for_selector('text="File Management"', timeout=5000)
+            page.wait_for_selector('text="Recent files"', timeout=5000)
         except Exception:
-            # If not authenticated, should see auth required or be redirected
-            auth_required = page.locator('text="Authentication Required"')
-            login_button = page.locator('button:text("Login")')
-            assert (
-                auth_required.is_visible() or login_button.is_visible()
-            ), "Should show either auth required or login option"
+            # If not authenticated, should see sign-in page
+            sign_in_title = page.locator('text="Sign in to STUF"')
+            sign_in_button = page.locator('button:text("Sign in")')
+            assert sign_in_title.is_visible() or sign_in_button.is_visible(), (
+                "Should show either sign-in title or sign-in button"
+            )
 
     def test_spa_loads_in_browser(self, page: Page):
         """Test that the SPA loads successfully in browser."""
@@ -88,12 +87,12 @@ class TestSmokeConnectivity:
         page.wait_for_timeout(2000)
 
         # Should show unauthenticated state with login button
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
+        page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
         dashboard.take_screenshot("01-unauthenticated-state")
-        login_button = page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show login button when unauthenticated"
+        login_button = page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show login button when unauthenticated"
+        )
 
         # Click login to start OIDC flow
         login_button.click()
@@ -126,8 +125,8 @@ class TestSmokeConnectivity:
         page.wait_for_timeout(2000)
 
         # Should show unauthenticated state
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
-        login_button = page.locator('button:text("Login")')
+        page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
+        login_button = page.locator('button:text("Sign in")')
         login_button.click()
 
         # Should redirect to login
@@ -139,7 +138,7 @@ class TestSmokeConnectivity:
         login_page.login_with_admin_user()
 
         # Should be back at SPA and authenticated
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
         dashboard.take_screenshot("05-authenticated-dashboard")
         dashboard.assert_user_logged_in()
 
@@ -166,14 +165,14 @@ class TestSmokeConnectivity:
 
         # Check if still authenticated (auth might not persist across reload)
         try:
-            authenticated_page.wait_for_selector('text="File Management"', timeout=5000)
+            authenticated_page.wait_for_selector('text="Recent files"', timeout=5000)
         except Exception:
             # If not authenticated, that's also a valid test outcome
             # Just verify we're still at the SPA
             current_url = authenticated_page.url
-            assert (
-                SPA_HOST in current_url
-            ), f"Should stay at SPA, but URL is: {current_url}"
+            assert SPA_HOST in current_url, (
+                f"Should stay at SPA, but URL is: {current_url}"
+            )
 
         # Check for authentication or API-related errors
         api_errors = [
@@ -231,11 +230,11 @@ class TestBasicFunctionality:
         # Should now show unauthenticated state
         try:
             authenticated_page.wait_for_selector(
-                'text="Authentication Required"', timeout=10000
+                'text="Sign in to STUF"', timeout=10000
             )
         except Exception:
             # Alternative: should show login button
             login_button = authenticated_page.locator('button:text("Login")')
-            assert (
-                login_button.is_visible()
-            ), "Should show either auth required or login button after logout"
+            assert login_button.is_visible(), (
+                "Should show either auth required or login button after logout"
+            )

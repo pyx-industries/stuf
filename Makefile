@@ -86,6 +86,9 @@ clean:
 	@rm -f api/.coverage
 	@rm -rf $(VENV_DIR)
 	@tests/run.sh clean
+	@echo "Cleaning Keycloak database..."
+	@rm -rf docker/keycloak/data/h2
+	@rm -rf docker/keycloak/data/transaction-logs
 	@echo "Clean complete."
 
 # Test targets
@@ -100,7 +103,7 @@ test: $(VENV_DIR)/dev-requirements.stamp
 test-e2e:
 	@echo "Running end-to-end tests with coverage..."
 	@echo "Starting browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml --profile testing up -d
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml --profile testing up -d --wait
 	@echo "Running API E2E and browser E2E tests (inside container)..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x -v --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results . && python generate_presentation_report.py"
 	@echo "Stopping browser E2E services..."
@@ -142,3 +145,6 @@ spa-build:
 spa-stop:
 	@echo "Stopping SPA services..."
 	@docker compose down
+	@echo "Cleaning Keycloak database..."
+	@rm -rf docker/keycloak/data/h2
+	@rm -rf docker/keycloak/data/transaction-logs

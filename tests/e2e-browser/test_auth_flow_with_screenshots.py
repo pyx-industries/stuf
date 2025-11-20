@@ -1,10 +1,9 @@
 """Direct authentication flow test with screenshot generation (bypassing BDD for now)."""
 
-from playwright.sync_api import Page
-
+from config import SPA_HOST
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
-from config import SPA_HOST
+from playwright.sync_api import Page
 
 
 class TestAuthFlowWithScreenshots:
@@ -37,11 +36,11 @@ class TestAuthFlowWithScreenshots:
         page.wait_for_timeout(2000)
 
         # Step 2: Should show unauthenticated state (ready to click login)
-        page.wait_for_selector('text="Authentication Required"', timeout=10000)
-        login_button = page.locator('button:text("Login")')
-        assert (
-            login_button.is_visible()
-        ), "Should show login button when unauthenticated"
+        page.wait_for_selector('text="Sign in to STUF"', timeout=10000)
+        login_button = page.locator('button:text("Sign in")')
+        assert login_button.is_visible(), (
+            "Should show login button when unauthenticated"
+        )
         dashboard.take_screenshot(
             "ready-to-click-login",
             scenario_name,
@@ -89,7 +88,7 @@ class TestAuthFlowWithScreenshots:
         page.wait_for_timeout(1000)  # Wait for navigation
 
         # Step 7: Back at SPA and authenticated
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
         dashboard.assert_user_logged_in()
         dashboard.take_screenshot(
             "back-at-spa-authenticated",
@@ -112,7 +111,7 @@ class TestAuthFlowWithScreenshots:
         page.reload()
         page.wait_for_timeout(3000)
         try:
-            page.wait_for_selector('text="File Management"', timeout=5000)
+            page.wait_for_selector('text="Recent files"', timeout=5000)
             dashboard.take_screenshot(
                 "session-persisted-after-reload",
                 scenario_name,

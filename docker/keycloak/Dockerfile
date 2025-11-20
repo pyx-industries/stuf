@@ -26,5 +26,6 @@ COPY --from=curl-installer /mnt/rootfs /
 
 
 
+
 # Use the standard Keycloak entrypoint
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

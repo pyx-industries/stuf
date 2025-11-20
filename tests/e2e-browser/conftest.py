@@ -8,12 +8,14 @@ from playwright.sync_api import sync_playwright
 # Use centralized configuration
 try:
     from config import (
-        SPA_URL as BASE_URL,
         API_URL,
         KEYCLOAK_URL,
-        SPA_HOST,
         PLAYWRIGHT_HEADLESS,
         PLAYWRIGHT_SLOW_MO,
+        SPA_HOST,
+    )
+    from config import (
+        SPA_URL as BASE_URL,
     )
 except Exception:
     # Fallback values
@@ -98,9 +100,9 @@ def authenticated_page(page):
     # Check if we're already authenticated
     try:
         # Look for signs of successful authentication
-        page.wait_for_selector('text="File Management"', timeout=3000)
-        # Also check we don't see the "Authentication Required" message
-        auth_required = page.locator('text="Authentication Required"')
+        page.wait_for_selector('text="Recent files"', timeout=3000)
+        # Also check we don't see the "Sign in to STUF" message
+        auth_required = page.locator('text="Sign in to STUF"')
         if not auth_required.is_visible():
             # Already authenticated
             yield page
@@ -111,7 +113,7 @@ def authenticated_page(page):
 
     # Trigger login by clicking the login button
     try:
-        login_button = page.locator('button:text("Login")')
+        login_button = page.locator('button:text("Sign in")')
         if login_button.is_visible():
             login_button.click()
 
@@ -121,7 +123,7 @@ def authenticated_page(page):
                 timeout=10000,
             )
         else:
-            raise RuntimeError("Login button not found")
+            raise RuntimeError("Sign in button not found")
     except Exception as e:
         raise RuntimeError(f"Failed to start login flow: {e}")
 
@@ -159,10 +161,10 @@ def authenticated_page(page):
     # Wait for authentication to complete
     try:
         # Wait for authenticated content to appear
-        page.wait_for_selector('text="File Management"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=10000)
 
         # Verify we don't see authentication required
-        auth_required = page.locator('text="Authentication Required"')
+        auth_required = page.locator('text="Sign in to STUF"')
         if auth_required.is_visible():
             raise RuntimeError(
                 "Authentication failed - still seeing auth required message"
