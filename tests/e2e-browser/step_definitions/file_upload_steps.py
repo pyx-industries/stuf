@@ -30,13 +30,12 @@ def select_valid_file_to_upload(authenticated_page: Page, bdd_screenshot_helper)
     
     # Attach the file
     file_input.set_input_files(str(file_path))
-    print(f"✓ Selected file: {file_path.name}")
+    print(f"Selected file: {file_path.name}")
     
-    # NEW: Select collection from dropdown
-    collection_dropdown = page.locator('select').first  # or use a more specific selector
+    collection_dropdown = page.locator('select').first 
     collection_dropdown.wait_for(state="visible", timeout=5000)
     collection_dropdown.select_option("test")
-    print("✓ Selected collection: test")
+    print("Selected collection: test")
     
     page.wait_for_timeout(1000)
 
@@ -62,7 +61,7 @@ def select_collection(authenticated_page: Page, bdd_screenshot_helper):
     
     print(f"\n=== Selecting collection: {collection_name} ===")
     
-    # Try clicking collection from sidebar first (preferred)
+    # clicking collection from sidebar first
     sidebar_item = page.locator(f'text="{collection_name}"').first
     if sidebar_item.is_visible():
         print(f"✓ Found collection in sidebar")
@@ -76,33 +75,25 @@ def select_collection(authenticated_page: Page, bdd_screenshot_helper):
         else:
             raise AssertionError(f"Could not find collection '{collection_name}'")
     
-    # Wait for collection detail page to load
     page.wait_for_timeout(3000)
     
     # Verify we're on the collection page
     page.wait_for_selector(f'text="{collection_name}"', timeout=5000)
-    print(f"✓ On collection detail page for '{collection_name}'")
+    print(f"On collection detail page for '{collection_name}'")
     
     # Now click the "Add files" button
     add_files_btn = page.locator('button:has-text("Add files"), button[aria-label="Add files"]').first
     add_files_btn.wait_for(state="visible", timeout=5000)
-    print("✓ Found 'Add files' button")
+    print("Found 'Add files' button")
     
     add_files_btn.click()
-    print("✓ Clicked 'Add files' button")
+    print("Clicked 'Add files' button")
 
-    
-    # Wait for upload dialog/modal to open
     page.wait_for_timeout(2000)
-
-    # Debug what happened after click
-    print(f"Current URL: {page.url}")
-    print(f"Page content:\n{page.inner_text('body')[:500]}")
 
     # Check for file input
     file_inputs = page.locator('input[type="file"]')
     print(f"File inputs found: {file_inputs.count()}")
-
 
     bdd_screenshot_helper.take_bdd_screenshot(
         page,
@@ -134,7 +125,6 @@ def click_upload_button(authenticated_page: Page, bdd_screenshot_helper):
 def should_see_success_message(authenticated_page: Page, bdd_screenshot_helper):
     """Verify the green 'Upload successful!' panel appears."""
     page = authenticated_page
-
     page.get_by_text("File uploaded successfully", exact=False).wait_for(timeout=10000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
@@ -142,25 +132,3 @@ def should_see_success_message(authenticated_page: Page, bdd_screenshot_helper):
         "upload-success-message",
         "Then I should see a success message",
     )
-
-
-# @then("I should see the uploaded file listed in the collection")
-# def should_see_uploaded_file_in_collection(authenticated_page: Page, bdd_screenshot_helper):
-#     """
-#     Verify a file appears under 'Files in collection'.
-
-#     Filenames are timestamped, so we just assert there is at least
-#     one file row with a Download button.
-#     """
-#     page = authenticated_page
-
-#     page.get_by_text("Files in collection", exact=False).wait_for(timeout=10000)
-
-#     download_button = page.get_by_role("button", name="Download").first
-#     download_button.wait_for(timeout=10000)
-
-#     # bdd_screenshot_helper.take_bdd_screenshot(
-#     #     page,
-#     #     "file-listed-in-collection",
-#     #     "And I should see the uploaded file listed in the collection",
-#     # )
