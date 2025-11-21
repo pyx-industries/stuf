@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pages.dashboard_page import DashboardPage
 from pytest_bdd import when, then, parsers
 from playwright.sync_api import Page
 
@@ -46,17 +47,17 @@ def select_collection(authenticated_page: Page, collection: str, bdd_screenshot_
     page.wait_for_timeout(2000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
-        page,
+        dashboard,
         f"collection-{collection}-upload-dialog",
         "After clicking Add files",
     )
 
 @when(parsers.parse('I select the file {filename} to upload to the {collection} collection'))
-def select_valid_file_to_upload(authenticated_page: Page, filename: str, collection: str, bdd_screenshot_helper):
+def select_valid_file_to_upload(page: Page, filename: str, collection: str, bdd_screenshot_helper):
     """
     Choose a valid test file and select the collection to upload it to.
     """
-    page = authenticated_page
+    dashboard = DashboardPage(page)
     
     resources_dir = _get_resources_dir()
     filename = filename.strip('"').strip("'")
@@ -82,17 +83,17 @@ def select_valid_file_to_upload(authenticated_page: Page, filename: str, collect
     page.wait_for_timeout(1000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
-        authenticated_page,
+        dashboard,
         "valid-file-selected",
         "When I select a valid file to upload",
     )
 
 @when("I click the upload button")
-def click_upload_button(authenticated_page: Page, bdd_screenshot_helper):
+def click_upload_button(page: Page, bdd_screenshot_helper):
     """
     Click the Upload button to submit the selected file.
     """
-    page = authenticated_page
+    dashboard = DashboardPage(page)
 
     upload_button = page.get_by_role("button", name="Upload")
     assert upload_button.is_visible(), "Upload button should be visible"
@@ -101,27 +102,27 @@ def click_upload_button(authenticated_page: Page, bdd_screenshot_helper):
     upload_button.click()
 
     bdd_screenshot_helper.take_bdd_screenshot(
-        page,
+        dashboard,
         "clicked-upload-button",
         "And I click the upload button",
     )
 
 
 @then("I should see a success message")
-def success_message(authenticated_page: Page, bdd_screenshot_helper):
+def success_message(page: Page, bdd_screenshot_helper):
     """Verify the green 'Upload successful!' panel appears."""
-    page = authenticated_page
+    dashboard = DashboardPage(page)
     page.get_by_text("File uploaded successfully", exact=False).wait_for(timeout=10000)
 
     bdd_screenshot_helper.take_bdd_screenshot(
-        page,
+        dashboard,
         "upload-success-message",
         "Then I should see a success message",
     )
 
 @then(parsers.parse('I should see the file {filename} listed in the {collection} collection'))
-def very_file_in_collection(authenticated_page: Page, filename: str, collection: str, bdd_screenshot_helper):
-    page = authenticated_page
+def very_file_in_collection(page: Page, filename: str, collection: str, bdd_screenshot_helper):
+    dashboard = DashboardPage(page)
     filename = filename.strip('"').strip("'")
     collection = collection.strip('"').strip("'")
     
@@ -139,7 +140,7 @@ def very_file_in_collection(authenticated_page: Page, filename: str, collection:
     file_element.wait_for(state="visible", timeout=10000)
     
     bdd_screenshot_helper.take_bdd_screenshot(
-        page,
+        dashboard,
         "file-listed-in-collection",
         f'Then I should see the file {filename} listed in the {collection} collection',
     )
