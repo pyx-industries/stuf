@@ -121,7 +121,7 @@ def success_message(page: Page, bdd_screenshot_helper):
     )
 
 @then(parsers.parse('I should see the file {filename} listed in the {collection} collection'))
-def very_file_in_collection(page: Page, filename: str, collection: str, bdd_screenshot_helper):
+def verify_file_in_collection(page: Page, filename: str, collection: str, bdd_screenshot_helper):
     dashboard = DashboardPage(page)
     filename = filename.strip('"').strip("'")
     collection = collection.strip('"').strip("'")
