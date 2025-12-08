@@ -130,7 +130,7 @@ jobs:
     name: Publish Container Images
     runs-on: ubuntu-latest
     needs: e2e-tests
-    # if: success()
+    if: success()
     permissions:
       contents: read
       packages: write
