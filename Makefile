@@ -15,8 +15,12 @@ PYTEST = $(PYTHON) -m pytest api/tests --tb=short -v
 
 # Container registry configuration
 REGISTRY = ghcr.io
-REPO_OWNER = $(shell git config --get remote.origin.url | sed 's/.*[:/]\([^/]*\)\/\([^/]*\)\.git/\1/')
-REPO_NAME = $(shell git config --get remote.origin.url | sed 's/.*[:/]\([^/]*\)\/\([^/]*\)\.git/\2/')
+# Extract "owner/repo" from any GitHub remote URL (SSH or HTTPS, with or without .git)
+REPO_PATH = $(shell git config --get remote.origin.url \
+                | sed 's#\.git$$##' \
+                | sed 's#.*/\([^/]*\/[^/]*\)$$#\1#')
+REPO_OWNER = $(shell echo $(REPO_PATH) | cut -d/ -f1)
+REPO_NAME  = $(shell echo $(REPO_PATH) | cut -d/ -f2)
 IMAGE_PREFIX = $(REGISTRY)/$(REPO_OWNER)/$(REPO_NAME)
 
 # Git information for tagging
