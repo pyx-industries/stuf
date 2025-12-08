@@ -176,6 +176,42 @@ pre-commit run --all-files
 pre-commit run
 ```
 
+### Container Publishing
+
+STUF provides built-in container publishing for CI/CD workflows and local development.
+
+#### CI Publishing (Automatic)
+
+Container images are automatically published to GitHub Container Registry when:
+- Tests pass on the `master` branch
+- Images are tagged with both `latest` and commit SHA
+
+Published images:
+- `ghcr.io/owner/repo-api:latest` / `ghcr.io/owner/repo-api:abc1234`
+- `ghcr.io/owner/repo-spa:latest` / `ghcr.io/owner/repo-spa:abc1234`
+
+#### Local Publishing
+
+For testing or manual publishing:
+
+```bash
+# Build containers locally
+make build-containers
+
+# Publish development images (requires GITHUB_TOKEN)
+export GITHUB_TOKEN=your_personal_access_token
+make publish-dev
+
+# Publish release images (requires git tag)
+git tag v1.0.0
+make publish-release
+```
+
+To create a personal access token for local publishing:
+1. GitHub → Settings → Developer settings → Personal access tokens
+2. Generate token with `write:packages` and `read:packages` scopes
+3. Copy token and export as `GITHUB_TOKEN` environment variable
+
 ### Stopping the Environment
 
 To stop the Docker Compose environment:

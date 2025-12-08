@@ -1,5 +1,5 @@
 # Development stage
-FROM node:20-alpine as development
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ EXPOSE 3000
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Production stage
-FROM node:20-alpine as production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 

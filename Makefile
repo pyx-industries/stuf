@@ -3,7 +3,7 @@
 # Benefits: eliminates PlantUML system dependency, consistent build environment,
 # easier CI/CD integration, and no "works on my machine" issues
 
-.PHONY: help docs serve clean spa-dev spa-prod spa-build spa-stop
+.PHONY: help docs serve clean spa-dev spa-prod spa-build spa-stop build-containers publish-containers publish-dev publish-release
 
 # Virtual environment directory
 VENV_DIR = .venv
@@ -12,6 +12,21 @@ PIP = $(VENV_DIR)/bin/pip
 
 # Test command variable
 PYTEST = $(PYTHON) -m pytest api/tests --tb=short -v
+
+# Container registry configuration
+REGISTRY = ghcr.io
+REPO_OWNER = $(shell git config --get remote.origin.url | sed 's/.*[:/]\([^/]*\)\/\([^/]*\)\.git/\1/')
+REPO_NAME = $(shell git config --get remote.origin.url | sed 's/.*[:/]\([^/]*\)\/\([^/]*\)\.git/\2/')
+IMAGE_PREFIX = $(REGISTRY)/$(REPO_OWNER)/$(REPO_NAME)
+
+# Git information for tagging
+GIT_COMMIT = $(shell git rev-parse --short HEAD)
+GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_TAG = $(shell git describe --tags --exact-match 2>/dev/null || echo "")
+
+# Container image names
+API_IMAGE = $(IMAGE_PREFIX)-api
+SPA_IMAGE = $(IMAGE_PREFIX)-spa
 
 # Default target - show help
 help:
@@ -36,6 +51,12 @@ help:
 	@echo "  spa-prod      Start SPA in production mode"
 	@echo "  spa-build     Build SPA for production"
 	@echo "  spa-stop      Stop SPA services"
+	@echo ""
+	@echo "Container Publishing:"
+	@echo "  build-containers    Build all containers for publishing"
+	@echo "  publish-containers  Build and push containers (for CI)"
+	@echo "  publish-dev         Push with development tags (branch + commit)"
+	@echo "  publish-release     Push with release tags (requires git tag)"
 	@echo ""
 	@echo ""
 	@echo "Usage: make <target>"
@@ -148,3 +169,74 @@ spa-stop:
 	@echo "Cleaning Keycloak database..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+
+# Container building and publishing targets
+
+# Build all containers for publishing
+build-containers:
+	@echo "Building containers for publishing..."
+	@echo "API Image: $(API_IMAGE)"
+	@echo "SPA Image: $(SPA_IMAGE)"
+	@echo ""
+	@echo "Building API container..."
+	@docker build -t $(API_IMAGE):latest ./api
+	@echo "Building SPA container..."
+	@docker build --target production -t $(SPA_IMAGE):latest ./spa
+	@echo "All containers built successfully!"
+
+# Tag and push containers (used by CI)
+publish-containers: build-containers
+	@echo "Publishing containers to $(REGISTRY)..."
+	@if [ -z "$$GITHUB_TOKEN" ] && [ -z "$$REGISTRY_TOKEN" ]; then \
+		echo "Error: GITHUB_TOKEN or REGISTRY_TOKEN environment variable required"; \
+		exit 1; \
+	fi
+	@echo "Logging in to container registry..."
+	@echo "$${GITHUB_TOKEN:-$$REGISTRY_TOKEN}" | docker login $(REGISTRY) -u $${GITHUB_ACTOR:-token} --password-stdin
+	@echo "Tagging and pushing images..."
+	@docker tag $(API_IMAGE):latest $(API_IMAGE):$(GIT_COMMIT)
+	@docker tag $(SPA_IMAGE):latest $(SPA_IMAGE):$(GIT_COMMIT)
+	@if [ "$(GIT_BRANCH)" = "master" ] || [ "$(GIT_BRANCH)" = "main" ]; then \
+		echo "Pushing latest tags for main branch..."; \
+		docker push $(API_IMAGE):latest; \
+		docker push $(SPA_IMAGE):latest; \
+	fi
+	@echo "Pushing commit-specific tags..."
+	@docker push $(API_IMAGE):$(GIT_COMMIT)
+	@docker push $(SPA_IMAGE):$(GIT_COMMIT)
+	@echo "Successfully published all containers!"
+
+# Push with development tags (for feature branches)
+publish-dev: build-containers
+	@echo "Publishing development containers..."
+	@if [ -z "$$GITHUB_TOKEN" ] && [ -z "$$REGISTRY_TOKEN" ]; then \
+		echo "Error: GITHUB_TOKEN or REGISTRY_TOKEN environment variable required"; \
+		exit 1; \
+	fi
+	@echo "$${GITHUB_TOKEN:-$$REGISTRY_TOKEN}" | docker login $(REGISTRY) -u $${GITHUB_ACTOR:-token} --password-stdin
+	@docker tag $(API_IMAGE):latest $(API_IMAGE):$(GIT_BRANCH)-$(GIT_COMMIT)
+	@docker tag $(SPA_IMAGE):latest $(SPA_IMAGE):$(GIT_BRANCH)-$(GIT_COMMIT)
+	@docker push $(API_IMAGE):$(GIT_BRANCH)-$(GIT_COMMIT)
+	@docker push $(SPA_IMAGE):$(GIT_BRANCH)-$(GIT_COMMIT)
+	@echo "Published development containers with tags: $(GIT_BRANCH)-$(GIT_COMMIT)"
+
+# Push with release tags (requires git tag)
+publish-release: build-containers
+	@echo "Publishing release containers..."
+	@if [ -z "$(GIT_TAG)" ]; then \
+		echo "Error: No git tag found. Create a tag first with: git tag v1.0.0"; \
+		exit 1; \
+	fi
+	@if [ -z "$$GITHUB_TOKEN" ] && [ -z "$$REGISTRY_TOKEN" ]; then \
+		echo "Error: GITHUB_TOKEN or REGISTRY_TOKEN environment variable required"; \
+		exit 1; \
+	fi
+	@echo "Publishing release $(GIT_TAG)..."
+	@echo "$${GITHUB_TOKEN:-$$REGISTRY_TOKEN}" | docker login $(REGISTRY) -u $${GITHUB_ACTOR:-token} --password-stdin
+	@docker tag $(API_IMAGE):latest $(API_IMAGE):$(GIT_TAG)
+	@docker tag $(SPA_IMAGE):latest $(SPA_IMAGE):$(GIT_TAG)
+	@docker push $(API_IMAGE):$(GIT_TAG)
+	@docker push $(SPA_IMAGE):$(GIT_TAG)
+	@docker push $(API_IMAGE):latest
+	@docker push $(SPA_IMAGE):latest
+	@echo "Published release containers with tag: $(GIT_TAG)"
