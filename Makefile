@@ -114,6 +114,8 @@ clean:
 	@echo "Cleaning Keycloak database..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning SPA generated config..."
+	@rm -f spa/public/config.js spa/build/config.js
 	@echo "Clean complete."
 
 # Test targets
@@ -173,6 +175,8 @@ spa-stop:
 	@echo "Cleaning Keycloak database..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning generated config..."
+	@rm -f spa/public/config.js spa/build/config.js
 
 # Container building and publishing targets
 

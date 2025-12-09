@@ -1,18 +1,18 @@
-import type {
-  IApiClient,
-  AuthContext,
-  RequestOptions,
-} from "@/types/services/api";
-import { API_BASE_URL } from "@/config";
+import { getConfig } from "@/config";
 import {
   ApiError,
-  NotFoundError,
   ForbiddenError,
+  NetworkError,
+  NotFoundError,
+  ServerError,
   UnauthorizedError,
   ValidationError,
-  NetworkError,
-  ServerError,
 } from "@/errors/api";
+import type {
+  AuthContext,
+  IApiClient,
+  RequestOptions,
+} from "@/types/services/api";
 
 /**
  * HTTP client for making API requests
@@ -26,8 +26,9 @@ export class ApiClient implements IApiClient {
 
   async request(endpoint: string, options: RequestOptions = {}): Promise<any> {
     try {
+      const { apiBaseUrl } = getConfig();
       const token = this.auth?.user?.access_token;
-      const url = `${API_BASE_URL}${endpoint}`;
+      const url = `${apiBaseUrl}${endpoint}`;
 
       // Always include Authorization header if we have a token
       const headers: Record<string, string> = {

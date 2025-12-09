@@ -31,5 +31,3 @@ services:
     environment:
       # Enable file watching in Docker
       - CHOKIDAR_USEPOLLING=true
-      - VITE_HMRPORT=3000
-    command: npm run dev

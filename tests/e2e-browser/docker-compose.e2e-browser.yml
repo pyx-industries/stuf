@@ -109,15 +109,12 @@ services:
       - "3100:3000" # Different port
     environment:
       # API configuration (internal Docker network URL)
-      - REACT_APP_API_URL=http://api-e2e:8000
+      - API_URL=http://api-e2e:8000
 
       # Keycloak configuration (internal Docker network URL)
-      - REACT_APP_KEYCLOAK_URL=http://keycloak-e2e:8080
-      - REACT_APP_KEYCLOAK_REALM=stuf
-      - REACT_APP_KEYCLOAK_CLIENT_ID=stuf-spa
-
-      # Development settings
-      - REACT_APP_NODE_ENV=development
+      - KEYCLOAK_URL=http://keycloak-e2e:8080
+      - KEYCLOAK_REALM=stuf
+      - KEYCLOAK_CLIENT_ID=stuf-spa
     depends_on:
       - api-e2e
     networks:
