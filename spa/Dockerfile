@@ -47,6 +47,9 @@ COPY index.html ./
 # Copy source code
 COPY src/ ./src/
 
+# Copy public assets (icons, etc.)
+COPY public/ ./public/
+
 # Install dev dependencies needed for build
 RUN npm install vite @vitejs/plugin-react --save-dev
 
