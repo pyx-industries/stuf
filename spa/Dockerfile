@@ -20,10 +20,12 @@ COPY index.html ./
 # Copy source code
 COPY src/ ./src/
 
-EXPOSE 3000
+# Copy and set up the entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
-# Use Vite dev server for development
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Use entrypoint with "dev" argument
+ENTRYPOINT ["/app/docker-entrypoint.sh", "dev"]
 
 # Production stage
 FROM node:20-alpine AS production
@@ -53,6 +55,9 @@ RUN npm install vite @vitejs/plugin-react --save-dev
 # Build the application
 RUN npm run build
 
-# Use Vite preview server for production
-EXPOSE 3000
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
+# Copy and set up the entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Use entrypoint with "prod" argument (default)
+ENTRYPOINT ["/app/docker-entrypoint.sh", "prod"]

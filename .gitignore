@@ -31,6 +31,10 @@ tests/.venv/
 spa/build/
 spa/dist/
 
+# Runtime-generated config files
+spa/public/config.js
+spa/build/config.js
+
 # Coverage reports
 api/htmlcov/
 api/.coverage

@@ -1,15 +1,17 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import { AuthProvider } from "react-oidc-context";
 import App from "./App";
+import { getConfig } from "./config";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-const authority = `${process.env.REACT_APP_KEYCLOAK_URL || "http://localhost:8080"}/realms/${process.env.REACT_APP_KEYCLOAK_REALM || "stuf"}`;
+const { keycloakUrl, keycloakRealm, keycloakClientId } = getConfig();
+
+const authority = `${keycloakUrl}/realms/${keycloakRealm}`;
 
 const oidcConfig = {
   authority,
-  client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || "stuf-spa",
+  client_id: keycloakClientId,
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",

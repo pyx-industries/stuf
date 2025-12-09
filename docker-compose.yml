@@ -71,10 +71,10 @@ services:
     ports:
       - "${SPA_PORT:-3000}:3000"
     environment:
-      - REACT_APP_API_URL=${API_URL:-http://localhost:8000}
-      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
-      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
-      - REACT_APP_KEYCLOAK_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
+      - API_URL=${API_URL:-http://localhost:8000}
+      - KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
     depends_on:
       - api
 
