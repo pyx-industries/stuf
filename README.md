@@ -156,7 +156,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
     - stuf-api: Confidential client with service account
   - Roles:
     - admin: Administrator role with full access
-    - collection-\*: Collection-specific access roles
+    - collection: Collection-specific access roles
   - Test users:
     - admin@example.com / password (admin role)
 - **MinIO**: S3-compatible object storage
