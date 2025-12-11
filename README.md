@@ -21,24 +21,28 @@ Traditional file sharing methods often fall short in security, auditability, or 
 STUF provides a trusted, secure mechanism for receiving confidential files with:
 
 1. **Strong Security by Design**
+
    - Two-factor authentication (email + SMS verification)
    - Encrypted storage with strict access controls
    - Comprehensive audit logging
    - Secure file validation and scanning
 
 2. **Trust Through Transparency**
+
    - "Code under glass" approach provides complete visibility
    - All deployed code and configuration is preserved in a private git repository
    - Trust Architects have read access to verify security implementations
    - No hidden processes or black-box operations
 
 3. **Flexible Deployment Options**
+
    - Fully managed (Pyx-hosted Zulip + Pyx-hosted STUF)
    - Hybrid (Pyx-hosted Zulip + Self-hosted STUF)
    - Fully self-hosted (Self-hosted Zulip + Self-hosted STUF)
    - Clear migration paths between deployment models
 
 4. **Seamless Integration**
+
    - Deep integration with Zulip for notifications and management
    - Pluggable Django app for Trust Architect administration
    - API-based architecture for future integrations
@@ -83,6 +87,10 @@ For detailed information on deploying and using STUF, please refer to:
 
 STUF is continuously evolving to meet the needs of organizations requiring secure file uploads. For information on upcoming features and enhancements, see our [Vision and Roadmap](docs/vision_and_roadmap.md).
 
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
 ## Local Development with Docker Compose
 
 STUF can be run locally using Docker Compose for development and testing purposes.
@@ -95,21 +103,25 @@ STUF can be run locally using Docker Compose for development and testing purpose
 ### Setup Instructions
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/pyx-industries/stuf.git
    cd stuf
    ```
 
 2. Run the test suite to verify setup:
+
    ```bash
    make test
    ```
+
    This will automatically create a Python virtual environment and install dependencies.
    If you want to run tests individually, say for the api service, you can activate
    the virtualenv in your console manually with `source .venv/bin/activate` and run
    tests with `pytest api/`, for example.
 
 3. Create a `.env` file from the example and edit as needed:
+
    ```bash
    cp .env.example .env
    ```
@@ -118,6 +130,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
    Edit this file to customize your local development environment.
 
 4. Start the Docker Compose environment:
+
    ```bash
    docker compose up -d
    ```
@@ -143,7 +156,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
     - stuf-api: Confidential client with service account
   - Roles:
     - admin: Administrator role with full access
-    - collection-*: Collection-specific access roles
+    - collection: Collection-specific access roles
   - Test users:
     - admin@example.com / password (admin role)
 - **MinIO**: S3-compatible object storage
@@ -157,6 +170,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
 This project uses pre-commit hooks with ruff for code formatting and linting:
 
 1. Install development dependencies:
+
    ```bash
    pip install -r requirements-dev.txt
    ```
@@ -183,10 +197,12 @@ STUF provides built-in container publishing for CI/CD workflows and local develo
 #### CI Publishing (Automatic)
 
 Container images are automatically published to GitHub Container Registry when:
+
 - Tests pass on the `master` branch
 - Images are tagged with both `latest` and commit SHA
 
 Published images:
+
 - `ghcr.io/owner/repo-api:latest` / `ghcr.io/owner/repo-api:abc1234`
 - `ghcr.io/owner/repo-spa:latest` / `ghcr.io/owner/repo-spa:abc1234`
 
@@ -208,6 +224,7 @@ make publish-release
 ```
 
 To create a personal access token for local publishing:
+
 1. GitHub → Settings → Developer settings → Personal access tokens
 2. Generate token with `write:packages` and `read:packages` scopes
 3. Copy token and export as `GITHUB_TOKEN` environment variable
@@ -215,11 +232,13 @@ To create a personal access token for local publishing:
 ### Stopping the Environment
 
 To stop the Docker Compose environment:
+
 ```bash
 docker-compose down
 ```
 
 To stop and remove volumes (will delete all data):
+
 ```bash
 docker-compose down -v
 ```
