@@ -1,9 +1,11 @@
-import pytest
 import os
-import requests
 import sys
 from pathlib import Path
+
+import pytest
+import requests
 from fastapi.testclient import TestClient
+
 from api.main import app
 
 # Import the shared service readiness fixture
@@ -101,4 +103,38 @@ def e2e_authenticated_client(e2e_client, real_keycloak_token):
 def e2e_limited_client(e2e_client, limited_keycloak_token):
     """Limited user client for E2E tests"""
     e2e_client.headers.update({"Authorization": f"Bearer {limited_keycloak_token}"})
+    return e2e_client
+
+
+@pytest.fixture
+def service_account_token(ensure_services_ready):  # noqa: F811
+    """Get a real service account token from Keycloak using client credentials"""
+
+    token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+
+    # Use client credentials grant for service account
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": "backup-service",
+        "client_secret": "backup-service-secret",
+        "scope": "stuf:access",
+    }
+
+    response = requests.post(token_url, data=data)
+
+    if response.status_code != 200:
+        pytest.skip(
+            f"Could not get service account token from Keycloak: {response.text}"
+        )
+
+    token_data = response.json()
+    access_token = token_data["access_token"]
+
+    return access_token
+
+
+@pytest.fixture
+def e2e_service_account_client(e2e_client, service_account_token):
+    """Service account client for E2E tests"""
+    e2e_client.headers.update({"Authorization": f"Bearer {service_account_token}"})
     return e2e_client

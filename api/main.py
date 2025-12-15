@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+import logging
 import os
 
-from auth.middleware import get_current_user
-from domain.models import User
+import uvicorn
+from auth.middleware import get_current_principal
+from domain.models import AuthenticatedPrincipal, ServiceAccount, User
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import files
 
 app = FastAPI(
@@ -39,14 +40,45 @@ def info():
 
 
 @app.get("/api/me")
-def get_current_user_info(current_user: User = Depends(get_current_user)):
-    import logging
-
+def get_current_principal_info(
+    current_principal: AuthenticatedPrincipal = Depends(get_current_principal),
+):
     logger = logging.getLogger(__name__)
-    logger.info(f"API /me called for user: {current_user.username}")
-    logger.info(f"User collections: {current_user.collections}")
-    logger.info(f"User roles: {current_user.roles}")
-    return current_user
+    logger.info(f"API /me called for principal: {current_principal.get_identifier()}")
+    logger.info(f"Principal collections: {current_principal.collections}")
+    logger.info(f"Principal roles: {current_principal.roles}")
+
+    # Add type information to response
+    if isinstance(current_principal, User):
+        return {
+            "type": "user",
+            "username": current_principal.username,
+            "email": current_principal.email,
+            "full_name": current_principal.full_name,
+            "roles": current_principal.roles,
+            "collections": current_principal.collections,
+            "active": current_principal.active,
+        }
+    elif isinstance(current_principal, ServiceAccount):
+        return {
+            "type": "service_account",
+            "client_id": current_principal.client_id,
+            "name": current_principal.name,
+            "description": current_principal.description,
+            "roles": current_principal.roles,
+            "collections": current_principal.collections,
+            "scopes": current_principal.scopes,
+            "active": current_principal.active,
+        }
+    else:
+        # Fallback for protocol compliance
+        return {
+            "type": "unknown",
+            "identifier": current_principal.get_identifier(),
+            "roles": getattr(current_principal, "roles", []),
+            "collections": getattr(current_principal, "collections", {}),
+            "active": getattr(current_principal, "active", True),
+        }
 
 
 if __name__ == "__main__":

@@ -1,41 +1,41 @@
 import io
 import logging
+
+from auth.middleware import get_current_principal
+from domain import (
+    AuthenticatedPrincipal,
+    FileDeleteError,
+    FileDownloadError,
+    FileListingError,
+    FileNotFoundError,
+    FileUploadError,
+    InsufficientPermissionsError,
+    InvalidMetadataError,
+    StorageRepository,
+)
 from fastapi import (
     APIRouter,
     Depends,
     File,
-    UploadFile,
     Form,
     HTTPException,
+    UploadFile,
     status,
 )
 from fastapi.responses import StreamingResponse
-
-from auth.middleware import get_current_user
-from domain import (
-    User,
-    InsufficientPermissionsError,
-    InvalidMetadataError,
-    FileUploadError,
-    FileListingError,
-    FileDownloadError,
-    FileDeleteError,
-    FileNotFoundError,
-    StorageRepository,
-)
 from infrastructure.container import get_storage_repository
-from usecases.upload_file import UploadFileUseCase
-from usecases.list_files import ListFilesUseCase
-from usecases.download_file import DownloadFileUseCase
-from usecases.delete_file import DeleteFileUseCase
 from public_interfaces import (
-    UploadFileRequest,
-    UploadFileResponse,
+    DeleteFileRequest,
+    DownloadFileRequest,
     ListFilesRequest,
     ListFilesResponse,
-    DownloadFileRequest,
-    DeleteFileRequest,
+    UploadFileRequest,
+    UploadFileResponse,
 )
+from usecases.delete_file import DeleteFileUseCase
+from usecases.download_file import DownloadFileUseCase
+from usecases.list_files import ListFilesUseCase
+from usecases.upload_file import UploadFileUseCase
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ async def upload_file(
     collection: str,
     file: UploadFile = File(...),
     metadata: str = Form("{}"),
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_principal),
     storage_repo: StorageRepository = Depends(get_storage_repository),
 ):
     """
@@ -86,7 +86,7 @@ async def upload_file(
 @router.get("/{collection}", response_model=ListFilesResponse)
 async def list_files(
     collection: str,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_principal),
     storage_repo: StorageRepository = Depends(get_storage_repository),
 ):
     """
@@ -119,7 +119,7 @@ async def list_files(
 async def download_file(
     collection: str,
     object_name: str,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_principal),
     storage_repo: StorageRepository = Depends(get_storage_repository),
 ):
     """
@@ -208,7 +208,7 @@ async def download_file(
 async def delete_file(
     collection: str,
     object_name: str,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedPrincipal = Depends(get_current_principal),
     storage_repo: StorageRepository = Depends(get_storage_repository),
 ):
     """Delete a file from a specific collection"""

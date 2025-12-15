@@ -1,4 +1,12 @@
 import pytest
+from fastapi.security import HTTPBearer
+
+from api.auth.middleware import (
+    KEYCLOAK_REALM,
+    KEYCLOAK_URL,
+    bearer_scheme,
+    verify_jwt_token,
+)
 
 
 @pytest.mark.e2e
@@ -7,25 +15,20 @@ class TestAuthenticationE2E:
 
     def test_oauth2_configuration(self):
         """Test that OAuth2 scheme is properly configured"""
-        from api.auth.middleware import oauth2_scheme, KEYCLOAK_URL, KEYCLOAK_REALM
-        from fastapi.security import OAuth2AuthorizationCodeBearer
 
-        # Verify OAuth2 scheme type
-        assert isinstance(oauth2_scheme, OAuth2AuthorizationCodeBearer)
+        # Verify bearer scheme type
+        assert isinstance(bearer_scheme, HTTPBearer)
 
-        # Verify endpoints are configured
-        expected_auth_url = (
-            f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth"
-        )
-        assert "protocol/openid-connect/auth" in expected_auth_url
+        # Verify Keycloak configuration is present
+        assert KEYCLOAK_URL is not None
+        assert KEYCLOAK_REALM is not None
 
     def test_token_validation_with_real_keycloak(self, real_keycloak_token):
         """Test token validation against real Keycloak instance"""
-        from api.auth.middleware import verify_jwt_token
 
         # This should work with a real token from the fixture
         token_info = verify_jwt_token(real_keycloak_token)
-        
+
         assert token_info is not None
         # JWT tokens have standard claims, not "active" like introspection
         assert "iss" in token_info  # Issuer is always present
@@ -37,7 +40,6 @@ class TestAuthenticationE2E:
 
     def test_invalid_token_rejection(self):
         """Test that invalid tokens are properly rejected"""
-        from api.auth.middleware import verify_jwt_token
 
         # Test with obviously invalid token
         token_info = verify_jwt_token("invalid-token-12345")

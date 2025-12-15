@@ -1,15 +1,17 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
-from api.tests.fixtures.test_data import (
-    SAMPLE_TOKEN_RESPONSES,
-    SAMPLE_FILES,
-)
-from api.main import app  # Import app here for dependency override
-from infrastructure.container import get_storage_repository
-from domain.repositories import StorageRepository
 import json
 import time
+from unittest.mock import MagicMock, patch
+
+import pytest
+from domain.repositories import StorageRepository
+from fastapi.testclient import TestClient
+from infrastructure.container import get_storage_repository
+
+from api.main import app  # Import app here for dependency override
+from api.tests.fixtures.test_data import (
+    SAMPLE_FILES,
+    SAMPLE_TOKEN_RESPONSES,
+)
 
 
 @pytest.fixture
@@ -72,6 +74,7 @@ def integration_client(mock_keycloak_requests, mock_jwt_verification):
             for file_data in SAMPLE_FILES[:2]
         ]
         from io import BytesIO
+
         from domain.models import File
 
         storage_repo_mock.retrieve_file.return_value = (
@@ -116,6 +119,10 @@ def mock_jwt_verification():
                 "preferred_username": "testuser",
                 "email": "testuser@example.com",
                 "name": "Test User",
+                "given_name": "Test",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {"roles": ["user", "collection-test"]},
                 "collections": json.dumps({"test": ["read", "write", "delete"]}),
                 "aud": ["stuf-api"],
@@ -130,6 +137,10 @@ def mock_jwt_verification():
                 "preferred_username": "admin",
                 "email": "admin@example.com",
                 "name": "Admin User",
+                "given_name": "Admin",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {
                     "roles": ["admin", "collection-test", "collection-restricted"]
                 },
@@ -151,10 +162,50 @@ def mock_jwt_verification():
                 "preferred_username": "limiteduser",
                 "email": "limiteduser@example.com",
                 "name": "Limited User",
+                "given_name": "Limited",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {"roles": ["user", "collection-other"]},
                 "collections": json.dumps(
                     {"other": ["read", "write", "delete"]}
                 ),  # No access to "test" collection
+                "aud": ["stuf-api"],
+                "iss": "http://localhost:8080/realms/stuf",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        elif token == "service-account-integration-test-token":
+            # Return a valid token payload for service account
+            return {
+                "sub": "service-account-backup",
+                "azp": "backup-service",  # Service account identifier
+                "client_id": "backup-service",
+                "preferred_username": "service-account-backup-service",  # Service account pattern
+                "name": "Backup Service Account",
+                "description": "Service account for integration tests",
+                "realm_access": {"roles": ["service", "backup-admin"]},
+                "collections": json.dumps({"test": ["read", "write", "delete"]}),
+                "scope": "stuf:access",
+                "aud": ["stuf-api"],
+                "iss": "http://localhost:8080/realms/stuf",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        elif token == "limited-service-account-integration-test-token":
+            # Return a valid token payload for limited service account (only has access to "other" collection)
+            return {
+                "sub": "service-account-limited",
+                "azp": "limited-service",
+                "client_id": "limited-service",
+                "preferred_username": "service-account-limited-service",  # Service account pattern
+                "name": "Limited Service Account",
+                "description": "Limited service account for integration tests",
+                "realm_access": {"roles": ["service"]},
+                "collections": json.dumps(
+                    {"other": ["read", "write", "delete"]}
+                ),  # No access to "test" collection
+                "scope": "stuf:access",
                 "aud": ["stuf-api"],
                 "iss": "http://localhost:8080/realms/stuf",
                 "exp": int(time.time()) + 3600,
@@ -182,3 +233,15 @@ def admin_headers():
 def limited_user_headers():
     """Headers with limited user authentication token (no access to test collection)"""
     return {"Authorization": "Bearer limited-integration-test-token"}
+
+
+@pytest.fixture
+def service_account_headers():
+    """Headers with service account authentication token"""
+    return {"Authorization": "Bearer service-account-integration-test-token"}
+
+
+@pytest.fixture
+def limited_service_account_headers():
+    """Headers with limited service account authentication token (no access to test collection)"""
+    return {"Authorization": "Bearer limited-service-account-integration-test-token"}

@@ -1,8 +1,14 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2AuthorizationCodeBearer
-import requests
+import json
+import logging
 import os
-from domain.models import User
+from typing import Optional, Union
+
+import requests
+from domain.models import ServiceAccount, User
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import jwk, jwt
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 
 # Keycloak configuration
 KEYCLOAK_URL = os.environ.get(
@@ -25,19 +31,14 @@ introspect_endpoint = (
 )
 jwks_uri = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 
-# OAuth2 scheme for token validation
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth",
-    tokenUrl=token_endpoint,
-    refreshUrl=f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token",
-    scopes={},
-)
+
+# Bearer token scheme for both user and service account validation
+# Using auto_error=False to handle authentication errors manually
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_keycloak_public_keys():
     """Fetch Keycloak public keys for JWT verification"""
-    import logging
-
     logger = logging.getLogger(__name__)
 
     try:
@@ -55,16 +56,11 @@ def get_keycloak_public_keys():
 
 def verify_jwt_token(token: str):
     """Verify and parse JWT token with proper signature validation"""
-    import logging
-
     logger = logging.getLogger(__name__)
 
     logger.info(f"Verifying JWT token (first 50 chars): {token[:50]}...")
 
     try:
-        from jose import jwt, jwk
-        from jose.exceptions import JWTError, JWTClaimsError, ExpiredSignatureError
-
         # Get Keycloak public keys
         jwks = get_keycloak_public_keys()
         if not jwks:
@@ -136,15 +132,11 @@ def verify_jwt_token(token: str):
         return None
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(
+    token: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> User:
     """Get the current user from the JWT token"""
-    import logging
-
     logger = logging.getLogger(__name__)
-
-    logger.info(
-        f"get_current_user called with token: {token[:50] if token else 'None'}..."
-    )
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -152,7 +144,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    token_payload = verify_jwt_token(token)
+    # Handle missing authentication (401)
+    if token is None:
+        logger.error("No authorization header provided")
+        raise credentials_exception
+
+    logger.info(
+        f"get_current_user called with token: {token.credentials[:50] if token else 'None'}..."
+    )
+
+    token_payload = verify_jwt_token(token.credentials)
 
     if not token_payload:
         logger.error("JWT verification failed - token_payload is None")
@@ -185,8 +186,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     if collections_claim:
         try:
             if isinstance(collections_claim, str):
-                import json
-
                 collections = json.loads(collections_claim)
             else:
                 collections = collections_claim  # Already parsed
@@ -198,6 +197,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         f"Successfully authenticated user: {username} with roles: {roles}, collections: {collections}"
     )
 
+    # Ensure this is a user token, not a service account
+    if not token_payload.get("preferred_username") and not token_payload.get(
+        "username"
+    ):
+        if token_payload.get("azp") or token_payload.get("client_id"):
+            logger.error("Service account token used for user authentication")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Service account token not valid for user authentication",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     return User(
         username=username,
         email=token_payload.get("email"),
@@ -208,15 +219,159 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     )
 
 
-def require_role(required_role: str):
-    """Dependency to check if the user has a specific role"""
+async def get_current_service_account(
+    token: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> ServiceAccount:
+    """Get the current service account from the JWT token"""
+    logger = logging.getLogger(__name__)
 
-    async def role_checker(current_user: User = Depends(get_current_user)):
-        if required_role not in current_user.roles:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate service account credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # Handle missing authentication (401)
+    if token is None:
+        logger.error("No authorization header provided")
+        raise credentials_exception
+
+    logger.info(
+        f"get_current_service_account called with token: {token.credentials[:50] if token else 'None'}..."
+    )
+
+    token_payload = verify_jwt_token(token.credentials)
+
+    if not token_payload:
+        logger.error("JWT verification failed - token_payload is None")
+        raise credentials_exception
+
+    # Extract client ID for service account
+    client_id = token_payload.get("azp") or token_payload.get("client_id")
+    if not client_id:
+        logger.error("No client_id found in JWT - not a service account token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not a valid service account token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Extract roles from realm_access
+    realm_access = token_payload.get("realm_access", {})
+    roles = realm_access.get("roles", [])
+
+    # Extract and parse collections from custom claim
+    collections = {}
+    collections_claim = token_payload.get("collections")
+    if collections_claim:
+        try:
+            if isinstance(collections_claim, str):
+                collections = json.loads(collections_claim)
+            else:
+                collections = collections_claim  # Already parsed
+            logger.debug(f"Parsed collections: {collections}")
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse collections claim: {e}")
+
+    # Extract scopes
+    scopes = (
+        token_payload.get("scope", "").split() if token_payload.get("scope") else []
+    )
+
+    logger.info(
+        f"Successfully authenticated service account: {client_id} with roles: {roles}, collections: {collections}"
+    )
+
+    return ServiceAccount(
+        client_id=client_id,
+        name=token_payload.get("name", client_id),
+        description=token_payload.get("description", ""),
+        roles=roles,
+        collections=collections,
+        scopes=scopes,
+        active=True,  # JWT presence implies active
+    )
+
+
+async def get_current_principal(
+    token: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> Union[User, ServiceAccount]:
+    """Get the current authenticated principal (user or service account) from JWT token"""
+    logger = logging.getLogger(__name__)
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # Handle missing authentication (401)
+    if token is None:
+        logger.error("No authorization header provided")
+        raise credentials_exception
+
+    logger.info(
+        f"get_current_principal called with token: {token.credentials[:50] if token else 'None'}..."
+    )
+
+    token_payload = verify_jwt_token(token.credentials)
+
+    if not token_payload:
+        logger.error("JWT verification failed - token_payload is None")
+        raise credentials_exception
+
+    # Determine token type using provider-agnostic field-based detection
+    # Based on analysis of real Keycloak tokens
+
+    # Check for user-specific fields that service accounts typically don't have
+    has_user_fields = bool(
+        token_payload.get("email")
+        or token_payload.get("given_name")
+        or token_payload.get("family_name")
+        or token_payload.get("sid")  # Session ID - user sessions only
+    )
+
+    # Check for service account indicators
+    # Service accounts often have broader scopes or specific audience patterns
+    azp = token_payload.get("azp", "")
+    scope = token_payload.get("scope", "")
+
+    # Service accounts typically don't have openid/profile scopes and have specific azp
+    has_service_indicators = (
+        azp != "stuf-spa"  # Users typically use SPA client
+        and "openid" not in scope  # Service accounts usually don't have openid scope
+        and "profile" not in scope  # Service accounts usually don't have profile scope
+        and "email" not in scope  # Service accounts usually don't have email scope
+    )
+
+    if has_user_fields and not has_service_indicators:
+        # Token has user-specific fields → User token
+        logger.debug(f"Detected user token (has user-specific fields)")
+        return await get_current_user(token)
+    elif has_service_indicators and not has_user_fields:
+        # Token has service indicators and no user fields → Service account token
+        logger.debug(
+            f"Detected service account token (service indicators, no user fields)"
+        )
+        return await get_current_service_account(token)
+    else:
+        logger.error(
+            f"Cannot determine token type - has_user_fields: {bool(has_user_fields)}, has_service_indicators: {bool(has_service_indicators)}"
+        )
+        raise credentials_exception
+
+
+def require_role(required_role: str):
+    """Dependency to check if the principal has a specific role"""
+
+    async def role_checker(
+        current_principal: Union[User, ServiceAccount] = Depends(get_current_principal),
+    ):
+        if not current_principal.has_role(required_role):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Role {required_role} required",
             )
-        return current_user
+        return current_principal
 
     return role_checker

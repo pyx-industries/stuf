@@ -2,16 +2,16 @@ import io
 from datetime import datetime
 
 from domain import (
-    User,
+    AuthenticatedPrincipal,
     File,
+    FileMetadataService,
+    FilePathService,
     FileUpload,
+    FileUploadError,
     InsufficientPermissionsError,
     InvalidMetadataError,
-    FileUploadError,
-    FilePathService,
-    FileMetadataService,
 )
-from domain.repositories import StorageRepository, StorageError
+from domain.repositories import StorageError, StorageRepository
 from public_interfaces import UploadFileRequest
 
 
@@ -20,7 +20,7 @@ class UploadFileUseCase:
         self.storage = storage
 
     async def execute(
-        self, request: UploadFileRequest, file: FileUpload, user: User
+        self, request: UploadFileRequest, file: FileUpload, user: AuthenticatedPrincipal
     ) -> File:
         if not user.has_collection_permission(request.collection, "write"):
             raise InsufficientPermissionsError(
@@ -36,12 +36,15 @@ class UploadFileUseCase:
         timestamp = datetime.now()
         timestamp_str = timestamp.strftime(FilePathService.TIMESTAMP_FORMAT)
         storage_path = FilePathService.generate_storage_path(
-            request.collection, user.username, file.filename or "unknown", timestamp
+            request.collection,
+            user.get_identifier(),
+            file.filename or "unknown",
+            timestamp,
         )
 
         # Create upload metadata using domain service
         upload_metadata = FileMetadataService.create_upload_metadata(
-            uploader=user.username,
+            uploader=user.get_identifier(),
             upload_time=timestamp_str,
             collection=request.collection,
             original_filename=file.filename or "unknown",
@@ -52,7 +55,7 @@ class UploadFileUseCase:
         domain_file = File(
             object_name=storage_path,
             collection=request.collection,
-            owner=user.username,
+            owner=user.get_identifier(),
             original_filename=file.filename or "unknown",
             upload_time=timestamp_str,
             content_type=file.content_type or "application/octet-stream",
