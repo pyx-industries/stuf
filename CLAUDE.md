@@ -30,6 +30,9 @@ make test-cov          # Tests with coverage report
 # Start full development environment
 docker-compose up -d
 
+# Start E2E test environment
+docker-compose -f docker-compose.e2e.yml up -d
+
 # Stop and clean up
 docker-compose down
 docker-compose down -v  # Remove volumes/data
