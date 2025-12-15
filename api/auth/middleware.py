@@ -320,23 +320,43 @@ async def get_current_principal(
         logger.error("JWT verification failed - token_payload is None")
         raise credentials_exception
 
-    # Determine if this is a user or service account token
-    client_id = token_payload.get("azp") or token_payload.get("client_id")
-    has_username = token_payload.get("preferred_username") or token_payload.get(
-        "username"
+    # Determine token type using provider-agnostic field-based detection
+    # Based on analysis of real Keycloak tokens
+
+    # Check for user-specific fields that service accounts typically don't have
+    has_user_fields = bool(
+        token_payload.get("email")
+        or token_payload.get("given_name")
+        or token_payload.get("family_name")
+        or token_payload.get("sid")  # Session ID - user sessions only
     )
 
-    if has_username and not client_id:
-        # This is a user token
-        logger.debug("Detected user token")
+    # Check for service account indicators
+    # Service accounts often have broader scopes or specific audience patterns
+    azp = token_payload.get("azp", "")
+    scope = token_payload.get("scope", "")
+
+    # Service accounts typically don't have openid/profile scopes and have specific azp
+    has_service_indicators = (
+        azp != "stuf-spa"  # Users typically use SPA client
+        and "openid" not in scope  # Service accounts usually don't have openid scope
+        and "profile" not in scope  # Service accounts usually don't have profile scope
+        and "email" not in scope  # Service accounts usually don't have email scope
+    )
+
+    if has_user_fields and not has_service_indicators:
+        # Token has user-specific fields → User token
+        logger.debug(f"Detected user token (has user-specific fields)")
         return await get_current_user(token)
-    elif client_id and not has_username:
-        # This is a service account token
-        logger.debug("Detected service account token")
+    elif has_service_indicators and not has_user_fields:
+        # Token has service indicators and no user fields → Service account token
+        logger.debug(
+            f"Detected service account token (service indicators, no user fields)"
+        )
         return await get_current_service_account(token)
     else:
         logger.error(
-            f"Ambiguous token type - has_username: {bool(has_username)}, has_client_id: {bool(client_id)}"
+            f"Cannot determine token type - has_user_fields: {bool(has_user_fields)}, has_service_indicators: {bool(has_service_indicators)}"
         )
         raise credentials_exception
 

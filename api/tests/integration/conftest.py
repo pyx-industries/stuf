@@ -119,6 +119,10 @@ def mock_jwt_verification():
                 "preferred_username": "testuser",
                 "email": "testuser@example.com",
                 "name": "Test User",
+                "given_name": "Test",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {"roles": ["user", "collection-test"]},
                 "collections": json.dumps({"test": ["read", "write", "delete"]}),
                 "aud": ["stuf-api"],
@@ -133,6 +137,10 @@ def mock_jwt_verification():
                 "preferred_username": "admin",
                 "email": "admin@example.com",
                 "name": "Admin User",
+                "given_name": "Admin",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {
                     "roles": ["admin", "collection-test", "collection-restricted"]
                 },
@@ -154,6 +162,10 @@ def mock_jwt_verification():
                 "preferred_username": "limiteduser",
                 "email": "limiteduser@example.com",
                 "name": "Limited User",
+                "given_name": "Limited",
+                "family_name": "User",
+                "azp": "stuf-spa",  # SPA client for users
+                "scope": "openid profile email stuf:access",  # User scopes
                 "realm_access": {"roles": ["user", "collection-other"]},
                 "collections": json.dumps(
                     {"other": ["read", "write", "delete"]}
@@ -169,16 +181,16 @@ def mock_jwt_verification():
                 "sub": "service-account-backup",
                 "azp": "backup-service",  # Service account identifier
                 "client_id": "backup-service",
+                "preferred_username": "service-account-backup-service",  # Service account pattern
                 "name": "Backup Service Account",
                 "description": "Service account for integration tests",
                 "realm_access": {"roles": ["service", "backup-admin"]},
                 "collections": json.dumps({"test": ["read", "write", "delete"]}),
-                "scope": "read write delete",
+                "scope": "stuf:access",
                 "aud": ["stuf-api"],
                 "iss": "http://localhost:8080/realms/stuf",
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
-                # No preferred_username - this makes it a service account token
             }
         elif token == "limited-service-account-integration-test-token":
             # Return a valid token payload for limited service account (only has access to "other" collection)
@@ -186,18 +198,18 @@ def mock_jwt_verification():
                 "sub": "service-account-limited",
                 "azp": "limited-service",
                 "client_id": "limited-service",
+                "preferred_username": "service-account-limited-service",  # Service account pattern
                 "name": "Limited Service Account",
                 "description": "Limited service account for integration tests",
                 "realm_access": {"roles": ["service"]},
                 "collections": json.dumps(
                     {"other": ["read", "write", "delete"]}
                 ),  # No access to "test" collection
-                "scope": "read write delete",
+                "scope": "stuf:access",
                 "aud": ["stuf-api"],
                 "iss": "http://localhost:8080/realms/stuf",
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
-                # No preferred_username - this makes it a service account token
             }
         return None
 
