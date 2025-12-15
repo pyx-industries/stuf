@@ -1,23 +1,25 @@
 # Domain layer - contains all business logic and rules
 # This package defines the core domain objects, services, and interfaces
 
-from .repositories import StorageRepository
 from .exceptions import (
     DomainError,
+    FileDeleteError,
+    FileDownloadError,
+    FileListingError,
+    FileNotFoundError,
+    FileUploadError,
     InsufficientPermissionsError,
     InvalidMetadataError,
-    FileUploadError,
-    FileListingError,
-    FileDownloadError,
-    FileDeleteError,
-    FileNotFoundError,
 )
-from .models import User, File
+from .models import AuthenticatedPrincipal, File, ServiceAccount, User
 from .protocols import FileUpload
-from .services import FilePathService, FileMetadataService, FileParsingService
+from .repositories import StorageRepository
+from .services import FileMetadataService, FileParsingService, FilePathService
 
 __all__ = [
     "User",
+    "ServiceAccount",
+    "AuthenticatedPrincipal",
     "File",
     "StorageRepository",
     "FileUpload",

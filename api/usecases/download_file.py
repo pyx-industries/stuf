@@ -1,17 +1,17 @@
-from typing import Tuple
 from io import BytesIO
+from typing import Tuple
 
 from domain import (
-    User,
+    AuthenticatedPrincipal,
     File,
-    InsufficientPermissionsError,
     FileDownloadError,
     FileNotFoundError,
+    InsufficientPermissionsError,
 )
 from domain.repositories import (
-    StorageRepository,
     StorageError,
     StorageFileNotFoundError,
+    StorageRepository,
 )
 from public_interfaces import DownloadFileRequest
 
@@ -20,7 +20,9 @@ class DownloadFileUseCase:
     def __init__(self, storage: StorageRepository):
         self.storage = storage
 
-    def execute(self, request: DownloadFileRequest, user: User) -> Tuple[BytesIO, File]:
+    def execute(
+        self, request: DownloadFileRequest, user: AuthenticatedPrincipal
+    ) -> Tuple[BytesIO, File]:
         if not user.has_collection_permission(request.collection, "read"):
             raise InsufficientPermissionsError(
                 f"You don't have read access to collection: {request.collection}"

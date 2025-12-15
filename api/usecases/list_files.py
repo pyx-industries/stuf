@@ -1,7 +1,12 @@
 from typing import List
 
-from domain import User, File, InsufficientPermissionsError, FileListingError
-from domain.repositories import StorageRepository, StorageError
+from domain import (
+    AuthenticatedPrincipal,
+    File,
+    FileListingError,
+    InsufficientPermissionsError,
+)
+from domain.repositories import StorageError, StorageRepository
 from public_interfaces import ListFilesRequest
 
 
@@ -9,7 +14,9 @@ class ListFilesUseCase:
     def __init__(self, storage: StorageRepository):
         self.storage = storage
 
-    def execute(self, request: ListFilesRequest, user: User) -> List[File]:
+    def execute(
+        self, request: ListFilesRequest, user: AuthenticatedPrincipal
+    ) -> List[File]:
         if not user.has_collection_permission(request.collection, "read"):
             raise InsufficientPermissionsError(
                 f"You don't have read access to collection: {request.collection}"

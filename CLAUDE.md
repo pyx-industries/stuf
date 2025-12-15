@@ -57,15 +57,17 @@ npm run build # Production build
 ### API Layer (`api/`)
 - **FastAPI application** with modular router organization
 - **Keycloak integration** for OAuth2/OIDC authentication using JWT signature verification
+- **Dual authentication support** for both user accounts and service accounts
 - **Attribute-based authorization** with collection-level permissions stored in JWT collections claim
 - **MinIO integration** for S3-compatible object storage
-- **Dependency injection pattern** for authentication (`get_current_user`, `require_role`) and storage (`MinioClient`)
+- **Dependency injection pattern** for authentication (`get_current_user`, `get_current_service_account`, `get_current_principal`, `require_role`) and storage (`MinioClient`)
 
 ### Key Files
 - `api/main.py`: FastAPI app setup, CORS, and main endpoints
-- `api/auth/middleware.py`: Authentication and authorization logic
+- `api/auth/middleware.py`: Authentication and authorization logic for users and service accounts
 - `api/routers/files.py`: File management endpoints with collection-based access control
 - `api/storage/minio.py`: S3-compatible storage abstraction
+- `api/domain/models.py`: User and ServiceAccount models with AuthenticatedPrincipal protocol
 - `spa/src/App.js`: React app with OIDC authentication flow
 
 ### Environment Configuration
@@ -83,9 +85,17 @@ All services configured via environment variables with development defaults:
 ## Security Model
 
 ### Authentication Flow
+
+#### User Authentication
 1. React SPA uses `react-oidc-context` for Keycloak OIDC flow
 2. FastAPI backend validates tokens via JWT signature verification against Keycloak public keys
 3. Users must have appropriate collection permissions in their JWT collections claim or admin role
+
+#### Service Account Authentication
+1. External services use client credentials flow to obtain JWT tokens
+2. FastAPI backend validates service account tokens using same JWT verification
+3. Service accounts identified by `client_id`/`azp` instead of username
+4. Service accounts follow same collection-based permission model
 
 ### File Organization
 - Files organized by collections with attribute-based access
@@ -116,6 +126,8 @@ All services configured via environment variables with development defaults:
 1. Keycloak auto-configures with realm `stuf` and test users
 2. Default admin user: `admin@example.com` / `password`
 3. Collection permissions stored in JWT collections claim as JSON: `{"collection-name": ["read", "write", "delete"]}`
+4. Service accounts created as Keycloak clients with service account roles enabled
+5. Both users and service accounts use same collection permission format
 
 ### File Upload Flow
 1. User authenticates via Keycloak OIDC
@@ -127,6 +139,8 @@ All services configured via environment variables with development defaults:
 - Use `@pytest.fixture` for auth tokens in tests
 - Mock Keycloak responses for unit tests
 - E2E tests use real Keycloak instance
+- Test both user and service account authentication flows
+- Service account tokens can be generated using client credentials flow
 
 ## Service Endpoints
 
@@ -138,11 +152,13 @@ All services configured via environment variables with development defaults:
 
 ### API Endpoints
 - `GET /api/health`: Health check
-- `GET /api/me`: Current user info
+- `GET /api/me`: Current user/service account info
 - `POST /api/files/upload`: File upload with collection and metadata
 - `GET /api/files/list/{collection}`: List files in collection
 - `GET /api/files/download/{collection}/{path}`: Stream file download
 - `DELETE /api/files/{collection}/{object}`: Delete file (admin only)
+
+All endpoints support both user and service account authentication via Bearer token.
 
 ## File Organization Notes
 - **spec/**: Contains important org-mode files for project planning and specifications - DO NOT DELETE

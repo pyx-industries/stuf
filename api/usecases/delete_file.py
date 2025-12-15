@@ -1,13 +1,13 @@
 from domain import (
-    User,
-    InsufficientPermissionsError,
+    AuthenticatedPrincipal,
     FileDeleteError,
     FileNotFoundError,
+    InsufficientPermissionsError,
 )
 from domain.repositories import (
-    StorageRepository,
     StorageError,
     StorageFileNotFoundError,
+    StorageRepository,
 )
 from public_interfaces import DeleteFileRequest
 
@@ -16,7 +16,7 @@ class DeleteFileUseCase:
     def __init__(self, storage: StorageRepository):
         self.storage = storage
 
-    def execute(self, request: DeleteFileRequest, user: User) -> bool:
+    def execute(self, request: DeleteFileRequest, user: AuthenticatedPrincipal) -> bool:
         if not user.has_collection_permission(request.collection, "delete"):
             raise InsufficientPermissionsError(
                 f"You don't have delete access to collection: {request.collection}"
