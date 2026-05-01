@@ -2,8 +2,8 @@ import pytest
 from fastapi.security import HTTPBearer
 
 from api.auth.middleware import (
-    KEYCLOAK_REALM,
-    KEYCLOAK_URL,
+    OIDC_ISSUER_URL,
+    OIDC_VALID_AUDIENCES,
     bearer_scheme,
     verify_jwt_token,
 )
@@ -19,9 +19,9 @@ class TestAuthenticationE2E:
         # Verify bearer scheme type
         assert isinstance(bearer_scheme, HTTPBearer)
 
-        # Verify Keycloak configuration is present
-        assert KEYCLOAK_URL is not None
-        assert KEYCLOAK_REALM is not None
+        # Verify OIDC configuration is present
+        assert OIDC_ISSUER_URL is not None
+        assert len(OIDC_VALID_AUDIENCES) > 0
 
     def test_token_validation_with_real_keycloak(self, real_keycloak_token):
         """Test token validation against real Keycloak instance"""
