@@ -416,11 +416,17 @@ These need decisions or upstream investigation before implementation:
    but it's the change that decouples STUF from any one provider for
    good. Worth doing as the foundation step rather than retrofitting
    Zitadel-specific URL templates beside the Keycloak ones.
+   **Resolved (step 1).** `api/auth/middleware.py` now fetches the JWKS
+   URI from `OIDC_BASE_URL/.well-known/openid-configuration` and has no
+   provider-specific URL construction.
 
 7. **Storage choice for Zitadel.** Zitadel requires Postgres. STUF's
    compose has no Postgres today. A dedicated `zitadel-postgres` service
    keeps this self-contained; it can be on the `zitadel` profile so the
    default Keycloak path stays unaffected.
+   **Resolved (step 3).** `zitadel-postgres` (Postgres 17) added to
+   `docker-compose.yml` under the `zitadel` profile. Default Keycloak
+   path is unaffected.
 
 8. **Compose-profile strategy.** The cleanest way to ship parallel
    provider support is `docker compose --profile keycloak up` (today's
@@ -430,6 +436,17 @@ These need decisions or upstream investigation before implementation:
    service names — `keycloak-e2e` is hard-coded in several Playwright
    fixtures and would have to become provider-parameterised or
    provider-renamed.
+   **Partially resolved (step 3).** Profile strategy implemented:
+   `--profile keycloak` starts Keycloak on :8080; `--profile zitadel`
+   starts the Zitadel stack on :8080/:8090; bare `docker compose up`
+   starts minio/api/spa only. The e2e service-name issue (hardcoded
+   `keycloak-e2e` in Playwright fixtures) remains open for step 6.
+   Additional discovery: `zitadel-login` (v4.14.0) is the correct image
+   name (not `zitadel/login`); `ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI`
+   must be set to `http://localhost:8090/ui/v2/login` so Zitadel
+   constructs the correct redirect URL; the login container requires
+   `ZITADEL_SERVICE_USER_TOKEN` (IAM_LOGIN_CLIENT role) to serve the
+   login page — provisioned in step 4.
 
 ## Suggested implementation order
 
