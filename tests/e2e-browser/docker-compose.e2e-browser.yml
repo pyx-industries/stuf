@@ -64,12 +64,9 @@ services:
     ports:
       - "8100:8000" # Different port
     environment:
-      # Keycloak configuration (internal network)
-      - KEYCLOAK_URL=http://keycloak-e2e:8080
-      - KEYCLOAK_ISSUER_URL=http://keycloak-e2e:8080 # Internal Docker network URL
-      - KEYCLOAK_REALM=stuf
-      - KEYCLOAK_CLIENT_ID=stuf-api
-      - KEYCLOAK_CLIENT_SECRET=test-secret-e2e
+      # OIDC configuration (internal network; issuer and fetch URL are the same in e2e)
+      - OIDC_ISSUER_URL=http://keycloak-e2e:8080/realms/stuf
+      - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
 
       # MinIO configuration (internal network)
       - MINIO_ENDPOINT=minio-e2e:9000
@@ -143,10 +140,10 @@ services:
       - API_URL=http://api-e2e:8000
       - KEYCLOAK_URL=http://keycloak-e2e:8080
       - MINIO_URL=http://minio-e2e:9000
-      # API E2E tests need these for proper JWT validation
-      - KEYCLOAK_ISSUER_URL=http://keycloak-e2e:8080
+      # API E2E tests: OIDC vars for middleware, KEYCLOAK_* vars for token fixtures
+      - OIDC_ISSUER_URL=http://keycloak-e2e:8080/realms/stuf
+      - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
       - KEYCLOAK_REALM=stuf
-      - KEYCLOAK_CLIENT_ID=stuf-api
       # MinIO configuration for API E2E tests
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
