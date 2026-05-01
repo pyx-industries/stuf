@@ -12,23 +12,32 @@ if [ -z "$API_URL" ]; then
   echo "WARNING: API_URL not set, using default: $DEFAULT_API_BASE_URL"
 fi
 
-if [ -z "$KEYCLOAK_URL" ]; then
+if [ -z "$KEYCLOAK_URL" ] && [ -z "$OIDC_AUTHORITY" ]; then
   echo "WARNING: KEYCLOAK_URL not set, using default: $DEFAULT_KEYCLOAK_URL"
 fi
 
-if [ -z "$KEYCLOAK_REALM" ]; then
+if [ -z "$KEYCLOAK_REALM" ] && [ -z "$OIDC_AUTHORITY" ]; then
   echo "WARNING: KEYCLOAK_REALM not set, using default: $DEFAULT_KEYCLOAK_REALM"
 fi
 
-if [ -z "$KEYCLOAK_CLIENT_ID" ]; then
+if [ -z "$KEYCLOAK_CLIENT_ID" ] && [ -z "$OIDC_CLIENT_ID" ]; then
   echo "WARNING: KEYCLOAK_CLIENT_ID not set, using default: $DEFAULT_KEYCLOAK_CLIENT_ID"
 fi
 
 # Get values from environment or use defaults
 API_BASE_URL="${API_URL:-$DEFAULT_API_BASE_URL}"
-KEYCLOAK_URL="${KEYCLOAK_URL:-$DEFAULT_KEYCLOAK_URL}"
-KEYCLOAK_REALM="${KEYCLOAK_REALM:-$DEFAULT_KEYCLOAK_REALM}"
-KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-$DEFAULT_KEYCLOAK_CLIENT_ID}"
+
+# OIDC_AUTHORITY may be set directly (provider-agnostic) or computed from
+# KEYCLOAK_URL + KEYCLOAK_REALM for backwards-compatible Keycloak deployments.
+if [ -n "$OIDC_AUTHORITY" ]; then
+  COMPUTED_OIDC_AUTHORITY="$OIDC_AUTHORITY"
+else
+  _KC_URL="${KEYCLOAK_URL:-$DEFAULT_KEYCLOAK_URL}"
+  _KC_REALM="${KEYCLOAK_REALM:-$DEFAULT_KEYCLOAK_REALM}"
+  COMPUTED_OIDC_AUTHORITY="${_KC_URL}/realms/${_KC_REALM}"
+fi
+
+COMPUTED_OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-${KEYCLOAK_CLIENT_ID:-$DEFAULT_KEYCLOAK_CLIENT_ID}}"
 
 # Determine the mode (dev or prod) - default to prod
 MODE="${1:-prod}"
@@ -49,17 +58,15 @@ fi
 cat > "$CONFIG_PATH" <<EOF
 window.__STUF_CONFIG__ = {
   apiBaseUrl: "$API_BASE_URL",
-  keycloakUrl: "$KEYCLOAK_URL",
-  keycloakRealm: "$KEYCLOAK_REALM",
-  keycloakClientId: "$KEYCLOAK_CLIENT_ID"
+  oidcAuthority: "$COMPUTED_OIDC_AUTHORITY",
+  oidcClientId: "$COMPUTED_OIDC_CLIENT_ID"
 };
 EOF
 
 echo "Generated runtime configuration at $CONFIG_PATH:"
 echo "  API Base URL: $API_BASE_URL"
-echo "  Keycloak URL: $KEYCLOAK_URL"
-echo "  Keycloak Realm: $KEYCLOAK_REALM"
-echo "  Keycloak Client ID: $KEYCLOAK_CLIENT_ID"
+echo "  OIDC Authority: $COMPUTED_OIDC_AUTHORITY"
+echo "  OIDC Client ID: $COMPUTED_OIDC_CLIENT_ID"
 echo "  Port: $SPA_PORT"
 
 # Start the appropriate server based on mode

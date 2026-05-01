@@ -5,13 +5,11 @@ import { getConfig } from "./config";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-const { keycloakUrl, keycloakRealm, keycloakClientId } = getConfig();
-
-const authority = `${keycloakUrl}/realms/${keycloakRealm}`;
+const { oidcAuthority, oidcClientId } = getConfig();
 
 const oidcConfig = {
-  authority,
-  client_id: keycloakClientId,
+  authority: oidcAuthority,
+  client_id: oidcClientId,
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",
