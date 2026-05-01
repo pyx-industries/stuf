@@ -90,8 +90,14 @@ services:
       timeout: 3s
       retries: 5
 
-  # Makes the bootstrap volume world-writable so the Zitadel container (user
-  # "zitadel", non-root) can write the machine key file on first init.
+  # Makes the bootstrap volume world-writable/readable. Three containers with
+  # different users share it: zitadel (writes the machine key), zitadel-init
+  # root (writes login-token + generated.env), and zitadel-login nextjs user
+  # (reads login-token). A targeted chown is not feasible because busybox has
+  # no shared /etc/passwd with the other images, so their usernames ("zitadel",
+  # "nextjs") are unknown here — only hard-coding numeric UIDs would work, and
+  # those are internal image implementation details. World-writable is
+  # acceptable for a dev-only volume that holds no production credentials.
   zitadel-bootstrap-init:
     image: busybox:1.37
     profiles:
