@@ -11,16 +11,14 @@ declare global {
 
 export interface StufConfig {
   apiBaseUrl: string;
-  keycloakUrl: string;
-  keycloakRealm: string;
-  keycloakClientId: string;
+  oidcAuthority: string;
+  oidcClientId: string;
 }
 
 const DEFAULTS: StufConfig = {
   apiBaseUrl: "http://localhost:8000",
-  keycloakUrl: "http://localhost:8080",
-  keycloakRealm: "stuf",
-  keycloakClientId: "stuf-spa",
+  oidcAuthority: "http://localhost:8080/realms/stuf",
+  oidcClientId: "stuf-spa",
 };
 
 let configCache: StufConfig | null = null;
