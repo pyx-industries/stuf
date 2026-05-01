@@ -374,6 +374,14 @@ These need decisions or upstream investigation before implementation:
    project roles would invert the data model (one role per
    `{collection}:{permission}` combination) and is likely overkill for a
    mostly-attribute-based model.
+   **Resolved (step 4).** Keeping the custom claim. The `injectCollections`
+   Action (in `docker/zitadel-init/provision.py`) is deployed to the
+   `CUSTOMISE_TOKEN / PRE_ACCESS_TOKEN_CREATION` trigger. It reads the
+   `collections` key from user metadata (base64-decoded JSON) and injects
+   it as a top-level claim. It also injects `preferred_username` from
+   `ctx.v1.user.preferredLoginName` to fill the gap Zitadel has vs Keycloak.
+   Note: the Action fires for authorisation-code flows; behaviour on
+   `client_credentials` flows needs verification in step 5.
 
 2. **JWT vs opaque tokens.** Default Zitadel access tokens are opaque. Two
    options:
@@ -384,6 +392,10 @@ These need decisions or upstream investigation before implementation:
      round-trip per request.
    Recommend (a). It is also closer to the current Keycloak behaviour, so
    the same middleware path works for both providers.
+   **Resolved (step 4).** `stuf-spa` is created with `accessTokenType:
+   OIDC_TOKEN_TYPE_JWT` and `idTokenUserinfoAssertion: true`. The API app
+   uses `API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT`. The `backup-service` machine
+   user is created with `ACCESS_TOKEN_TYPE_JWT`.
 
 3. **Auto-generated client IDs.** Zitadel does not let you choose the
    client ID for an OIDC application — it's a generated identifier. That
@@ -392,6 +404,15 @@ These need decisions or upstream investigation before implementation:
    updated compose env vars), rather than the stable string literals
    (`stuf-api`, `stuf-spa`, `backup-service`) we use today. This is the
    single biggest ergonomic regression from the operator's perspective.
+   **Partially resolved (step 4).** `zitadel-init` writes the generated IDs
+   to `/bootstrap/generated.env` (named volume `zitadel-bootstrap`). For
+   step 5, compose needs to read these values into `api` and `spa` env vars.
+   One option: after `zitadel-init` completes, a second one-shot container
+   copies `generated.env` to a host-bound path so compose can pick it up
+   via `env_file`. Another option: wire env vars via `docker compose run`.
+   Exception: `backup-service` machine user's `clientId` IS the userName
+   (`backup-service`), so it is stable across restarts — only the secret
+   rotates.
 
 4. **Service account credentials.** `backup-service` today has a
    well-known `clientId=backup-service` and `secret=backup-service-secret`
@@ -400,6 +421,10 @@ These need decisions or upstream investigation before implementation:
    client-secret (auto-generated) or a private-key JWT. The init script
    has to write the resulting credentials to a place the e2e fixture can
    read — likely an `.env` file mounted into the test container.
+   **Partially resolved (step 4).** `backup-service` machine user created;
+   client credentials (`clientId=backup-service`, auto-generated secret)
+   written to `/bootstrap/generated.env`. `client_credentials` token flow
+   verified working. E2E fixture wiring deferred to step 5.
 
 5. **Token-type discrimination semantics.** `get_current_principal`'s
    distinction between user tokens and service-account tokens is the most
@@ -436,17 +461,21 @@ These need decisions or upstream investigation before implementation:
    service names — `keycloak-e2e` is hard-coded in several Playwright
    fixtures and would have to become provider-parameterised or
    provider-renamed.
-   **Partially resolved (step 3).** Profile strategy implemented:
+   **Partially resolved (step 3 + step 4).** Profile strategy implemented:
    `--profile keycloak` starts Keycloak on :8080; `--profile zitadel`
    starts the Zitadel stack on :8080/:8090; bare `docker compose up`
    starts minio/api/spa only. The e2e service-name issue (hardcoded
    `keycloak-e2e` in Playwright fixtures) remains open for step 6.
-   Additional discovery: `zitadel-login` (v4.14.0) is the correct image
-   name (not `zitadel/login`); `ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI`
-   must be set to `http://localhost:8090/ui/v2/login` so Zitadel
-   constructs the correct redirect URL; the login container requires
-   `ZITADEL_SERVICE_USER_TOKEN` (IAM_LOGIN_CLIENT role) to serve the
-   login page — provisioned in step 4.
+   Additional discovery (step 4): Zitadel validates the HTTP `Host` header
+   on every incoming request against `ZITADEL_EXTERNALDOMAIN` (localhost).
+   Any Docker-internal request using the service hostname (`zitadel:8080`)
+   returns "Instance not found". Fix: `zitadel-init` and `zitadel-login`
+   both use `network_mode: host` so they call `http://localhost:8080`
+   directly (the published port) — the `Host` header matches. For step 5,
+   `api` will also need either host networking or a proxy, or the env var
+   `OIDC_BASE_URL` must use `localhost` rather than `zitadel`.
+   `zitadel-login` uses `PORT` env var to bind on 8090 instead of the
+   default 3000.
 
 ## Suggested implementation order
 
