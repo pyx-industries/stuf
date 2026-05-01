@@ -167,11 +167,12 @@ services:
     network_mode: host
     environment:
       ZITADEL_DOMAIN: http://localhost:${ZITADEL_PORT:-8080}
-      ZITADEL_ADMIN_EMAIL: ${ZITADEL_ADMIN_EMAIL:-admin@example.com}
       MACHINE_KEY_PATH: /bootstrap/zitadel-admin-sa.json
       BOOTSTRAP_DIR: /bootstrap
+      FIXTURE_PATH: /fixtures/dev/instance.yaml
     volumes:
       - zitadel-bootstrap:/bootstrap
+      - ./docker/zitadel-init:/fixtures:ro
     depends_on:
       zitadel:
         condition: service_healthy
