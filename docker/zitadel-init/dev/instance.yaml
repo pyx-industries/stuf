@@ -1,0 +1,121 @@
+project:
+  name: stuf
+  roles:
+    - key: admin
+      displayName: Administrator
+    - key: trust-architect
+      displayName: Trust Architect
+    - key: project-participant
+      displayName: Project Participant
+    - key: collection-test
+      displayName: Collection Test
+    - key: service
+      displayName: Service Account
+
+apps:
+  spa:
+    name: stuf-spa
+    redirectUris:
+      - http://localhost:3000
+      - http://localhost:3100
+      - http://spa-e2e:3000
+    postLogoutRedirectUris:
+      - http://localhost:3000
+      - http://localhost:3100
+      - http://spa-e2e:3000
+  api:
+    name: stuf-api
+
+# Users with existing: true are created by ZITADEL_FIRSTINSTANCE_* env vars.
+# The script looks them up by email and applies roles + collections metadata
+# without creating or changing their password.
+human_users:
+  - existing: true
+    email: admin@example.com
+    roles: [admin]
+    collections:
+      test: [read, write, delete]
+      restricted: [read, write, delete]
+      shared: [read, write, delete]
+
+  - username: testuser
+    firstName: Test
+    lastName: User
+    email: testuser@example.com
+    password: password
+    roles: [project-participant]
+    collections:
+      test: [read, write, delete]
+      collection-1-docs: [read, write]
+      collection-2-contracts: [read]
+      collection-3-cat-pics: [read, write, delete]
+
+  - username: test-admin
+    firstName: Test
+    lastName: Admin
+    email: admin@test.example.com
+    password: test-password
+    roles: [admin]
+    collections:
+      test: [read, write, delete]
+      restricted: [read, write, delete]
+      shared: [read, write, delete]
+
+  - username: test-trust-architect
+    firstName: Test
+    lastName: Architect
+    email: ta@test.example.com
+    password: test-password
+    roles: [trust-architect]
+    collections:
+      test: [read, write, delete]
+      restricted: [read, write, delete]
+      shared: [read, write, delete]
+
+  - username: test-user-full
+    firstName: Test
+    lastName: FullUser
+    email: full@test.example.com
+    password: test-password
+    roles: [project-participant]
+    collections:
+      test: [read, write]
+      restricted: [read, write]
+      shared: [read, write]
+
+  - username: test-user-limited
+    firstName: Test
+    lastName: LimitedUser
+    email: limited@test.example.com
+    password: test-password
+    roles: [project-participant]
+    collections:
+      test: [read, write]
+
+  - username: test-user-shared
+    firstName: Test
+    lastName: SharedUser
+    email: shared@test.example.com
+    password: test-password
+    roles: [project-participant]
+    collections:
+      shared: [read, write]
+
+  - username: test-user-inactive
+    firstName: Test
+    lastName: InactiveUser
+    email: inactive@test.example.com
+    password: test-password
+    roles: [project-participant]
+    collections:
+      test: [read, write]
+    disabled: true
+
+machine_users:
+  - username: backup-service
+    name: Backup Service
+    description: Service account for backup operations
+    roles: [service]
+    collections:
+      test: [read]
+      shared: [read]
