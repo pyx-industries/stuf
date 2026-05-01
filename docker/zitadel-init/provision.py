@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Zitadel provisioning script for STUF development environment.
-Mirrors the content of docker/keycloak/data/import/realm-export.json.
+Reads instance fixture from FIXTURE_PATH (default: /fixtures/dev/instance.yaml)
+and mirrors it into Zitadel via the Management API.
 
-Run order: after Zitadel is healthy, before api/spa/zitadel-login start.
 Writes /bootstrap/login-token (PAT for zitadel-login) and
 /bootstrap/generated.env (generated client IDs for step 5 wiring).
 """
@@ -18,13 +18,14 @@ from datetime import datetime, timezone, timedelta
 
 import httpx
 import jwt
+import yaml
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 
 ZITADEL_DOMAIN = os.environ.get("ZITADEL_DOMAIN", "http://localhost:8080")
 MACHINE_KEY_PATH = os.environ.get("MACHINE_KEY_PATH", "/bootstrap/zitadel-admin-sa.json")
 BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
-ZITADEL_ADMIN_EMAIL = os.environ.get("ZITADEL_ADMIN_EMAIL", "admin@example.com")
+FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
 # Injected into every access token via the preAccessTokenCreation trigger.
 # - preferred_username: not in Zitadel JWT access tokens by default; mirrors
@@ -48,72 +49,10 @@ function preAccessTokenCreation(ctx, api) {
 }
 """
 
-HUMAN_USERS = [
-    {
-        "username": "testuser",
-        "firstName": "Test",
-        "lastName": "User",
-        "email": "testuser@example.com",
-        "password": "password",
-        "roles": ["project-participant"],
-        "collections": '{"test":["read","write","delete"],"collection-1-docs":["read","write"],"collection-2-contracts":["read"],"collection-3-cat-pics":["read","write","delete"]}',
-    },
-    {
-        "username": "test-admin",
-        "firstName": "Test",
-        "lastName": "Admin",
-        "email": "admin@test.example.com",
-        "password": "test-password",
-        "roles": ["admin"],
-        "collections": '{"test":["read","write","delete"],"restricted":["read","write","delete"],"shared":["read","write","delete"]}',
-    },
-    {
-        "username": "test-trust-architect",
-        "firstName": "Test",
-        "lastName": "Architect",
-        "email": "ta@test.example.com",
-        "password": "test-password",
-        "roles": ["trust-architect"],
-        "collections": '{"test":["read","write","delete"],"restricted":["read","write","delete"],"shared":["read","write","delete"]}',
-    },
-    {
-        "username": "test-user-full",
-        "firstName": "Test",
-        "lastName": "FullUser",
-        "email": "full@test.example.com",
-        "password": "test-password",
-        "roles": ["project-participant"],
-        "collections": '{"test":["read","write"],"restricted":["read","write"],"shared":["read","write"]}',
-    },
-    {
-        "username": "test-user-limited",
-        "firstName": "Test",
-        "lastName": "LimitedUser",
-        "email": "limited@test.example.com",
-        "password": "test-password",
-        "roles": ["project-participant"],
-        "collections": '{"test":["read","write"]}',
-    },
-    {
-        "username": "test-user-shared",
-        "firstName": "Test",
-        "lastName": "SharedUser",
-        "email": "shared@test.example.com",
-        "password": "test-password",
-        "roles": ["project-participant"],
-        "collections": '{"shared":["read","write"]}',
-    },
-    {
-        "username": "test-user-inactive",
-        "firstName": "Test",
-        "lastName": "InactiveUser",
-        "email": "inactive@test.example.com",
-        "password": "test-password",
-        "roles": ["project-participant"],
-        "collections": '{"test":["read","write"]}',
-        "disabled": True,
-    },
-]
+
+def load_fixture():
+    with open(FIXTURE_PATH) as f:
+        return yaml.safe_load(f)
 
 
 def wait_for_machine_key(path, timeout=120):
@@ -132,7 +71,7 @@ def wait_for_machine_key(path, timeout=120):
 
 
 def get_issuer_url():
-    for attempt in range(30):
+    for _ in range(30):
         try:
             resp = httpx.get(f"{ZITADEL_DOMAIN}/.well-known/openid-configuration", timeout=5)
             resp.raise_for_status()
@@ -145,14 +84,9 @@ def get_issuer_url():
 def create_jwt_assertion(key_data, issuer_url):
     user_id = key_data["userId"]
     key_id = key_data["keyId"]
-    private_key_pem = key_data["key"]
-
     private_key = serialization.load_pem_private_key(
-        private_key_pem.encode(),
-        password=None,
-        backend=default_backend(),
+        key_data["key"].encode(), password=None, backend=default_backend()
     )
-
     now = datetime.now(timezone.utc)
     payload = {
         "iss": user_id,
@@ -162,7 +96,6 @@ def create_jwt_assertion(key_data, issuer_url):
         "exp": int((now + timedelta(minutes=5)).timestamp()),
         "jti": str(uuid.uuid4()),
     }
-
     return jwt.encode(payload, private_key, algorithm="RS256", headers={"kid": key_id})
 
 
@@ -191,12 +124,17 @@ def api(client, method, path, **kwargs):
     return resp.json() if resp.content else {}
 
 
-def set_user_metadata(client, user_id, key, value_str):
-    encoded = base64.b64encode(value_str.encode()).decode()
-    api(client, "post", f"/management/v1/users/{user_id}/metadata/{key}", json={"value": encoded})
+def set_collections_metadata(client, user_id, collections):
+    """Serialize collections dict to JSON, base64-encode, and store as metadata."""
+    encoded = base64.b64encode(json.dumps(collections).encode()).decode()
+    api(client, "post", f"/management/v1/users/{user_id}/metadata/collections",
+        json={"value": encoded})
 
 
 def main():
+    print(f"Loading fixture from {FIXTURE_PATH} ...")
+    fixture = load_fixture()
+
     print(f"Waiting for machine key at {MACHINE_KEY_PATH} ...")
     key_data = wait_for_machine_key(MACHINE_KEY_PATH)
     print(f"  Loaded key for user {key_data['userId']}")
@@ -213,10 +151,11 @@ def main():
 
     with httpx.Client(headers=headers, timeout=30.0) as client:
 
-        # ── Project ──────────────────────────────────────────────────────────
-        print("Creating project 'stuf' ...")
+        # ── Project ───────────────────────────────────────────────────────────
+        proj_cfg = fixture["project"]
+        print(f"Creating project '{proj_cfg['name']}' ...")
         project = api(client, "post", "/management/v1/projects", json={
-            "name": "stuf",
+            "name": proj_cfg["name"],
             "projectRoleAssertion": True,
             "projectRoleCheck": False,
             "hasProjectCheck": False,
@@ -227,30 +166,20 @@ def main():
 
         # ── Project roles ─────────────────────────────────────────────────────
         print("Creating project roles ...")
-        role_defs = [
-            ("admin", "Administrator"),
-            ("trust-architect", "Trust Architect"),
-            ("project-participant", "Project Participant"),
-            ("collection-test", "Collection Test"),
-            ("service", "Service Account"),
-        ]
-        for role_key, display_name in role_defs:
+        for role in proj_cfg["roles"]:
             api(client, "post", f"/management/v1/projects/{project_id}/roles", json={
-                "roleKey": role_key,
-                "displayName": display_name,
+                "roleKey": role["key"],
+                "displayName": role["displayName"],
                 "group": "",
             })
-            print(f"  {role_key}")
+            print(f"  {role['key']}")
 
-        # ── OIDC application: stuf-spa ─────────────────────────────────────
-        print("Creating OIDC app 'stuf-spa' ...")
+        # ── OIDC application: spa ─────────────────────────────────────────────
+        spa_cfg = fixture["apps"]["spa"]
+        print(f"Creating OIDC app '{spa_cfg['name']}' ...")
         spa_app = api(client, "post", f"/management/v1/projects/{project_id}/apps/oidc", json={
-            "name": "stuf-spa",
-            "redirectUris": [
-                "http://localhost:3000",
-                "http://localhost:3100",
-                "http://spa-e2e:3000",
-            ],
+            "name": spa_cfg["name"],
+            "redirectUris": spa_cfg["redirectUris"],
             "responseTypes": ["OIDC_RESPONSE_TYPE_CODE"],
             "grantTypes": [
                 "OIDC_GRANT_TYPE_AUTHORIZATION_CODE",
@@ -258,11 +187,7 @@ def main():
             ],
             "appType": "OIDC_APP_TYPE_USER_AGENT",
             "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
-            "postLogoutRedirectUris": [
-                "http://localhost:3000",
-                "http://localhost:3100",
-                "http://spa-e2e:3000",
-            ],
+            "postLogoutRedirectUris": spa_cfg["postLogoutRedirectUris"],
             "version": "OIDC_VERSION_1_0",
             "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
             "accessTokenRoleAssertion": True,
@@ -273,19 +198,19 @@ def main():
             "skipNativeAppSuccessPage": False,
         })
         spa_client_id = spa_app["clientId"]
-        spa_app_id = spa_app["appId"]
         print(f"  client_id={spa_client_id}")
 
-        # ── API application: stuf-api (audience target) ─────────────────────
-        print("Creating API app 'stuf-api' ...")
+        # ── API application (audience target) ─────────────────────────────────
+        api_cfg = fixture["apps"]["api"]
+        print(f"Creating API app '{api_cfg['name']}' ...")
         api_app = api(client, "post", f"/management/v1/projects/{project_id}/apps/api", json={
-            "name": "stuf-api",
+            "name": api_cfg["name"],
             "authMethodType": "API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT",
         })
         api_app_client_id = api_app["clientId"]
         print(f"  client_id={api_app_client_id}")
 
-        # ── Action: inject collections + preferred_username ──────────────────
+        # ── Action: inject collections + preferred_username ───────────────────
         print("Creating 'injectCollections' action ...")
         action = api(client, "post", "/management/v1/actions", json={
             "name": "injectCollections",
@@ -300,53 +225,46 @@ def main():
         api(client, "post", "/management/v1/flows/2/trigger/4", json={"actionIds": [action_id]})
         print("  trigger set (CUSTOMISE_TOKEN / PRE_ACCESS_TOKEN_CREATION)")
 
-        # ── Update existing admin user (created by first-instance) ───────────
-        # Search by email; FIRSTINSTANCE_ORG_HUMAN_USERNAME sets the loginName
-        # but the internal userName may include an org suffix in some versions.
-        print(f"Looking up first-instance admin user (email={ZITADEL_ADMIN_EMAIL}) ...")
-        search_resp = api(client, "post", "/management/v1/users/_search", json={
-            "query": {"limit": 5, "asc": True},
-            "queries": [{"emailQuery": {
-                "emailAddress": ZITADEL_ADMIN_EMAIL,
-                "method": "TEXT_QUERY_METHOD_EQUALS",
-            }}],
-        })
-        admin_results = search_resp.get("result", [])
-        if admin_results:
-            admin_user_id = admin_results[0]["id"]
-            print(f"  Found admin user_id={admin_user_id}")
-            api(client, "post", f"/management/v1/users/{admin_user_id}/grants", json={
-                "projectId": project_id,
-                "roleKeys": ["admin"],
-            })
-            set_user_metadata(client, admin_user_id, "collections",
-                '{"test":["read","write","delete"],"restricted":["read","write","delete"],"shared":["read","write","delete"]}')
-            print("  Granted admin role + set collections")
-        else:
-            print("  WARNING: first-instance admin user not found; skipping")
-
-        # ── Human test users ──────────────────────────────────────────────────
-        print("Creating human test users ...")
-        for user_def in HUMAN_USERS:
-            u = api(client, "post", "/management/v1/users/human", json={
-                "userName": user_def["username"],
-                "profile": {
-                    "firstName": user_def["firstName"],
-                    "lastName": user_def["lastName"],
-                    "displayName": f"{user_def['firstName']} {user_def['lastName']}",
-                    "preferredLanguage": "en",
-                },
-                "email": {
-                    "email": user_def["email"],
-                    "isEmailVerified": True,
-                },
-                "password": {
-                    "value": user_def["password"],
-                    "changeRequired": False,
-                },
-            })
-            user_id = u["userId"]
-            print(f"  {user_def['username']} → {user_id}")
+        # ── Human users ───────────────────────────────────────────────────────
+        print("Processing human users ...")
+        for user_def in fixture["human_users"]:
+            if user_def.get("existing"):
+                # Created by ZITADEL_FIRSTINSTANCE_*; look up by email, then
+                # apply roles and collections metadata only.
+                email = user_def["email"]
+                search = api(client, "post", "/management/v1/users/_search", json={
+                    "query": {"limit": 5, "asc": True},
+                    "queries": [{"emailQuery": {
+                        "emailAddress": email,
+                        "method": "TEXT_QUERY_METHOD_EQUALS",
+                    }}],
+                })
+                results = search.get("result", [])
+                if not results:
+                    print(f"  WARNING: existing user {email!r} not found; skipping")
+                    continue
+                user_id = results[0]["id"]
+                print(f"  (existing) {email} → {user_id}")
+            else:
+                u = api(client, "post", "/management/v1/users/human", json={
+                    "userName": user_def["username"],
+                    "profile": {
+                        "firstName": user_def["firstName"],
+                        "lastName": user_def["lastName"],
+                        "displayName": f"{user_def['firstName']} {user_def['lastName']}",
+                        "preferredLanguage": "en",
+                    },
+                    "email": {
+                        "email": user_def["email"],
+                        "isEmailVerified": True,
+                    },
+                    "password": {
+                        "value": user_def["password"],
+                        "changeRequired": False,
+                    },
+                })
+                user_id = u["userId"]
+                print(f"  {user_def['username']} → {user_id}")
 
             if user_def.get("roles"):
                 api(client, "post", f"/management/v1/users/{user_id}/grants", json={
@@ -355,7 +273,7 @@ def main():
                 })
 
             if user_def.get("collections"):
-                set_user_metadata(client, user_id, "collections", user_def["collections"])
+                set_collections_metadata(client, user_id, user_def["collections"])
 
             if user_def.get("disabled"):
                 # Newly-created users are in "initial" state and cannot be
@@ -363,30 +281,35 @@ def main():
                 api(client, "post", f"/management/v1/users/{user_id}/_lock", json={})
                 print(f"    (locked)")
 
-        # ── Machine user: backup-service ──────────────────────────────────────
-        print("Creating machine user 'backup-service' ...")
-        backup_user = api(client, "post", "/management/v1/users/machine", json={
-            "userName": "backup-service",
-            "name": "Backup Service",
-            "description": "Service account for backup operations",
-            "accessTokenType": "ACCESS_TOKEN_TYPE_JWT",
-        })
-        backup_user_id = backup_user["userId"]
-        print(f"  user_id={backup_user_id}")
+        # ── Machine users ─────────────────────────────────────────────────────
+        print("Creating machine users ...")
+        machine_client_id = None
+        machine_client_secret = None
+        for mu_def in fixture["machine_users"]:
+            mu = api(client, "post", "/management/v1/users/machine", json={
+                "userName": mu_def["username"],
+                "name": mu_def["name"],
+                "description": mu_def.get("description", ""),
+                "accessTokenType": "ACCESS_TOKEN_TYPE_JWT",
+            })
+            mu_id = mu["userId"]
+            print(f"  {mu_def['username']} → {mu_id}")
 
-        api(client, "post", f"/management/v1/users/{backup_user_id}/grants", json={
-            "projectId": project_id,
-            "roleKeys": ["service"],
-        })
-        set_user_metadata(client, backup_user_id, "collections", '{"test":["read"],"shared":["read"]}')
+            if mu_def.get("roles"):
+                api(client, "post", f"/management/v1/users/{mu_id}/grants", json={
+                    "projectId": project_id,
+                    "roleKeys": mu_def["roles"],
+                })
 
-        # Generate client credentials for backup-service
-        secret_resp = api(client, "put", f"/management/v1/users/{backup_user_id}/secret", json={})
-        backup_client_id = secret_resp.get("clientId", backup_user_id)
-        backup_client_secret = secret_resp.get("clientSecret", "")
-        print(f"  client_id={backup_client_id}")
+            if mu_def.get("collections"):
+                set_collections_metadata(client, mu_id, mu_def["collections"])
 
-        # ── Machine user: login-client (IAM_LOGIN_CLIENT) ─────────────────────
+            secret_resp = api(client, "put", f"/management/v1/users/{mu_id}/secret", json={})
+            machine_client_id = secret_resp.get("clientId", mu_def["username"])
+            machine_client_secret = secret_resp.get("clientSecret", "")
+            print(f"    client_id={machine_client_id}")
+
+        # ── Login-client machine user (infrastructure, not in fixture) ────────
         print("Creating machine user 'login-client' for zitadel-login ...")
         login_user = api(client, "post", "/management/v1/users/machine", json={
             "userName": "login-client",
@@ -397,14 +320,12 @@ def main():
         login_user_id = login_user["userId"]
         print(f"  user_id={login_user_id}")
 
-        # Grant IAM_LOGIN_CLIENT role (admin API)
         api(client, "post", "/admin/v1/members", json={
             "userId": login_user_id,
             "roles": ["IAM_LOGIN_CLIENT"],
         })
         print("  Granted IAM_LOGIN_CLIENT")
 
-        # Generate PAT (expiry far in future for dev)
         pat_resp = api(client, "post", f"/management/v1/users/{login_user_id}/pats", json={
             "expirationDate": "2099-01-01T00:00:00Z",
         })
@@ -423,8 +344,8 @@ def main():
             "ZITADEL_STUF_PROJECT_ID": project_id,
             "ZITADEL_SPA_CLIENT_ID": spa_client_id,
             "ZITADEL_API_APP_CLIENT_ID": api_app_client_id,
-            "ZITADEL_BACKUP_SERVICE_CLIENT_ID": backup_client_id,
-            "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": backup_client_secret,
+            "ZITADEL_BACKUP_SERVICE_CLIENT_ID": machine_client_id or "",
+            "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": machine_client_secret or "",
         }
         env_file = os.path.join(BOOTSTRAP_DIR, "generated.env")
         with open(env_file, "w") as f:
@@ -436,7 +357,7 @@ def main():
         print(f"  project_id:           {project_id}")
         print(f"  spa_client_id:        {spa_client_id}")
         print(f"  api_app_client_id:    {api_app_client_id}")
-        print(f"  backup client_id:     {backup_client_id}")
+        print(f"  backup client_id:     {machine_client_id}")
         print(f"  login-token written:  {token_file}")
         print(f"  generated.env:        {env_file}")
         print("=============================")
