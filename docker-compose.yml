@@ -90,6 +90,17 @@ services:
       timeout: 3s
       retries: 5
 
+  # Makes the bootstrap volume world-writable so the Zitadel container (user
+  # "zitadel", non-root) can write the machine key file on first init.
+  zitadel-bootstrap-init:
+    image: busybox:1.37
+    profiles:
+      - zitadel
+    command: ["chmod", "777", "/bootstrap"]
+    volumes:
+      - zitadel-bootstrap:/bootstrap
+    restart: "no"
+
   zitadel:
     image: ghcr.io/zitadel/zitadel:v4.14.0
     profiles:
@@ -117,11 +128,20 @@ services:
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: Admin
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: User
+      # Machine user for zitadel-init provisioning script; key written to bootstrap volume
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Zitadel Admin SA
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
+      ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /bootstrap/zitadel-admin-sa.json
+    volumes:
+      - zitadel-bootstrap:/bootstrap
     ports:
       - "${ZITADEL_PORT:-8080}:8080"
     depends_on:
       zitadel-postgres:
         condition: service_healthy
+      zitadel-bootstrap-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "/app/zitadel", "ready"]
       interval: 10s
@@ -129,18 +149,50 @@ services:
       retries: 10
       start_period: 60s
 
+  zitadel-init:
+    build:
+      context: ./docker/zitadel-init
+      dockerfile: Dockerfile
+    profiles:
+      - zitadel
+    # Use host networking so the script calls http://localhost:8080 — Zitadel
+    # validates the Host header against ZITADEL_EXTERNALDOMAIN (localhost), so
+    # requests from inside Docker on the internal hostname 'zitadel' get 404s.
+    network_mode: host
+    environment:
+      ZITADEL_DOMAIN: http://localhost:${ZITADEL_PORT:-8080}
+      ZITADEL_ADMIN_EMAIL: ${ZITADEL_ADMIN_EMAIL:-admin@example.com}
+      MACHINE_KEY_PATH: /bootstrap/zitadel-admin-sa.json
+      BOOTSTRAP_DIR: /bootstrap
+    volumes:
+      - zitadel-bootstrap:/bootstrap
+    depends_on:
+      zitadel:
+        condition: service_healthy
+    restart: "no"
+
   zitadel-login:
     image: ghcr.io/zitadel/zitadel-login:v4.14.0
     profiles:
       - zitadel
+    # Use host networking (same reason as zitadel-init): Zitadel validates the
+    # Host header against ZITADEL_EXTERNALDOMAIN (localhost), so requests from
+    # inside Docker on 'zitadel:8080' get "Instance not found" errors.
+    # With host networking, ZITADEL_API_URL uses localhost:8080 directly.
+    # PORT tells the Next.js server which host port to bind on.
+    network_mode: host
+    # Read the PAT written by zitadel-init from the shared volume and export
+    # it as ZITADEL_SERVICE_USER_TOKEN before starting the login UI server.
+    entrypoint: ["/bin/sh", "-c", "export ZITADEL_SERVICE_USER_TOKEN=$(cat /bootstrap/login-token) && exec /app/entrypoint.sh node apps/login/server.js"]
     environment:
-      ZITADEL_API_URL: http://zitadel:8080
-      # ZITADEL_SERVICE_USER_TOKEN is set by the zitadel-init provisioning step (step 4)
-    ports:
-      - "${ZITADEL_LOGIN_PORT:-8090}:3000"
+      ZITADEL_API_URL: http://localhost:${ZITADEL_PORT:-8080}
+      PORT: ${ZITADEL_LOGIN_PORT:-8090}
+    volumes:
+      - zitadel-bootstrap:/bootstrap:ro
     depends_on:
-      zitadel:
-        condition: service_healthy
+      zitadel-init:
+        condition: service_completed_successfully
 
 volumes:
   minio_data:
+  zitadel-bootstrap:
