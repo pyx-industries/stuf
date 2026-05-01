@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from typing import Optional, Union
 
 import requests
@@ -10,48 +11,53 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwk, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 
-# Keycloak configuration
-KEYCLOAK_URL = os.environ.get(
-    "KEYCLOAK_URL", "http://localhost:8080"
-)  # For internal API calls (JWKS, etc.)
-KEYCLOAK_ISSUER_URL = os.environ.get(
-    "KEYCLOAK_ISSUER_URL", "http://localhost:8080"
-)  # For JWT issuer validation
-KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "stuf")
-KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "stuf-api")
-KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "some-secret-value")
-
-# Keycloak endpoints
-token_endpoint = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
-userinfo_endpoint = (
-    f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
+# OIDC_ISSUER_URL: the issuer URL as it appears in tokens. Used to validate the
+# `iss` claim and (when OIDC_BASE_URL is not set) to fetch the discovery document.
+OIDC_ISSUER_URL = os.environ.get(
+    "OIDC_ISSUER_URL", "http://localhost:8080/realms/stuf"
 )
-introspect_endpoint = (
-    f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token/introspect"
+
+# OIDC_BASE_URL: optional override for the base URL used to fetch the discovery
+# document and JWKS. Set this to the container-internal hostname when the issuer
+# URL visible to clients (OIDC_ISSUER_URL) differs from the URL reachable by the
+# API process (e.g. docker-compose where keycloak is on an internal network).
+# Defaults to OIDC_ISSUER_URL when not set.
+_OIDC_BASE_URL = os.environ.get("OIDC_BASE_URL", OIDC_ISSUER_URL)
+
+OIDC_VALID_AUDIENCES = set(
+    a.strip()
+    for a in os.environ.get("OIDC_VALID_AUDIENCES", "stuf-api,stuf-spa").split(",")
+    if a.strip()
 )
-jwks_uri = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 
-
-# Bearer token scheme for both user and service account validation
-# Using auto_error=False to handle authentication errors manually
 bearer_scheme = HTTPBearer(auto_error=False)
 
+_discovery_doc: dict = {}
+_jwks_cache: dict = {"keys": [], "fetched_at": 0.0}
+_JWKS_TTL = 300  # seconds
 
-def get_keycloak_public_keys():
-    """Fetch Keycloak public keys for JWT verification"""
-    logger = logging.getLogger(__name__)
 
-    try:
-        jwks_response = requests.get(jwks_uri, timeout=10)
-        if jwks_response.status_code != 200:
-            logger.error(f"Failed to fetch JWKS: {jwks_response.status_code}")
-            return None
+def _fetch_discovery() -> dict:
+    """Fetch and cache the OIDC discovery document."""
+    global _discovery_doc
+    if not _discovery_doc:
+        url = f"{_OIDC_BASE_URL}/.well-known/openid-configuration"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        _discovery_doc = resp.json()
+    return _discovery_doc
 
-        jwks = jwks_response.json()
-        return jwks
-    except Exception as e:
-        logger.error(f"Exception fetching JWKS: {e}")
-        return None
+
+def _get_jwks(force_refresh: bool = False) -> list:
+    """Return cached JWKS keys, refreshing from the provider when stale or forced."""
+    global _jwks_cache
+    now = time.monotonic()
+    if force_refresh or now - _jwks_cache["fetched_at"] > _JWKS_TTL:
+        discovery = _fetch_discovery()
+        resp = requests.get(discovery["jwks_uri"], timeout=10)
+        resp.raise_for_status()
+        _jwks_cache = {"keys": resp.json().get("keys", []), "fetched_at": now}
+    return _jwks_cache["keys"]
 
 
 def verify_jwt_token(token: str):
@@ -61,36 +67,30 @@ def verify_jwt_token(token: str):
     logger.info(f"Verifying JWT token (first 50 chars): {token[:50]}...")
 
     try:
-        # Get Keycloak public keys
-        jwks = get_keycloak_public_keys()
-        if not jwks:
-            logger.error("Could not fetch Keycloak public keys")
-            return None
-
-        # Decode token header to get key ID
         header = jwt.get_unverified_header(token)
         kid = header.get("kid")
         if not kid:
             logger.error("JWT token missing key ID")
             return None
 
-        # Find the matching public key
+        # Try the cached JWKS first; on a cache miss force one refresh to handle
+        # key rotation before giving up.
         public_key = None
-        for key in jwks.get("keys", []):
-            if key.get("kid") == kid:
-                public_key = jwk.construct(key)
+        for force in (False, True):
+            keys = _get_jwks(force_refresh=force)
+            for key in keys:
+                if key.get("kid") == kid:
+                    public_key = jwk.construct(key)
+                    break
+            if public_key or force:
                 break
 
         if not public_key:
             logger.error(f"Could not find public key for kid: {kid}")
             return None
 
-        # Verify and decode JWT with signature validation
-        expected_issuer = f"{KEYCLOAK_ISSUER_URL}/realms/{KEYCLOAK_REALM}"
-
-        # JWT validation options - disable audience verification to handle manually
         options = {
-            "verify_aud": False,  # Handle audience validation manually
+            "verify_aud": False,  # Handle audience validation manually below
             "verify_iss": True,
             "verify_exp": True,
         }
@@ -98,18 +98,16 @@ def verify_jwt_token(token: str):
         token_payload = jwt.decode(
             token,
             public_key,
-            algorithms=["RS256"],  # Keycloak uses RS256
+            algorithms=["RS256"],
             options=options,
-            issuer=expected_issuer,
+            issuer=OIDC_ISSUER_URL,
         )
 
-        # Manually validate audience since jose is strict about format
         token_aud = token_payload.get("aud", [])
         if isinstance(token_aud, str):
             token_aud = [token_aud]
 
-        valid_audiences = {"stuf-api", "stuf-spa"}
-        if not any(aud in valid_audiences for aud in token_aud):
+        if not any(aud in OIDC_VALID_AUDIENCES for aud in token_aud):
             logger.error(f"Invalid audience in token: {token_aud}")
             return None
 
