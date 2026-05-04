@@ -331,38 +331,69 @@ metadata for `collections`).
      audience+roles scopes vs Keycloak's `stuf:access`.
 
 8. **`api/tests/integration/conftest.py` +
-   `api/tests/fixtures/test_data.py`** — the mocked token payloads currently
-   carry only Keycloak-shaped claims. Add parallel Zitadel-shaped
-   fixtures (or a single normalised shape that both branches of middleware
-   parse) so the integration suite covers both providers' claim layouts.
+   `api/tests/fixtures/test_data.py`** — *(Implemented — step 8)*
+   - `mock_jwt_verification` already had Zitadel-shaped tokens for user, admin, and
+     service account from a prior partial implementation.
+   - Added `zitadel-limited-user-integration-test-token` and `zitadel_limited_user_headers`
+     fixture.
+   - Extended `AUTH_FIXTURES` in `test_files_api.py` with `zitadel_authenticated_headers` and
+     `zitadel_service_account_headers`; extended `LIMITED_AUTH_FIXTURES` with
+     `zitadel_limited_user_headers`.
+   - Fixed `get_current_principal` in `api/auth/middleware.py`: simplified from a
+     complex `has_service_indicators` check (which broke for Zitadel machine users
+     that include `openid` in their scope) to a single `has_user_fields` discriminant.
+     Human tokens carry `email`/`given_name`/`family_name`; machine tokens do not —
+     this is reliable across both providers.
 
-9. **`tests/e2e-browser/pages/login_page.py`** — Zitadel-login's React UI
-   is structurally different from Keycloak's. The selectors will have to
-   be re-derived against Zitadel-login's actual DOM. Best done by running
-   the Zitadel profile locally and inspecting. Likely shape: separate
-   username and password steps (Zitadel-login defaults to a two-step
-   flow), no `kc-feedback-text` class, login button label "Next" / "Sign
-   in" rather than the current generic submit-button selector.
+9. **`tests/e2e-browser/pages/login_page.py`** — *(Implemented — step 5/branch 85-zitadel-3)*
+   `login_page.py` was fully updated with Zitadel-login v4 selectors and a two-step
+   login flow (login-name → Next → password → Sign in). Provider detection is URL-based:
+   `/ui/v2/login/` → Zitadel, `/realms/` → Keycloak.
 
 10. **`tests/e2e-browser/pages/login_page.py:27-30, 119-124` +
-    `tests/e2e-browser/conftest.py:122`** — drop the explicit
-    `realms/stuf/protocol/openid-connect/auth*` URL match; replace with
-    a less-specific match (e.g. wait for the username input on whatever
-    URL the OIDC `authorization_endpoint` lands on).
+    `tests/e2e-browser/conftest.py:122`** — *(Implemented — step 8)*
+    - `conftest.py` `authenticated_page` fixture updated to use `LoginPage.login_with_admin_user()`
+      instead of hardcoded Keycloak selectors. Provider detection and two-step flow handled inside
+      `LoginPage`.
+    - `authentication_steps.py` `enter_valid_admin_credentials` and `enter_invalid_credentials`
+      updated to use `LoginPage` selectors and handle Zitadel two-step flow inline.
+    - `assert_on_idp_page` already checks for both `/ui/v2/login/` and `/realms/` (no Keycloak-only
+      URL match remains).
 
-11. **`tests/run.sh`** — `wait_for_keycloak` should become provider-aware
-    (or a single `wait_for_idp` that polls whichever issuer is active).
-    Zitadel's readiness probe is `http://localhost:8080/debug/healthz` (or,
-    preferably, polling `docker compose ps` for `service_healthy`).
+11. **`tests/run.sh`** — *(Implemented — branch 85-zitadel-3)*
+    `wait_for_keycloak` replaced with `wait_for_idp` that polls Zitadel's `/debug/healthz`,
+    Keycloak's `/health/ready`, and the generic OIDC discovery endpoint as a fallback.
 
 12. **`docker-compose.e2e.yml` +
-    `tests/e2e-browser/docker-compose.e2e-browser.yml`** — duplicate of
-    (1). Both compose files need the parallel Zitadel profile so the e2e
-    suites can run against either provider.
+    `tests/e2e-browser/docker-compose.e2e-browser.yml`** — *(Implemented — step 8)*
+    - `docker-compose.e2e.yml`: added `keycloak` profile to the Keycloak service; added full
+      Zitadel stack (`zitadel-postgres`, `zitadel-bootstrap-init`, `zitadel`, `zitadel-init`,
+      `zitadel-login`) under `zitadel` profile using `network_mode: host` (same as main compose).
+    - `tests/e2e-browser/docker-compose.e2e-browser.yml`: added `keycloak` profile to
+      `keycloak-e2e`; added full Zitadel stack under `zitadel` profile running on the bridge
+      network with `ZITADEL_EXTERNALDOMAIN=zitadel-e2e` so the Playwright browser inside the
+      test-runner container can reach it by hostname (ports 8280/8290). The `api-e2e`, `spa-e2e`,
+      and `test-runner` services now use `${VAR:-keycloak-default}` env var substitution so they
+      can be configured for either provider without changing the compose file.
+    - Bootstrap volume changed to a bind-mount (`tests/e2e-browser/.zitadel-bootstrap/`) for the
+      e2e-browser stack so `generated.env` is accessible to the Makefile.
+    - `make test-e2e` updated to use `--profile keycloak`; `make test-e2e-zitadel` added to
+      source `generated.env` and start all services with the correct Zitadel-specific env vars.
+    - **Known limitation**: `OIDC_VALID_AUDIENCES` and SPA `OIDC_CLIENT_ID` depend on
+      Zitadel-generated IDs from `generated.env`. See open question #3 — these must be sourced
+      from `.zitadel-bootstrap/generated.env` after init completes; `make test-e2e-zitadel`
+      handles this automatically.
 
-13. **`Makefile`, `README.md`, `mkdocs.yml`, `docs/`** — wording, links to
-    realm files / admin-console URLs. The admin-console URL changes from
-    `http://localhost:8080/admin` to `http://localhost:8080/ui/console`.
+13. **`Makefile`, `README.md`, `mkdocs.yml`, `docs/`** — *(Implemented — step 8)*
+    - `CLAUDE.md` updated: Docker commands now use `--profile keycloak`/`--profile zitadel`;
+      authentication section made provider-agnostic; development URLs now list both Keycloak and
+      Zitadel admin consoles; dependency description updated from "Keycloak via python-jose" to
+      "OIDC via python-jose".
+    - `Makefile`: `make test-e2e` uses `--profile keycloak`; `make test-e2e-zitadel` added;
+      `clean` and `spa-stop` targets also clean the Zitadel e2e bootstrap directory.
+    - `README.md` already mentions both providers (updated in earlier branch).
+    - `docs/` and `mkdocs.yml` references to Keycloak are in historical/planning docs
+      (`docs/mvp.md`) and left as-is (they describe the MVP design, not current state).
 
 ## Open questions / blockers
 

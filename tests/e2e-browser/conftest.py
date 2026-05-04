@@ -127,34 +127,13 @@ def authenticated_page(page):
     except Exception as e:
         raise RuntimeError(f"Failed to start login flow: {e}")
 
-    # Fill in login form
+    # Complete the login using the provider-agnostic LoginPage abstraction.
+    # This handles both Keycloak (single-step) and Zitadel (two-step) flows.
     try:
-        # Wait for login form
-        page.wait_for_selector('input[name="username"]', timeout=10000)
-        page.wait_for_selector('input[name="password"]', timeout=5000)
+        from pages.login_page import LoginPage
 
-        # Fill credentials
-        page.fill('input[name="username"]', "admin@example.com")
-        page.fill('input[name="password"]', "password")
-
-        # Submit
-        page.click('button[type="submit"]')
-
-        # Wait for redirect back to SPA (more flexible)
-        max_attempts = 15
-        for attempt in range(max_attempts):
-            page.wait_for_timeout(1000)
-            current_url = page.url
-            if SPA_HOST in current_url:
-                break
-        else:
-            raise RuntimeError(
-                f"Not redirected to SPA after login. Current URL: {page.url}"
-            )
-
-        # Give time for React to process the auth callback
-        page.wait_for_timeout(3000)
-
+        login_page = LoginPage(page)
+        login_page.login_with_admin_user()
     except Exception as e:
         raise RuntimeError(f"Login flow failed: {e}")
 

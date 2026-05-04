@@ -8,15 +8,20 @@ from api.tests.fixtures.test_data import SAMPLE_FILES
 logger = logging.getLogger(__name__)
 
 
-# Parameterize authentication types for comprehensive testing
+# Parameterize authentication types for comprehensive testing.
+# Each list covers both Keycloak-shaped and Zitadel-shaped tokens so the
+# integration suite exercises both token formats through the middleware.
 AUTH_FIXTURES = [
-    "authenticated_headers",  # User authentication
-    "service_account_headers",  # Service account authentication
+    "authenticated_headers",  # Keycloak user
+    "service_account_headers",  # Keycloak service account
+    "zitadel_authenticated_headers",  # Zitadel user
+    "zitadel_service_account_headers",  # Zitadel service account
 ]
 
 LIMITED_AUTH_FIXTURES = [
-    "limited_user_headers",  # Limited user authentication
-    "limited_service_account_headers",  # Limited service account authentication
+    "limited_user_headers",  # Keycloak limited user
+    "limited_service_account_headers",  # Keycloak limited service account
+    "zitadel_limited_user_headers",  # Zitadel limited user
 ]
 
 

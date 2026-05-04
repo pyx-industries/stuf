@@ -269,6 +269,24 @@ def mock_jwt_verification():
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
             }
+        elif token == "zitadel-limited-user-integration-test-token":
+            return {
+                "sub": "limiteduser-zitadel-id",
+                "preferred_username": "limiteduser@example.com",
+                "email": "limiteduser@example.com",
+                "given_name": "Limited",
+                "family_name": "User",
+                "azp": "abc123-spa-client-id",
+                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "urn:zitadel:iam:org:project:roles": {
+                    "project-participant": {"orgId": "orgDomain"},
+                },
+                "collections": {"other": ["read", "write", "delete"]},
+                "aud": ["abc123-spa-client-id", "12345"],
+                "iss": "http://localhost:8080",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
         return None
 
     with patch("auth.middleware.verify_jwt_token", side_effect=mock_verify_jwt_token):
@@ -321,3 +339,9 @@ def zitadel_admin_headers():
 def zitadel_service_account_headers():
     """Headers with Zitadel-shaped service account token (project roles claim)"""
     return {"Authorization": "Bearer zitadel-service-account-integration-test-token"}
+
+
+@pytest.fixture
+def zitadel_limited_user_headers():
+    """Headers with Zitadel-shaped limited user token (no access to test collection)"""
+    return {"Authorization": "Bearer zitadel-limited-user-integration-test-token"}

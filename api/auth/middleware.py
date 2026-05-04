@@ -337,45 +337,24 @@ async def get_current_principal(
         logger.error("JWT verification failed - token_payload is None")
         raise credentials_exception
 
-    # Determine token type using provider-agnostic field-based detection
-    # Based on analysis of real Keycloak tokens
-
-    # Check for user-specific fields that service accounts typically don't have
+    # Discriminate user vs service-account using identity claims.
+    # Human user tokens (both Keycloak and Zitadel) carry email / given_name /
+    # family_name in the access token; machine-user tokens do not.  This is
+    # simpler and more reliable than inspecting scope or azp, which differ across
+    # providers and can include "openid" even for machine users in Zitadel.
     has_user_fields = bool(
         token_payload.get("email")
         or token_payload.get("given_name")
         or token_payload.get("family_name")
-        or token_payload.get("sid")  # Session ID - user sessions only
+        or token_payload.get("sid")  # session ID — human sessions only
     )
 
-    # Check for service account indicators
-    # Service accounts often have broader scopes or specific audience patterns
-    azp = token_payload.get("azp", "")
-    scope = token_payload.get("scope", "")
-
-    # Service accounts typically don't have openid/profile scopes and have specific azp
-    has_service_indicators = (
-        azp != OIDC_SPA_CLIENT_ID  # Users use the SPA OIDC client
-        and "openid" not in scope  # Service accounts usually don't have openid scope
-        and "profile" not in scope  # Service accounts usually don't have profile scope
-        and "email" not in scope  # Service accounts usually don't have email scope
-    )
-
-    if has_user_fields and not has_service_indicators:
-        # Token has user-specific fields → User token
-        logger.debug(f"Detected user token (has user-specific fields)")
+    if has_user_fields:
+        logger.debug("Detected user token (has user identity fields)")
         return await get_current_user(token)
-    elif has_service_indicators and not has_user_fields:
-        # Token has service indicators and no user fields → Service account token
-        logger.debug(
-            f"Detected service account token (service indicators, no user fields)"
-        )
-        return await get_current_service_account(token)
     else:
-        logger.error(
-            f"Cannot determine token type - has_user_fields: {bool(has_user_fields)}, has_service_indicators: {bool(has_service_indicators)}"
-        )
-        raise credentials_exception
+        logger.debug("Detected service account token (no user identity fields)")
+        return await get_current_service_account(token)
 
 
 def require_role(required_role: str):
