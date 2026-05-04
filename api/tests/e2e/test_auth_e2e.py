@@ -23,11 +23,11 @@ class TestAuthenticationE2E:
         assert OIDC_ISSUER_URL is not None
         assert len(OIDC_VALID_AUDIENCES) > 0
 
-    def test_token_validation_with_real_idp(self, real_keycloak_token):
+    def test_token_validation_with_real_idp(self, user_token):
         """Test token validation against the active OIDC provider"""
 
         # This should work with a real token from the fixture
-        token_info = verify_jwt_token(real_keycloak_token)
+        token_info = verify_jwt_token(user_token)
 
         assert token_info is not None
         # JWT tokens have standard claims, not "active" like introspection
