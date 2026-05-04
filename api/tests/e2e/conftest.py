@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 import requests
 from fastapi.testclient import TestClient
-from playwright.sync_api import sync_playwright
 
 from api.main import app
 
@@ -75,6 +74,8 @@ def _get_user_token_via_browser(username: str, password: str) -> str:
     Works with both Keycloak (single-step) and Zitadel (two-step) login UIs.
     Requires Playwright with Chromium (pre-installed in the test-runner container).
     """
+    from playwright.sync_api import sync_playwright
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
