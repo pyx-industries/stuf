@@ -150,9 +150,9 @@ test-e2e-zitadel:
 	@echo "Starting Zitadel stack and browser E2E services..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --wait zitadel-postgres-e2e zitadel-bootstrap-init-e2e zitadel-e2e
-	@echo "Waiting for Zitadel init to complete..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel run --rm zitadel-init-e2e
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --wait zitadel-login-e2e minio-e2e
+	@echo "Running Zitadel provisioning (foreground; container kept so depends_on tracking works)..."
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up --no-deps zitadel-init-e2e
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --no-deps --wait zitadel-login-e2e minio-e2e
 	@echo "Reading generated Zitadel credentials..."
 	@test -f tests/e2e-browser/.zitadel-bootstrap/generated.env || (echo "ERROR: generated.env not found"; exit 1)
 	@echo "Starting API and SPA with Zitadel configuration..."
