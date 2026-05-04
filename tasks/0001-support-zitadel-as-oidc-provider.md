@@ -316,20 +316,19 @@ metadata for `collections`).
    `ServiceAccount.client_id` to drop the "from Keycloak" wording. No code
    change needed; the model is already provider-neutral.
 
-7. **`api/tests/e2e/conftest.py`** — make the password-grant and
-   client-credentials grant fixtures discovery-aware (use the issuer's
-   `token_endpoint` from discovery rather than templating
-   `/realms/{realm}/protocol/openid-connect/token`). Add an `OIDC_PROVIDER`
-   env discriminator the fixture can use to pick scopes correctly
-   (`stuf:access` for Keycloak vs the audience+roles scopes for Zitadel).
-   **Note:** Zitadel v4 does not support the Resource Owner Password
-   Credentials (ROPC / password grant) for OIDC applications — the SPA
-   app is created with `OIDC_GRANT_TYPE_AUTHORIZATION_CODE` and
-   `OIDC_GRANT_TYPE_REFRESH_TOKEN` only. The `real_keycloak_token` and
-   `limited_keycloak_token` fixtures therefore cannot obtain user tokens
-   against Zitadel and will `pytest.skip`. ROPC is test-only (the SPA
-   uses the authorization code PKCE flow); no production functionality is
-   affected. See open question 9 for the resolution path.
+7. **`api/tests/e2e/conftest.py`** — *(Implemented — PRs #90, #91)*
+   - Token endpoint resolved via OIDC discovery (`/.well-known/openid-configuration`)
+     rather than templated Keycloak realm path.
+   - ROPC removed entirely. User tokens (`user_token`, `limited_user_token`) are
+     now obtained by driving a real browser login through the SPA with Playwright
+     (headless Chromium). Provider detection (Keycloak single-step vs Zitadel
+     two-step) is handled inline; the test-runner container already has
+     Playwright + Chromium installed and the SPA is on the same Docker network,
+     so no new infrastructure was needed.
+   - Service-account tokens still use `client_credentials` via `requests`
+     (works for both providers).
+   - `OIDC_SERVICE_ACCOUNT_SCOPES` remains env-configurable for Zitadel's
+     audience+roles scopes vs Keycloak's `stuf:access`.
 
 8. **`api/tests/integration/conftest.py` +
    `api/tests/fixtures/test_data.py`** — the mocked token payloads currently
