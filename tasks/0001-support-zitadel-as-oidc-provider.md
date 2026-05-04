@@ -485,20 +485,15 @@ These need decisions or upstream investigation before implementation:
    `zitadel-login` uses `PORT` env var to bind on 8090 instead of the
    default 3000.
 
-9. **API e2e user-token acquisition under Zitadel.** The `real_keycloak_token`
-   and `limited_keycloak_token` API e2e fixtures use the ROPC password grant,
-   which Zitadel v4 does not support for OIDC applications. Options:
-   - (a) Add e2e machine users to `instance.yaml` that mirror each test
-     human user's roles and collections, then use `client_credentials` to
-     obtain tokens for them — subject to confirming that the
-     `preAccessTokenCreation` Action fires for client_credentials flows
-     (open question 1 note).
-   - (b) Use the Zitadel session API to authenticate a human user
-     server-side and exchange the session for tokens (more complex, closer
-     to a real user flow).
-   Option (a) is lower friction; it reuses the same fixture shape and only
-   requires new `instance.yaml` entries and corresponding `generated.env`
-   writes from `provision.py`.
+9. **API e2e user-token acquisition under Zitadel.** *(Resolved — 2026-05-04)*
+   The ROPC-based `real_keycloak_token` / `limited_keycloak_token` fixtures were
+   replaced with Playwright browser-based login (`user_token` /
+   `limited_user_token`).  The test-runner container already has Playwright +
+   Chromium installed and the SPA is on the same Docker network, so no new
+   infrastructure was needed.  Provider detection (Keycloak single-step vs
+   Zitadel two-step) is handled inline in `conftest.py`, mirroring the logic
+   already in `login_page.py`.  ROPC is no longer used anywhere in the test
+   suite.
 
 ## Suggested implementation order
 

@@ -114,12 +114,12 @@ class TestServiceAccountE2E:
         assert isinstance(principal.roles, list)
 
     def test_service_account_vs_user_token_difference(
-        self, service_account_token, real_keycloak_token
+        self, service_account_token, user_token
     ):
         """Test that service account and user tokens are handled differently"""
         # Get token payloads
         service_payload = verify_jwt_token(service_account_token)
-        user_payload = verify_jwt_token(real_keycloak_token)
+        user_payload = verify_jwt_token(user_token)
 
         # Service account token characteristics
         assert "azp" in service_payload or "client_id" in service_payload
