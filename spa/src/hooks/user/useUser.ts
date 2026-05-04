@@ -18,7 +18,7 @@ export function useUser(): User | null {
     const username = (profile?.preferred_username as string) || "";
 
     return {
-      username, // Keycloak preferred_username - matches backend user.username
+      username, // standard OIDC preferred_username - matches backend user.username
       name:
         profile?.given_name && profile?.family_name
           ? `${profile.given_name} ${profile.family_name}`

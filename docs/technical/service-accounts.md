@@ -24,24 +24,30 @@ Service accounts provide a way for automated systems, scripts, and applications 
 
 ## Setting Up Service Accounts
 
-### 1. Create Service Account in Keycloak
+### 1. Create Service Account in the IDP
 
-1. Access Keycloak Admin Console: `http://localhost:8080/admin`
-2. Navigate to your realm (e.g., "stuf")
-3. Go to **Clients** → **Create Client**
-4. Configure the client:
+**Keycloak** (default dev profile):
+1. Access Admin Console: `http://localhost:8080/admin`
+2. Navigate to your realm (e.g., "stuf") → **Clients** → **Create Client**
+3. Configure the client:
    - **Client Type**: OpenID Connect
    - **Client ID**: `your-service-name` (e.g., `backup-service`)
    - **Client Authentication**: On
-   - **Authorization**: Off
    - **Authentication Flow**: Service accounts roles
+
+**Zitadel** (zitadel dev profile):
+1. Add a machine user entry under `machine_users:` in `docker/zitadel-init/dev/instance.yaml`
+2. Re-run `docker compose --profile zitadel up -d`; the `zitadel-init` container will
+   provision the machine user and write its credentials to `/bootstrap/generated.env`.
 
 ### 2. Configure Service Account Permissions
 
-Add collections permissions to the service account's JWT claims:
+Add collections permissions to the service account. In the dev environment these are
+set via the `collections:` key in the IDP fixture file.  For the `collections` claim
+to appear in access tokens, the STUF `injectCollections` Action (Zitadel) or the
+`stuf:access` client scope mapper (Keycloak) must be configured.
 
-1. In Keycloak, go to **Clients** → Your Service Account → **Client Scopes**
-2. Add a custom claim for collections:
+Example collections value:
    ```json
    {
      "docs": ["read", "write", "delete"],
@@ -62,8 +68,11 @@ Add appropriate roles to the service account:
 ### Getting an Access Token
 
 ```bash
+# Discover the token endpoint from OIDC discovery
+TOKEN_ENDPOINT=$(curl -s http://localhost:8080/.well-known/openid-configuration | jq -r .token_endpoint)
+
 # Request token using client credentials
-curl -X POST "http://localhost:8080/realms/stuf/protocol/openid-connect/token" \
+curl -X POST "$TOKEN_ENDPOINT" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
   -d "client_id=backup-service" \
@@ -212,7 +221,7 @@ Service accounts can have OAuth2 scopes that further restrict their capabilities
 # Service account credentials
 export BACKUP_SERVICE_CLIENT_ID="backup-service"
 export BACKUP_SERVICE_CLIENT_SECRET="your-secret-here"
-export KEYCLOAK_TOKEN_URL="http://localhost:8080/realms/stuf/protocol/openid-connect/token"
+export OIDC_ISSUER_URL="http://localhost:8080"   # no realm path for Zitadel
 export STUF_API_URL="http://localhost:8000/api"
 ```
 
@@ -222,7 +231,7 @@ export STUF_API_URL="http://localhost:8000/api"
 
 1. **Token validation fails**
    - Check client_id and client_secret
-   - Verify Keycloak realm configuration
+   - Verify IDP configuration and OIDC discovery endpoint
    - Ensure service account has proper roles
 
 2. **Permission denied errors**

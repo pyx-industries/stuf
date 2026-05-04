@@ -2,7 +2,7 @@
 
 import httpx
 import pytest
-from config import API_URL, KEYCLOAK_URL, SPA_HOST, SPA_URL
+from config import API_URL, IDP_URL, SPA_HOST, SPA_URL
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
 from playwright.sync_api import Page
@@ -25,11 +25,10 @@ class TestBasicConnectivity:
             assert response.status_code == 200
             assert "STUF" in response.text
 
-        # Test Keycloak basic response
+        # Test IDP basic response
         with httpx.Client() as client:
-            response = client.get(KEYCLOAK_URL, timeout=10.0)
-            # Keycloak may return various status codes, just ensure it responds
-            assert response.status_code < 500  # Any response better than server error
+            response = client.get(IDP_URL, timeout=10.0)
+            assert response.status_code < 500
 
 
 class TestSmokeConnectivity:
@@ -98,10 +97,10 @@ class TestSmokeConnectivity:
         login_button.click()
         dashboard.take_screenshot("02-clicked-login-button")
 
-        # Should redirect to Keycloak
+        # Should redirect to IDP login form
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
-        login_page.take_screenshot("03-keycloak-login-form")
+        login_page.take_screenshot("03-idp-login-form")
         login_page.assert_login_form_visible()
 
     def test_complete_authentication_flow(self, page: Page):
