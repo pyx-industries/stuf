@@ -30,11 +30,34 @@ OIDC_VALID_AUDIENCES = set(
     if a.strip()
 )
 
+# Client ID of the SPA OIDC application. Used to distinguish user tokens (where
+# azp matches the SPA client) from service-account tokens. For Keycloak the SPA
+# client ID is the stable string "stuf-spa"; for Zitadel it is an auto-generated
+# UUID written to /bootstrap/generated.env by zitadel-init.
+OIDC_SPA_CLIENT_ID = os.environ.get("OIDC_SPA_CLIENT_ID", "stuf-spa")
+
 bearer_scheme = HTTPBearer(auto_error=False)
 
 _discovery_doc: dict = {}
 _jwks_cache: dict = {"keys": [], "fetched_at": 0.0}
 _JWKS_TTL = 300  # seconds
+
+
+def _extract_roles(token_payload: dict) -> list:
+    """Extract role list from a token, handling both Keycloak and Zitadel shapes.
+
+    Keycloak puts roles at realm_access.roles (flat list).
+    Zitadel puts project roles at urn:zitadel:iam:org:project:roles
+    (dict of {role_key: {org_id: org_domain}}).
+    """
+    realm_access = token_payload.get("realm_access", {})
+    roles = realm_access.get("roles", [])
+    if roles:
+        return roles
+    zitadel_roles = token_payload.get("urn:zitadel:iam:org:project:roles", {})
+    if isinstance(zitadel_roles, dict):
+        return list(zitadel_roles.keys())
+    return []
 
 
 def _fetch_discovery() -> dict:
@@ -174,9 +197,7 @@ async def get_current_user(
         )
         raise credentials_exception
 
-    # Extract roles from realm_access
-    realm_access = token_payload.get("realm_access", {})
-    roles = realm_access.get("roles", [])
+    roles = _extract_roles(token_payload)
 
     # Extract and parse collections from custom claim
     collections = {}
@@ -254,9 +275,7 @@ async def get_current_service_account(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extract roles from realm_access
-    realm_access = token_payload.get("realm_access", {})
-    roles = realm_access.get("roles", [])
+    roles = _extract_roles(token_payload)
 
     # Extract and parse collections from custom claim
     collections = {}
@@ -336,7 +355,7 @@ async def get_current_principal(
 
     # Service accounts typically don't have openid/profile scopes and have specific azp
     has_service_indicators = (
-        azp != "stuf-spa"  # Users typically use SPA client
+        azp != OIDC_SPA_CLIENT_ID  # Users use the SPA OIDC client
         and "openid" not in scope  # Service accounts usually don't have openid scope
         and "profile" not in scope  # Service accounts usually don't have profile scope
         and "email" not in scope  # Service accounts usually don't have email scope

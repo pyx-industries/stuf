@@ -55,7 +55,7 @@ SAMPLE_METADATA = {
     },
 }
 
-# Sample Keycloak token responses
+# Sample OIDC token responses
 SAMPLE_TOKEN_RESPONSES = {
     "valid": {
         "active": True,

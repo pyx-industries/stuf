@@ -111,7 +111,7 @@ clean:
 	@rm -f api/.coverage
 	@rm -rf $(VENV_DIR)
 	@tests/run.sh clean
-	@echo "Cleaning Keycloak database..."
+	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
 	@echo "Cleaning SPA generated config..."
@@ -153,7 +153,7 @@ test-cov: $(VENV_DIR)/dev-requirements.stamp
 # Start SPA in development mode with hot reloading
 spa-dev:
 	@echo "Starting SPA in development mode with hot reloading..."
-	@echo "This includes full environment (API, Keycloak, MinIO) + fast SPA reloading"
+	@echo "This includes full environment (API, IDP, MinIO) + fast SPA reloading"
 	@echo "Access at: http://localhost:3000"
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
@@ -172,7 +172,7 @@ spa-build:
 spa-stop:
 	@echo "Stopping SPA services..."
 	@docker compose down
-	@echo "Cleaning Keycloak database..."
+	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
 	@echo "Cleaning generated config..."

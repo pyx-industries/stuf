@@ -7,7 +7,7 @@ import time
 import httpx
 import pytest
 
-from config import SPA_URL, API_URL, KEYCLOAK_URL
+from config import SPA_URL, API_URL, IDP_URL
 
 
 def check_services_ready():
@@ -16,7 +16,7 @@ def check_services_ready():
     services = [
         (f"{API_URL}/api/health", "API"),
         (f"{SPA_URL}", "SPA"),
-        (f"{KEYCLOAK_URL}", "Keycloak"),
+        (f"{IDP_URL}", "IDP"),
     ]
 
     for url, name in services:

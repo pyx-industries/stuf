@@ -105,54 +105,62 @@ wait_for_services_healthy() {
     return 1
 }
 
-# Wait for Keycloak to be ready by checking its health endpoint
-wait_for_keycloak() {
-    log_info "Waiting for Keycloak to be ready..."
-    
+# Wait for the active identity provider to be ready.
+# Supports both Keycloak (health/ready endpoint + realm discovery) and Zitadel
+# (debug/healthz endpoint + root OIDC discovery).  The IDP_PORT env var selects
+# the host port (default 8180 for e2e; 8080 for the main dev stack).
+wait_for_idp() {
+    local idp_port="${IDP_PORT:-8180}"
+    log_info "Waiting for IDP to be ready on port ${idp_port}..."
+
     local max_attempts=30  # 5 minutes total (30 * 10 seconds)
     local attempt=0
-    
+
     while [ $attempt -lt $max_attempts ]; do
-        # Check if Keycloak health endpoint responds
-        if curl -s -f http://localhost:8180/health/ready > /dev/null 2>&1; then
-            log_success "Keycloak is ready"
+        # Zitadel readiness probe
+        if curl -s -f "http://localhost:${idp_port}/debug/healthz" > /dev/null 2>&1; then
+            log_success "IDP (Zitadel) is ready"
             return 0
         fi
-        
-        # Also check if realm endpoint exists (fallback)
-        if curl -s http://localhost:8180/realms/stuf/.well-known/openid_configuration > /dev/null 2>&1; then
-            log_success "Keycloak realm is accessible"
+        # Keycloak readiness probe
+        if curl -s -f "http://localhost:${idp_port}/health/ready" > /dev/null 2>&1; then
+            log_success "IDP (Keycloak) is ready"
             return 0
         fi
-        
+        # Generic OIDC discovery fallback
+        if curl -s "http://localhost:${idp_port}/.well-known/openid-configuration" > /dev/null 2>&1; then
+            log_success "IDP OIDC discovery is accessible"
+            return 0
+        fi
+
         attempt=$((attempt + 1))
-        log_info "Waiting for Keycloak to be ready... ($attempt/$max_attempts)"
+        log_info "Waiting for IDP to be ready... ($attempt/$max_attempts)"
         sleep 10
     done
-    
-    log_error "Keycloak failed to become ready within 5 minutes"
-    log_info "Checking Keycloak logs for debugging:"
-    docker compose -f "$E2E_DIR/docker-compose.e2e-browser.yml" logs keycloak-e2e --tail=20
+
+    log_error "IDP failed to become ready within 5 minutes"
+    log_info "Checking service logs for debugging:"
+    docker compose -f "$E2E_DIR/docker-compose.e2e-browser.yml" logs --tail=20 2>/dev/null || true
     return 1
 }
 
 # Check if Docker is running and services are available
 check_docker_services() {
     log_info "Checking if Docker services are running..."
-    
+
     # Check if docker-compose services are up
     if ! docker compose -f "$E2E_DIR/docker-compose.e2e-browser.yml" ps --services --filter "status=running" | grep -q .; then
         log_warning "Docker services are not running. Starting them..."
         start_docker_services
-        
-        # Wait specifically for Keycloak to be ready (most critical service)
-        wait_for_keycloak
-        
+
+        # Wait for the IDP to be ready (most critical service)
+        wait_for_idp
+
         # Check if key services are responding
         log_info "Checking other service connectivity..."
         local max_attempts=12
         local attempt=0
-        
+
         while [ $attempt -lt $max_attempts ]; do
             if curl -s http://localhost:8100/api/health > /dev/null && curl -s http://localhost:3100 > /dev/null; then
                 log_success "All services are responding"
@@ -162,12 +170,12 @@ check_docker_services() {
             log_info "Waiting for API and SPA to be ready... ($attempt/$max_attempts)"
             sleep 10
         done
-        
+
         log_warning "Some services may still be starting. Continuing anyway..."
     else
         log_success "Docker services are running"
-        # Even if services are running, verify Keycloak is responding
-        wait_for_keycloak
+        # Even if services are running, verify IDP is responding
+        wait_for_idp
     fi
 }
 

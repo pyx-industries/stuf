@@ -64,7 +64,7 @@ class User(BaseModel):
 class ServiceAccount(BaseModel):
     """Domain model representing a service account with API access permissions"""
 
-    client_id: str = Field(..., description="Unique client identifier from Keycloak")
+    client_id: str = Field(..., description="Unique client identifier (azp claim)")
     name: str = Field(..., description="Human-readable service account name")
     description: str = Field(
         default="", description="Description of service account purpose"

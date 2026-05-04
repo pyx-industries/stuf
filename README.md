@@ -126,7 +126,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
    cp .env.example .env
    ```
 
-   Note: The `.env` file contains configuration for Keycloak realms, roles, and client IDs.
+   Note: The `.env` file contains configuration for the OIDC provider, roles, and client IDs.
    Edit this file to customize your local development environment.
 
 4. Start the Docker Compose environment:
@@ -137,26 +137,31 @@ STUF can be run locally using Docker Compose for development and testing purpose
 
 5. Access the components:
    - SPA (Frontend): http://localhost:3000
-     - Login with admin/password or other test users from realm-export.json
+     - Login with users from the active IDP (see below)
    - API: http://localhost:8000
      - Health check: http://localhost:8000/api/health
      - API info: http://localhost:8000/api/info
-   - Keycloak Admin Console: http://localhost:8080/admin (admin/admin)
+   - **Keycloak** (default profile): Admin console at http://localhost:8080/admin (admin/admin)
+   - **Zitadel** (zitadel profile): Admin console at http://localhost:8080/ui/console (admin / Password1!)
    - MinIO:
      - API endpoint: http://localhost:9000
      - Web console: http://localhost:9001 (minioadmin/minioadmin)
 
+Use `docker compose --profile keycloak up -d` for Keycloak (default) or
+`docker compose --profile zitadel up -d` for Zitadel.
+
 ### Environment Components
 
-- **Keycloak**: Authentication and authorization server
+- **Keycloak** (default profile): OIDC identity provider
   - Development-only admin credentials: admin/admin
-  - Configured with realm: stuf
-  - Clients:
-    - stuf-spa: Public client for the SPA
-    - stuf-api: Confidential client with service account
-  - Roles:
-    - admin: Administrator role with full access
-    - collection: Collection-specific access roles
+  - Configured from `docker/keycloak/data/import/realm-export.json`
+  - Clients: stuf-spa (public), stuf-api (confidential/service accounts)
+  - Roles: admin, trust-architect, project-participant, collection-test, service
+
+- **Zitadel** (zitadel profile): alternative OIDC identity provider
+  - Admin credentials: admin / Password1!
+  - Provisioned by `docker/zitadel-init/` from `docker/zitadel-init/dev/instance.yaml`
+  - Login UI served at http://localhost:8090
   - Test users:
     - admin@example.com / password (admin role)
 - **MinIO**: S3-compatible object storage

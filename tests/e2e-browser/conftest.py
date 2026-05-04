@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 try:
     from config import (
         API_URL,
-        KEYCLOAK_URL,
+        IDP_URL,
         PLAYWRIGHT_HEADLESS,
         PLAYWRIGHT_SLOW_MO,
         SPA_HOST,
@@ -21,7 +21,7 @@ except Exception:
     # Fallback values
     BASE_URL = "http://spa-e2e:3000"
     API_URL = "http://api-e2e:8000"
-    KEYCLOAK_URL = "http://keycloak-e2e:8080"
+    IDP_URL = "http://keycloak-e2e:8080"
     SPA_HOST = "spa-e2e:3000"
 
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
@@ -117,9 +117,9 @@ def authenticated_page(page):
         if login_button.is_visible():
             login_button.click()
 
-            # Wait for redirect to Keycloak
-            page.wait_for_url(
-                f"{KEYCLOAK_URL}/realms/stuf/protocol/openid-connect/auth*",
+            # Wait until we leave the SPA (redirect to IDP)
+            page.wait_for_function(
+                f"() => !window.location.href.includes('{SPA_HOST}')",
                 timeout=10000,
             )
         else:
@@ -198,7 +198,7 @@ def app_urls():
     return {
         "spa": BASE_URL,
         "api": API_URL,
-        "keycloak": KEYCLOAK_URL,
+        "idp": IDP_URL,
     }
 
 
