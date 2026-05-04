@@ -322,6 +322,14 @@ metadata for `collections`).
    `/realms/{realm}/protocol/openid-connect/token`). Add an `OIDC_PROVIDER`
    env discriminator the fixture can use to pick scopes correctly
    (`stuf:access` for Keycloak vs the audience+roles scopes for Zitadel).
+   **Note:** Zitadel v4 does not support the Resource Owner Password
+   Credentials (ROPC / password grant) for OIDC applications — the SPA
+   app is created with `OIDC_GRANT_TYPE_AUTHORIZATION_CODE` and
+   `OIDC_GRANT_TYPE_REFRESH_TOKEN` only. The `real_keycloak_token` and
+   `limited_keycloak_token` fixtures therefore cannot obtain user tokens
+   against Zitadel and will `pytest.skip`. ROPC is test-only (the SPA
+   uses the authorization code PKCE flow); no production functionality is
+   affected. See open question 9 for the resolution path.
 
 8. **`api/tests/integration/conftest.py` +
    `api/tests/fixtures/test_data.py`** — the mocked token payloads currently
@@ -476,6 +484,21 @@ These need decisions or upstream investigation before implementation:
    `OIDC_BASE_URL` must use `localhost` rather than `zitadel`.
    `zitadel-login` uses `PORT` env var to bind on 8090 instead of the
    default 3000.
+
+9. **API e2e user-token acquisition under Zitadel.** The `real_keycloak_token`
+   and `limited_keycloak_token` API e2e fixtures use the ROPC password grant,
+   which Zitadel v4 does not support for OIDC applications. Options:
+   - (a) Add e2e machine users to `instance.yaml` that mirror each test
+     human user's roles and collections, then use `client_credentials` to
+     obtain tokens for them — subject to confirming that the
+     `preAccessTokenCreation` Action fires for client_credentials flows
+     (open question 1 note).
+   - (b) Use the Zitadel session API to authenticate a human user
+     server-side and exchange the session for tokens (more complex, closer
+     to a real user flow).
+   Option (a) is lower friction; it reuses the same fixture shape and only
+   requires new `instance.yaml` entries and corresponding `generated.env`
+   writes from `provision.py`.
 
 ## Suggested implementation order
 
