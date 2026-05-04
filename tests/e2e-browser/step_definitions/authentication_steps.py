@@ -331,7 +331,7 @@ def see_authentication_error(page: Page, bdd_screenshot_helper):
 def remain_on_login_page(page: Page):
     """Verify still on login page."""
     login_page = LoginPage(page)
-    login_page.assert_on_keycloak_page()
+    login_page.assert_on_idp_page()
     login_page.assert_login_form_visible()
 
 

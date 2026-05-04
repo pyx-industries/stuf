@@ -10,11 +10,17 @@ from fastapi.testclient import TestClient
 
 from api.auth.middleware import get_current_principal, verify_jwt_token
 from api.main import app
+from api.tests.e2e.conftest import (
+    OIDC_SERVICE_ACCOUNT_CLIENT_ID,
+    OIDC_SERVICE_ACCOUNT_CLIENT_SECRET,
+    OIDC_SERVICE_ACCOUNT_SCOPES,
+    _get_token_endpoint,
+)
 
 
 @pytest.mark.e2e
 class TestServiceAccountE2E:
-    """End-to-end tests for service account authentication using real Keycloak"""
+    """End-to-end tests for service account authentication using the active OIDC provider"""
 
     def test_service_account_token_validation(self, service_account_token):
         """Test that service account token is valid and properly structured"""
@@ -24,11 +30,7 @@ class TestServiceAccountE2E:
         assert token_info is not None
         # Service account tokens should have client_id/azp
         assert "azp" in token_info or "client_id" in token_info
-        # Real Keycloak service accounts DO have preferred_username (e.g., "service-account-backup-service")
-        assert "preferred_username" in token_info
-        # But the preferred_username should start with "service-account-" for service accounts
-        preferred_username = token_info.get("preferred_username", "")
-        assert preferred_username.startswith("service-account-")
+        # Service accounts are identified by azp/sub, not by preferred_username prefix
         assert "iss" in token_info  # Issuer
         assert "exp" in token_info  # Expiration
         assert "collections" in token_info  # Collection permissions
@@ -109,8 +111,6 @@ class TestServiceAccountE2E:
 
         assert isinstance(principal, ServiceAccount)
         assert principal.client_id == "backup-service"
-        # Service account tokens from Keycloak don't include realm roles by default
-        # Authorization is based on collections, not roles
         assert isinstance(principal.roles, list)
 
     def test_service_account_vs_user_token_difference(
@@ -123,14 +123,9 @@ class TestServiceAccountE2E:
 
         # Service account token characteristics
         assert "azp" in service_payload or "client_id" in service_payload
-        # Service accounts DO have preferred_username, but it starts with "service-account-"
-        service_username = service_payload.get("preferred_username", "")
-        assert service_username.startswith("service-account-")
 
         # User token characteristics
         assert "preferred_username" in user_payload
-        user_username = user_payload.get("preferred_username", "")
-        assert not user_username.startswith("service-account-")
         assert user_payload.get("azp") != service_payload.get("azp")
 
         # Both should have standard JWT claims
@@ -150,19 +145,15 @@ class TestServiceAccountE2E:
 
     def test_service_account_authentication_flow_e2e(self, ensure_services_ready):
         """Test complete service account authentication flow from token request to API access"""
-        # Step 1: Get service account token via client credentials
-        token_url = (
-            f"http://keycloak-e2e:8080/realms/stuf/protocol/openid-connect/token"
-        )
-
+        # Step 1: Get service account token via client credentials (provider-agnostic)
         data = {
             "grant_type": "client_credentials",
-            "client_id": "backup-service",
-            "client_secret": "backup-service-secret",
-            "scope": "stuf:access",
+            "client_id": OIDC_SERVICE_ACCOUNT_CLIENT_ID,
+            "client_secret": OIDC_SERVICE_ACCOUNT_CLIENT_SECRET,
+            "scope": OIDC_SERVICE_ACCOUNT_SCOPES,
         }
 
-        token_response = requests.post(token_url, data=data)
+        token_response = requests.post(_get_token_endpoint(), data=data)
         assert token_response.status_code == 200
 
         token_data = token_response.json()

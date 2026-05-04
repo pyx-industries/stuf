@@ -211,6 +211,64 @@ def mock_jwt_verification():
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
             }
+        # --- Zitadel-shaped tokens ---
+        # Roles in urn:zitadel:iam:org:project:roles (dict), issuer has no realm path.
+        elif token == "zitadel-user-integration-test-token":
+            return {
+                "sub": "testuser-zitadel-id",
+                "preferred_username": "testuser@example.com",
+                "email": "testuser@example.com",
+                "given_name": "Test",
+                "family_name": "User",
+                "azp": "abc123-spa-client-id",  # Zitadel auto-generated SPA client ID
+                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "urn:zitadel:iam:org:project:roles": {
+                    "project-participant": {"orgId": "orgDomain"},
+                    "collection-test": {"orgId": "orgDomain"},
+                },
+                "collections": {"test": ["read", "write", "delete"]},
+                "aud": ["abc123-spa-client-id", "12345"],
+                "iss": "http://localhost:8080",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        elif token == "zitadel-admin-integration-test-token":
+            return {
+                "sub": "admin-zitadel-id",
+                "preferred_username": "admin@example.com",
+                "email": "admin@example.com",
+                "given_name": "Admin",
+                "family_name": "User",
+                "azp": "abc123-spa-client-id",
+                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "urn:zitadel:iam:org:project:roles": {
+                    "admin": {"orgId": "orgDomain"},
+                    "collection-test": {"orgId": "orgDomain"},
+                    "collection-restricted": {"orgId": "orgDomain"},
+                },
+                "collections": {
+                    "test": ["read", "write", "delete"],
+                    "restricted": ["read", "write", "delete"],
+                },
+                "aud": ["abc123-spa-client-id", "12345"],
+                "iss": "http://localhost:8080",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        elif token == "zitadel-service-account-integration-test-token":
+            return {
+                "sub": "backup-service",
+                "azp": "backup-service",
+                "scope": "openid urn:zitadel:iam:org:project:id:12345:aud",
+                "urn:zitadel:iam:org:project:roles": {
+                    "service": {"orgId": "orgDomain"},
+                },
+                "collections": {"test": ["read", "write", "delete"]},
+                "aud": ["backup-service", "12345"],
+                "iss": "http://localhost:8080",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
         return None
 
     with patch("auth.middleware.verify_jwt_token", side_effect=mock_verify_jwt_token):
@@ -245,3 +303,21 @@ def service_account_headers():
 def limited_service_account_headers():
     """Headers with limited service account authentication token (no access to test collection)"""
     return {"Authorization": "Bearer limited-service-account-integration-test-token"}
+
+
+@pytest.fixture
+def zitadel_authenticated_headers():
+    """Headers with Zitadel-shaped user token (project roles claim, no realm_access)"""
+    return {"Authorization": "Bearer zitadel-user-integration-test-token"}
+
+
+@pytest.fixture
+def zitadel_admin_headers():
+    """Headers with Zitadel-shaped admin token"""
+    return {"Authorization": "Bearer zitadel-admin-integration-test-token"}
+
+
+@pytest.fixture
+def zitadel_service_account_headers():
+    """Headers with Zitadel-shaped service account token (project roles claim)"""
+    return {"Authorization": "Bearer zitadel-service-account-integration-test-token"}

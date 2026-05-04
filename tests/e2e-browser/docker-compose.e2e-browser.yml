@@ -108,10 +108,11 @@ services:
       # API configuration (internal Docker network URL)
       - API_URL=http://api-e2e:8000
 
-      # Keycloak configuration (internal Docker network URL)
-      - KEYCLOAK_URL=http://keycloak-e2e:8080
-      - KEYCLOAK_REALM=stuf
-      - KEYCLOAK_CLIENT_ID=stuf-spa
+      # OIDC authority passed directly so docker-entrypoint.sh needs no realm
+      # path assembly. For Keycloak the value is keycloakUrl/realms/realm;
+      # for Zitadel it is just the issuer URL (no realm segment).
+      - OIDC_AUTHORITY=http://keycloak-e2e:8080/realms/stuf
+      - OIDC_CLIENT_ID=stuf-spa
     depends_on:
       - api-e2e
     networks:
@@ -138,12 +139,11 @@ services:
       # Use internal Docker network URLs
       - SPA_URL=http://spa-e2e:3000
       - API_URL=http://api-e2e:8000
-      - KEYCLOAK_URL=http://keycloak-e2e:8080
+      - IDP_URL=http://keycloak-e2e:8080
       - MINIO_URL=http://minio-e2e:9000
-      # API E2E tests: OIDC vars for middleware, KEYCLOAK_* vars for token fixtures
+      # OIDC configuration (provider-agnostic)
       - OIDC_ISSUER_URL=http://keycloak-e2e:8080/realms/stuf
       - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
-      - KEYCLOAK_REALM=stuf
       # MinIO configuration for API E2E tests
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
