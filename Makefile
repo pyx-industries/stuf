@@ -133,7 +133,7 @@ test: $(VENV_DIR)/dev-requirements.stamp
 test-e2e:
 	@echo "Running end-to-end tests with coverage (Keycloak profile)..."
 	@echo "Starting browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing up -d --wait
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner spa-e2e && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing up -d --wait
 	@echo "Running API E2E and browser E2E tests (inside container)..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x -v --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results . && python generate_presentation_report.py"
 	@echo "Stopping browser E2E services..."
@@ -148,7 +148,7 @@ test-e2e-zitadel:
 	@echo "Running end-to-end tests against Zitadel..."
 	@mkdir -p tests/e2e-browser/.zitadel-bootstrap
 	@echo "Starting Zitadel stack and browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner zitadel-init-e2e api-e2e spa-e2e
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --wait zitadel-postgres-e2e zitadel-bootstrap-init-e2e zitadel-e2e
 	@echo "Running Zitadel provisioning (foreground; container kept so depends_on tracking works)..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up --no-deps zitadel-init-e2e
@@ -160,7 +160,7 @@ test-e2e-zitadel:
 		set -a; . tests/e2e-browser/.zitadel-bootstrap/generated.env; set +a; \
 		export OIDC_ISSUER_URL=http://zitadel-e2e:8080; \
 		export OIDC_BASE_URL=http://zitadel-e2e:8080; \
-		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID}"; \
+		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
 		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_AUTHORITY=http://zitadel-e2e:8080; \
 		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \

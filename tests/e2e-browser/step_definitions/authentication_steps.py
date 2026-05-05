@@ -207,41 +207,34 @@ def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
 
-    if user_type.lower() == "regular":
-        login_page.fill_username("testuser@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    elif user_type.lower() == "admin":
-        login_page.fill_username("admin@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    elif user_type.lower() == "limited":
-        login_page.fill_username("limiteduser@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    else:
+    credentials = {
+        "regular": ("testuser@example.com", "password"),
+        "admin": ("admin@example.com", "Password1!" if login_page._is_zitadel() else "password"),
+        "limited": ("limiteduser@example.com", "password"),
+    }
+    if user_type.lower() not in credentials:
         raise ValueError(f"Unknown user type: {user_type}")
 
+    username, password = credentials[user_type.lower()]
+    login_page.fill_username(username)
+    if login_page._is_zitadel():
+        # Zitadel two-step: advance from login-name page to password page
+        login_page.click_login()
+        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+    login_page.fill_password(password)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page,
+        f"login-form-filled-{user_type.lower()}",
+        f'When I log in as a "{user_type}" user',
+    )
+    login_page.click_login()
+
     # Wait for redirect back to SPA
-    page.wait_for_timeout(3000)
+    try:
+        page.wait_for_url(f"*{SPA_HOST}*", timeout=15000)
+    except Exception:
+        pass
+    page.wait_for_timeout(2000)
 
 
 @then("I should be redirected back to the application")

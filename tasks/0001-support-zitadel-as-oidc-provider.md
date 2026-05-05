@@ -553,3 +553,108 @@ Once the open questions above are answered, a low-risk sequence is:
 
 This sequence keeps Keycloak working through every step and lets us bail
 out at any point without the dev stack regressing.
+
+---
+
+## Current state of branch (as of 2026-05-05)
+
+Branch: `85-zitadel-5` — PR #92.
+
+Steps 1–6 are fully implemented and all Zitadel e2e tests pass. Below is a
+summary of what was fixed and what works.
+
+### What works
+
+- Provider-agnostic API middleware (OIDC discovery + JWT verification).
+- `docker-compose.yml` and `docker-compose.e2e-browser.yml` both have a
+  `--profile zitadel` path with the full Nginx-proxied Zitadel stack
+  (postgres → zitadel-backend → nginx → zitadel-login).
+- `docker/zitadel-init/provision.py` provisions the project, roles, OIDC
+  apps, action (collections claim injection), human users, machine users,
+  and the login-client PAT.
+- `make test-e2e-zitadel` orchestrates a clean bring-up and runs both API
+  e2e and browser e2e test suites.
+- Browser e2e fixture (`conftest.py`) does live Playwright login for
+  user-token tests; service-account tokens use client-credentials grant.
+- Playwright `LoginPage` handles Zitadel's two-step login (login-name page
+  → Continue → password page) alongside Keycloak's single-step form.
+- Machine user collection permissions are extracted from Zitadel project
+  role names (`col-{collection}-{perm}`) and from the
+  `STUF_MACHINE_USER_COLLECTIONS` env var written by `zitadel-init`
+  (Zitadel v4 cannot inject custom claims into `client_credentials` tokens).
+
+### Root causes found and fixed
+
+**1. First-instance admin had `passwordChangeRequired=true`**
+
+Zitadel always creates the `ZITADEL_FIRSTINSTANCE_ORG_HUMAN_*` admin with
+`passwordChangeRequired=true`. The Management API `POST
+/management/v1/users/{id}/password` with `changeRequired: false` returns
+200 but does not clear this flag (confirmed by v2 `GET /v2/users/{id}`
+still showing `"passwordChangeRequired": true`).
+
+Fix: added `ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"`
+to both `docker-compose.yml` and `docker-compose.e2e-browser.yml`. This
+prevents the flag from being set at initialization time.
+
+**2. Provisioned users stuck in `USER_STATE_INITIAL`**
+
+`provision.py` used the Management v1 API (`/management/v1/users/human`)
+which always creates users in `USER_STATE_INITIAL` regardless of whether
+`isEmailVerified` is set. Zitadel Login v2 shows **"Initial User not
+supported"** for INITIAL-state users and cannot log them in.
+
+Fix: switched to the v2 API (`/v2/users/human`) with
+`email.isAlreadyVerified: true`. This creates users in `USER_STATE_ACTIVE`
+directly. The v2 profile uses `givenName`/`familyName` (not
+`firstName`/`lastName`) and the password field is `password` (not `value`).
+Role grants and metadata calls continue to use the Management v1 API (user
+IDs are consistent across both API versions).
+
+**3. BDD step `login_as_user_type` did not handle Zitadel's two-step login**
+
+The step called `fill_password` immediately after `fill_username`, before
+clicking Continue to advance to the password page. Fixed to detect
+`_is_zitadel()` and insert the intermediate click + wait.
+
+Also fixed the admin password in this step: Zitadel requires `Password1!`
+(complexity policy), not `password`.
+
+**4. Machine user tokens carry no `collections` claim in Zitadel v4**
+
+Zitadel v4 actions cannot inject custom claims into `client_credentials`
+tokens. Fixed in two layers:
+
+- `api/auth/middleware.py` extracts collection permissions from project role
+  names (`col-{collection}-{perm}`) assigned during provisioning.
+- `zitadel-init` writes a `STUF_MACHINE_USER_COLLECTIONS` env var
+  (base64-encoded JSON) to `generated.env` as a fallback; the middleware
+  reads it at startup.
+
+### Test results (all passing after all fixes)
+
+| Test | Result |
+|------|--------|
+| `test_auth_flow_with_screenshots.py` | ✅ PASSED |
+| `test_authentication_bdd::test_successful_login_with_valid_credentials` | ✅ PASSED |
+| `test_authentication_bdd::test_login_failure_with_invalid_credentials` | ✅ PASSED |
+| `test_authentication_bdd::test_successful_logout` | ✅ PASSED |
+| `test_authentication_bdd::test_direct_access_to_protected_route_when_not_authenticated` | ✅ PASSED |
+| `test_authentication_bdd::test_authentication_with_different_user_roles` | ✅ PASSED |
+| API e2e (non-browser) | ✅ 58 passed, 8 skipped |
+
+The 8 skips are user-token API tests that require a logged-in user JWT;
+they are not yet wired up in the API e2e fixtures (separate task).
+
+### Open Zitadel behaviour notes (for future reference)
+
+- The Management v1 password endpoint (`POST
+  /management/v1/users/{id}/password`) returns 200 for ACTIVE users but
+  **silently ignores `changeRequired: false`** if the account-level
+  `passwordChangeRequired` flag was set at initialization. The v2
+  `GET /v2/users/{id}` response field `passwordChangeRequired` is the
+  authoritative check.
+- INITIAL-state users cannot have their password set, deactivated, or
+  reactivated via the Management API — they can only be deleted.
+- The `ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED` env var
+  defaults to `true`; always set it to `"false"` in dev/test stacks.

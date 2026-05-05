@@ -27,22 +27,38 @@ MACHINE_KEY_PATH = os.environ.get("MACHINE_KEY_PATH", "/bootstrap/zitadel-admin-
 BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
 FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
-# Injected into every access token via the preAccessTokenCreation trigger.
+# Injected into human-user access tokens via the PRE_ACCESS_TOKEN_CREATION trigger.
 # - preferred_username: not in Zitadel JWT access tokens by default; mirrors
 #   the Keycloak claim the STUF API middleware reads.
 # - collections: user metadata injected as a JSON object claim; mirrors the
 #   Keycloak stuf:access scope's collections attribute mapper.
 # Metadata values arrive as base64-encoded strings in ctx.v1.user.metadataList.
+#
+# IMPORTANT: In Zitadel v3+, the JavaScript function name must match the action
+# NAME (not the trigger-type camelCase name).  Our action is named
+# "injectCollections", so the function must also be "injectCollections".
+#
+# NOTE: ctx.v1.user is undefined for machine user (client_credentials) tokens.
+# api.v1.claims.setClaim is a no-op for those tokens in Zitadel v4.  Machine
+# user collection permissions are instead encoded in their project role names
+# (col-{collection}-{perm}) and extracted by the STUF API middleware.
 COLLECTIONS_ACTION_SCRIPT = """\
-function preAccessTokenCreation(ctx, api) {
-  api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
-  var md = ctx.v1.user.metadataList;
+function injectCollections(ctx, api) {
+  if (ctx.v1.user && ctx.v1.user.preferredLoginName) {
+    api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
+  }
+  var md = ctx.v1.user && ctx.v1.user.metadataList;
   if (!md) { return; }
   for (var i = 0; i < md.length; i++) {
     if (md[i].key === "collections") {
-      try {
-        api.v1.claims.setClaim("collections", JSON.parse(atob(md[i].value)));
-      } catch (e) {}
+      var val = md[i].value;
+      var parsed = null;
+      try { parsed = JSON.parse(atob(val)); } catch (e1) {
+        try { parsed = JSON.parse(val); } catch (e2) {}
+      }
+      if (parsed) {
+        api.v1.claims.setClaim("collections", parsed);
+      }
       break;
     }
   }
@@ -189,6 +205,7 @@ def main():
             "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
             "postLogoutRedirectUris": spa_cfg["postLogoutRedirectUris"],
             "version": "OIDC_VERSION_1_0",
+            "devMode": True,
             "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
             "accessTokenRoleAssertion": True,
             "idTokenRoleAssertion": True,
@@ -246,20 +263,24 @@ def main():
                 user_id = results[0]["id"]
                 print(f"  (existing) {email} → {user_id}")
             else:
-                u = api(client, "post", "/management/v1/users/human", json={
-                    "userName": user_def["username"],
+                # The v2 API creates users in USER_STATE_ACTIVE when
+                # email.isAlreadyVerified=True. The Management v1 API always
+                # creates users in USER_STATE_INITIAL, which blocks login via
+                # Zitadel Login v2 ("Initial User not supported").
+                u = api(client, "post", "/v2/users/human", json={
+                    "username": user_def["username"],
                     "profile": {
-                        "firstName": user_def["firstName"],
-                        "lastName": user_def["lastName"],
+                        "givenName": user_def["firstName"],
+                        "familyName": user_def["lastName"],
                         "displayName": f"{user_def['firstName']} {user_def['lastName']}",
                         "preferredLanguage": "en",
                     },
                     "email": {
                         "email": user_def["email"],
-                        "isEmailVerified": True,
+                        "isAlreadyVerified": True,
                     },
                     "password": {
-                        "value": user_def["password"],
+                        "password": user_def["password"],
                         "changeRequired": False,
                     },
                 })
@@ -276,15 +297,17 @@ def main():
                 set_collections_metadata(client, user_id, user_def["collections"])
 
             if user_def.get("disabled"):
-                # Newly-created users are in "initial" state and cannot be
-                # deactivated; locking works across all states.
-                api(client, "post", f"/management/v1/users/{user_id}/_lock", json={})
-                print(f"    (locked)")
+                api(client, "post", f"/management/v1/users/{user_id}/_deactivate", json={})
+                print(f"    (deactivated)")
 
         # ── Machine users ─────────────────────────────────────────────────────
         print("Creating machine users ...")
         machine_client_id = None
         machine_client_secret = None
+        # Collect per-client-id collection permissions to write to generated.env.
+        # Zitadel v4 cannot inject custom claims into client_credentials tokens
+        # via actions, so the STUF API reads this env var as a fallback.
+        machine_user_collections = {}
         for mu_def in fixture["machine_users"]:
             mu = api(client, "post", "/management/v1/users/machine", json={
                 "userName": mu_def["username"],
@@ -308,6 +331,9 @@ def main():
             machine_client_id = secret_resp.get("clientId", mu_def["username"])
             machine_client_secret = secret_resp.get("clientSecret", "")
             print(f"    client_id={machine_client_id}")
+
+            if mu_def.get("collections"):
+                machine_user_collections[machine_client_id] = mu_def["collections"]
 
         # ── Login-client machine user (infrastructure, not in fixture) ────────
         print("Creating machine user 'login-client' for zitadel-login ...")
@@ -346,6 +372,14 @@ def main():
             "ZITADEL_API_APP_CLIENT_ID": api_app_client_id,
             "ZITADEL_BACKUP_SERVICE_CLIENT_ID": machine_client_id or "",
             "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": machine_client_secret or "",
+            # base64-encoded JSON map of {client_id: collections} for machine users.
+            # The STUF API reads this when the JWT carries no collections claim
+            # (Zitadel v4 cannot inject custom claims into client_credentials tokens).
+            # Base64 encoding avoids quoting issues when the value is sourced as a
+            # shell env var (JSON contains braces, colons, and spaces).
+            "STUF_MACHINE_USER_COLLECTIONS": base64.b64encode(
+                json.dumps(machine_user_collections).encode()
+            ).decode(),
         }
         env_file = os.path.join(BOOTSTRAP_DIR, "generated.env")
         with open(env_file, "w") as f:

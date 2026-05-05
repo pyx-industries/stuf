@@ -47,7 +47,11 @@ services:
   # All Zitadel e2e services run on the bridge network so that the Playwright
   # browser inside the test-runner container can reach them by hostname.
   # ZITADEL_EXTERNALDOMAIN=zitadel-e2e makes Zitadel accept requests on that
-  # hostname; the SPA must be configured with OIDC_AUTHORITY=http://zitadel-e2e:8080.
+  # hostname.  An Nginx reverse proxy (zitadel-e2e) sits in front, routing
+  # /ui/v2/login/* to the login UI and everything else to the Zitadel backend.
+  # This means the browser always uses zitadel-e2e:8080 as the OIDC authority,
+  # which matches EXTERNALDOMAIN and avoids "public domain not trusted" errors
+  # from the login UI making server-side calls to Zitadel.
   zitadel-postgres-e2e:
     image: postgres:17
     profiles:
@@ -75,7 +79,7 @@ services:
       - stuf-e2e-test-net
     restart: "no"
 
-  zitadel-e2e:
+  zitadel-backend-e2e:
     image: ghcr.io/zitadel/zitadel:v4.14.0
     profiles:
       - zitadel
@@ -93,13 +97,16 @@ services:
       ZITADEL_TLS_ENABLED: "false"
       ZITADEL_EXTERNALSECURE: "false"
       ZITADEL_EXTERNALPORT: 8080
-      # Use the Docker hostname so all containers (including the browser in
-      # test-runner) can reach Zitadel at http://zitadel-e2e:8080.
+      # External domain matches the Nginx proxy hostname so all containers
+      # (including the browser in the test-runner) use http://zitadel-e2e:8080.
       ZITADEL_EXTERNALDOMAIN: zitadel-e2e
-      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: http://zitadel-login-e2e:8090/ui/v2/login
+      # LOGINV2_BASEURI routes the browser through the Nginx proxy so the
+      # login UI's server-side API calls carry the zitadel-e2e origin.
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: http://zitadel-e2e:8080/ui/v2/login
       ZITADEL_FIRSTINSTANCE_ORG_NAME: STUF
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: Password1!
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: admin@example.com
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: Admin
@@ -110,8 +117,6 @@ services:
       ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /bootstrap/zitadel-admin-sa.json
     volumes:
       - ./.zitadel-bootstrap:/bootstrap
-    ports:
-      - "8280:8080"
     networks:
       - stuf-e2e-test-net
     depends_on:
@@ -126,14 +131,40 @@ services:
       retries: 10
       start_period: 60s
 
+  # Nginx reverse proxy: presents a single zitadel-e2e:8080 hostname to all
+  # clients.  Routes /ui/v2/login/* to the login UI and everything else to the
+  # Zitadel backend.  Because the browser always hits zitadel-e2e:8080, the
+  # login UI's server-side API calls carry Host: zitadel-e2e, matching
+  # EXTERNALDOMAIN and avoiding "public domain not trusted" errors.
+  zitadel-e2e:
+    image: nginx:alpine
+    profiles:
+      - zitadel
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8280:8080"
+    networks:
+      - stuf-e2e-test-net
+    depends_on:
+      zitadel-backend-e2e:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   zitadel-init-e2e:
     build:
       context: ../../docker/zitadel-init
       dockerfile: Dockerfile
     profiles:
       - zitadel
-    # Use bridge network and call zitadel-e2e by hostname; EXTERNALDOMAIN=zitadel-e2e
-    # means Zitadel accepts requests at http://zitadel-e2e:8080 — no host networking needed.
+    # Call the Nginx proxy so the Host header is zitadel-e2e:8080, matching
+    # EXTERNALDOMAIN=zitadel-e2e (direct calls to zitadel-backend-e2e would
+    # have the wrong Host and fail instance routing).
     environment:
       ZITADEL_DOMAIN: http://zitadel-e2e:8080
       MACHINE_KEY_PATH: /bootstrap/zitadel-admin-sa.json
@@ -155,6 +186,8 @@ services:
       - zitadel
     entrypoint: ["/bin/sh", "-c", "export ZITADEL_SERVICE_USER_TOKEN=$(cat /bootstrap/login-token) && exec /app/entrypoint.sh node apps/login/server.js"]
     environment:
+      # Use the Nginx proxy URL so that when the login UI makes server-side
+      # API calls the Host header is zitadel-e2e:8080, matching EXTERNALDOMAIN.
       ZITADEL_API_URL: http://zitadel-e2e:8080
       PORT: 8090
     volumes:
@@ -204,6 +237,9 @@ services:
       - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
+      # Machine user collection permissions written by zitadel-init (JSON map).
+      # Empty string when running against Keycloak (not needed; collections are JWT claims).
+      - STUF_MACHINE_USER_COLLECTIONS=${STUF_MACHINE_USER_COLLECTIONS:-}
 
       # MinIO configuration (internal network)
       - MINIO_ENDPOINT=minio-e2e:9000
@@ -289,6 +325,10 @@ services:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
       - MINIO_BUCKET_NAME=stuf-uploads-e2e
+      # Machine user collection permissions (base64 JSON) written by zitadel-init.
+      # The test-runner imports the STUF API directly (TestClient) so needs this
+      # env var for the middleware's fallback collection lookup.
+      - STUF_MACHINE_USER_COLLECTIONS=${STUF_MACHINE_USER_COLLECTIONS:-}
     depends_on:
       spa-e2e:
         condition: service_healthy
