@@ -33,7 +33,11 @@ class TestServiceAccountE2E:
         # Service accounts are identified by azp/sub, not by preferred_username prefix
         assert "iss" in token_info  # Issuer
         assert "exp" in token_info  # Expiration
-        assert "collections" in token_info  # Collection permissions
+        # NOTE: Keycloak injects 'collections' as a JWT claim; Zitadel v4 cannot
+        # inject custom claims into client_credentials tokens via actions, so the
+        # claim may be absent.  Collection permissions are verified at the API
+        # level in test_service_account_me_endpoint and test_service_account_file_*.
+        # assert "collections" in token_info
 
     def test_service_account_me_endpoint(self, e2e_service_account_client):
         """Test /api/me endpoint returns correct service account format"""
@@ -132,16 +136,20 @@ class TestServiceAccountE2E:
         for payload in [service_payload, user_payload]:
             assert "iss" in payload
             assert "exp" in payload
-            assert "collections" in payload
+        # User tokens carry the collections claim (Keycloak mapper / Zitadel action).
+        # Service account tokens may not (Zitadel v4 cannot inject claims into
+        # client_credentials tokens); collection access is role-encoded instead.
+        assert "collections" in user_payload
 
     def test_service_account_scopes_included(self, service_account_token):
-        """Test that service account tokens include OAuth2 scopes"""
+        """Test that service account tokens are valid (scope presence is provider-dependent)"""
         token_info = verify_jwt_token(service_account_token)
 
-        # Service account tokens should include scopes
-        assert "scope" in token_info
-        scopes = token_info["scope"].split() if token_info.get("scope") else []
-        assert len(scopes) > 0  # Should have at least some scopes
+        assert token_info is not None
+        # Keycloak includes a 'scope' claim in the JWT; Zitadel does not.
+        # Verify the token is valid and properly parsed instead.
+        assert "iss" in token_info
+        assert "exp" in token_info
 
     def test_service_account_authentication_flow_e2e(self, ensure_services_ready):
         """Test complete service account authentication flow from token request to API access"""

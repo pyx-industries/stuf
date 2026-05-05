@@ -111,15 +111,15 @@ class LoginPage(BasePage):
 
     def login_with_admin_user(self) -> None:
         """Login with default admin user credentials."""
-        self.login("admin@example.com", "Password1!" if self._is_zitadel() else "password")
+        self.login("admin@example.com", "Password1!")
 
     def login_with_test_user(self) -> None:
         """Login with default test user credentials."""
-        self.login("testuser@example.com", "password")
+        self.login("testuser@example.com", "Password1!")
 
     def login_with_limited_user(self) -> None:
         """Login with limited user credentials."""
-        self.login("limiteduser@example.com", "password")
+        self.login("limiteduser@example.com", "Password1!")
 
     def assert_login_form_visible(self) -> None:
         """Assert that the login form is visible."""

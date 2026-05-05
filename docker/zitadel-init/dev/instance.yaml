@@ -42,7 +42,7 @@ human_users:
     firstName: Test
     lastName: User
     email: testuser@example.com
-    password: password
+    password: Password1!
     roles: [project-participant]
     collections:
       test: [read, write, delete]
@@ -54,7 +54,7 @@ human_users:
     firstName: Test
     lastName: Admin
     email: admin@test.example.com
-    password: test-password
+    password: Password1!
     roles: [admin]
     collections:
       test: [read, write, delete]
@@ -65,7 +65,7 @@ human_users:
     firstName: Test
     lastName: Architect
     email: ta@test.example.com
-    password: test-password
+    password: Password1!
     roles: [trust-architect]
     collections:
       test: [read, write, delete]
@@ -76,7 +76,7 @@ human_users:
     firstName: Test
     lastName: FullUser
     email: full@test.example.com
-    password: test-password
+    password: Password1!
     roles: [project-participant]
     collections:
       test: [read, write]
@@ -87,7 +87,7 @@ human_users:
     firstName: Test
     lastName: LimitedUser
     email: limited@test.example.com
-    password: test-password
+    password: Password1!
     roles: [project-participant]
     collections:
       test: [read, write]
@@ -96,7 +96,7 @@ human_users:
     firstName: Test
     lastName: SharedUser
     email: shared@test.example.com
-    password: test-password
+    password: Password1!
     roles: [project-participant]
     collections:
       shared: [read, write]
@@ -105,7 +105,7 @@ human_users:
     firstName: Test
     lastName: InactiveUser
     email: inactive@test.example.com
-    password: test-password
+    password: Password1!
     roles: [project-participant]
     collections:
       test: [read, write]

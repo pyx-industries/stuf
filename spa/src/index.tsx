@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-const { oidcAuthority, oidcClientId } = getConfig();
+const { oidcAuthority, oidcClientId, oidcScope, oidcLoadUserInfo } = getConfig();
 
 const oidcConfig = {
   authority: oidcAuthority,
@@ -13,7 +13,8 @@ const oidcConfig = {
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",
-  scope: "openid profile email stuf:access",
+  scope: oidcScope,
+  loadUserInfo: oidcLoadUserInfo,
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
   // Use default storage (localStorage) - works fine for most cases
