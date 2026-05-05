@@ -108,7 +108,8 @@
             "claim.name": "collections",
             "jsonType.label": "JSON",
             "access.token.claim": "true",
-            "id.token.claim": "true"
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
           }
         },
         {
