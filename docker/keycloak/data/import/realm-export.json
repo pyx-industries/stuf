@@ -3,7 +3,9 @@
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": false,
-  "requiredCredentials": ["password"],
+  "requiredCredentials": [
+    "password"
+  ],
   "roles": {
     "realm": [
       {
@@ -179,7 +181,11 @@
         "token.endpoint.auth.signing.alg": "RS256",
         "introspection.response.audience.enabled": "true"
       },
-      "defaultClientScopes": ["web-origins", "roles", "stuf:access"]
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "stuf:access"
+      ]
     },
     {
       "clientId": "stuf-api",
@@ -212,11 +218,13 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["admin"],
+      "realmRoles": [
+        "admin"
+      ],
       "attributes": {
         "collections": [
           "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
@@ -232,11 +240,13 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["project-participant"],
+      "realmRoles": [
+        "project-participant"
+      ],
       "attributes": {
         "collections": [
           "{\"test\":[\"read\",\"write\",\"delete\"],\"collection-1-docs\":[\"read\",\"write\"],\"collection-2-contracts\":[\"read\"],\"collection-3-cat-pics\":[\"read\",\"write\",\"delete\"]}"
@@ -252,11 +262,13 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["admin"],
+      "realmRoles": [
+        "admin"
+      ],
       "attributes": {
         "collections": [
           "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
@@ -272,11 +284,13 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["trust-architect"],
+      "realmRoles": [
+        "trust-architect"
+      ],
       "attributes": {
         "collections": [
           "{\"test\":[\"read\",\"write\",\"delete\"],\"restricted\":[\"read\",\"write\",\"delete\"],\"shared\":[\"read\",\"write\",\"delete\"]}"
@@ -292,11 +306,13 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["project-participant"],
+      "realmRoles": [
+        "project-participant"
+      ],
       "attributes": {
         "collections": [
           "{\"test\":[\"read\",\"write\"],\"restricted\":[\"read\",\"write\"],\"shared\":[\"read\",\"write\"]}"
@@ -312,13 +328,17 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["project-participant"],
+      "realmRoles": [
+        "project-participant"
+      ],
       "attributes": {
-        "collections": ["{\"test\":[\"read\",\"write\"]}"]
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
+        ]
       }
     },
     {
@@ -330,13 +350,17 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["project-participant"],
+      "realmRoles": [
+        "project-participant"
+      ],
       "attributes": {
-        "collections": ["{\"shared\":[\"read\",\"write\"]}"]
+        "collections": [
+          "{\"shared\":[\"read\",\"write\"]}"
+        ]
       }
     },
     {
@@ -348,13 +372,17 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test-password",
+          "value": "Password1!",
           "temporary": false
         }
       ],
-      "realmRoles": ["project-participant"],
+      "realmRoles": [
+        "project-participant"
+      ],
       "attributes": {
-        "collections": ["{\"test\":[\"read\",\"write\"]}"]
+        "collections": [
+          "{\"test\":[\"read\",\"write\"]}"
+        ]
       }
     },
     {
@@ -364,9 +392,13 @@
       "firstName": "",
       "lastName": "",
       "email": "",
-      "realmRoles": ["service"],
+      "realmRoles": [
+        "service"
+      ],
       "attributes": {
-        "collections": ["{\"test\":[\"read\"],\"shared\":[\"read\"]}"]
+        "collections": [
+          "{\"test\":[\"read\"],\"shared\":[\"read\"]}"
+        ]
       }
     }
   ]

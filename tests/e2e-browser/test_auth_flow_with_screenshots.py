@@ -81,7 +81,7 @@ class TestAuthFlowWithScreenshots:
             login_page.fill_password("Password1!")
         else:
             login_page.fill_username("admin@example.com")
-            login_page.fill_password("password")
+            login_page.fill_password("Password1!")
         login_page.take_screenshot(
             "credentials-entered",
             scenario_name,

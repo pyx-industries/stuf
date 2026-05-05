@@ -188,17 +188,17 @@ def test_data():
         "users": {
             "admin": {
                 "username": "admin@example.com",
-                "password": "password",
+                "password": "Password1!",
                 "role": "admin",
             },
             "user": {
                 "username": "testuser@example.com",
-                "password": "password",
+                "password": "Password1!",
                 "role": "user",
             },
             "limited": {
                 "username": "limiteduser@example.com",
-                "password": "password",
+                "password": "Password1!",
                 "role": "limited",
             },
         },

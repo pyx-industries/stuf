@@ -113,7 +113,7 @@ def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
         login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "Password1!")
     else:
         login_page.fill_input(login_page.KC_USERNAME_INPUT, "admin@example.com")
-        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "password")
+        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "Password1!")
 
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "credentials-entered", "And I enter valid admin credentials"
@@ -208,9 +208,9 @@ def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
     login_page.wait_for_login_form()
 
     credentials = {
-        "regular": ("testuser@example.com", "password"),
-        "admin": ("admin@example.com", "Password1!" if login_page._is_zitadel() else "password"),
-        "limited": ("limiteduser@example.com", "password"),
+        "regular": ("testuser@example.com", "Password1!"),
+        "admin": ("admin@example.com", "Password1!"),
+        "limited": ("limiteduser@example.com", "Password1!"),
     }
     if user_type.lower() not in credentials:
         raise ValueError(f"Unknown user type: {user_type}")

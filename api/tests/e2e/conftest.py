@@ -136,7 +136,7 @@ def _get_user_token_via_browser(username: str, password: str) -> str:
 def user_token(ensure_services_ready):  # noqa: F811
     """Get a real user token via browser-based OIDC login."""
     try:
-        return _get_user_token_via_browser("testuser@example.com", "password")
+        return _get_user_token_via_browser("testuser@example.com", "Password1!")
     except Exception as e:
         pytest.skip(f"Could not get user token via browser login: {e}")
 
@@ -145,7 +145,7 @@ def user_token(ensure_services_ready):  # noqa: F811
 def limited_user_token(ensure_services_ready):  # noqa: F811
     """Get a token for a user with limited permissions via browser-based OIDC login."""
     try:
-        return _get_user_token_via_browser("limiteduser@example.com", "password")
+        return _get_user_token_via_browser("limiteduser@example.com", "Password1!")
     except Exception as e:
         pytest.skip(f"Could not get limited user token via browser login: {e}")
 

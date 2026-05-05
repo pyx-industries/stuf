@@ -128,7 +128,7 @@ All services configured via environment variables with development defaults:
 
 ### Authentication Setup
 1. Keycloak auto-configures with realm `stuf` and test users; Zitadel is provisioned by `docker/zitadel-init/`
-2. Default admin user: `admin@example.com` / `password` (Keycloak) or `Password1!` (Zitadel)
+2. Default admin user: `admin@example.com` / `Password1!` (both Keycloak and Zitadel)
 3. Collection permissions stored in JWT collections claim as JSON: `{"collection-name": ["read", "write", "delete"]}`
 4. Service accounts: Keycloak clients with service-account roles enabled; Zitadel machine users with JWT access tokens
 5. Both users and service accounts use same collection permission format

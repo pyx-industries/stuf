@@ -39,4 +39,4 @@ SPA_HOST = get_spa_host()
 
 # Default credentials
 DEFAULT_USERNAME = "admin@example.com"
-DEFAULT_PASSWORD = "password"
+DEFAULT_PASSWORD = "Password1!"
