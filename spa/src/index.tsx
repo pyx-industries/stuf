@@ -13,7 +13,8 @@ const oidcConfig = {
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",
-  scope: "openid profile email stuf:access",
+  scope: "openid profile email stuf:access urn:zitadel:iam:user:metadata",
+  loadUserInfo: true,
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
   // Use default storage (localStorage) - works fine for most cases

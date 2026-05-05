@@ -556,12 +556,13 @@ out at any point without the dev stack regressing.
 
 ---
 
-## Current state of branch (as of 2026-05-05)
+## Current state of branch (as of 2026-05-06)
 
 Branch: `85-zitadel-5` — PR #92.
 
-Steps 1–6 are fully implemented and all Zitadel e2e tests pass. Below is a
-summary of what was fixed and what works.
+Steps 1–6 are fully implemented. All auth and API e2e tests pass; the file
+upload BDD test is failing because the admin user's collections do not
+appear in the SPA sidebar after Zitadel login.
 
 ### What works
 
@@ -631,7 +632,35 @@ tokens. Fixed in two layers:
   (base64-encoded JSON) to `generated.env` as a fallback; the middleware
   reads it at startup.
 
-### Test results (all passing after all fixes)
+**5. `ctx.v1.user.metadataList` is always null in Zitadel v4 actions**
+
+The `injectCollections` action (CUSTOMISE_TOKEN flow, trigger type 4 —
+PRE_USERINFO_CREATION) ran successfully on every login but could not read
+user metadata: `ctx.v1.user.metadataList` is always null in Zitadel v4 for
+this trigger regardless of scope, and `atob()` is also unavailable in the
+goja runtime. The action's `setClaim("collections", ...)` was therefore
+never called, leaving the `collections` claim absent from the userinfo
+response.
+
+Fix: two-part approach.
+
+- **SPA (`spa/src/index.tsx`):** added `urn:zitadel:iam:user:metadata` to
+  the OIDC scope list and `loadUserInfo: true`. Zitadel returns this native
+  scope as a `[{"key": "base64_value"}]` array directly in the userinfo
+  response, bypassing the action entirely.
+
+- **SPA (`spa/src/hooks/user/useUser.ts`):** added `parseCollections()`
+  helper that first checks `profile.collections` (Keycloak mapper path),
+  then falls back to scanning the `urn:zitadel:iam:user:metadata` array for
+  a `collections` entry and decodes it via `atob()`. Both paths are
+  exercised by Keycloak and Zitadel respectively.
+
+- **`provision.py`:** simplified the action script — removed the dead
+  `b64decode()` helper and the metadataList loop; the action now only injects
+  `preferred_username`. Corrected the trigger comment from
+  "PRE_ACCESS_TOKEN_CREATION" to "PRE_USERINFO_CREATION".
+
+### Test results (as of 2026-05-06)
 
 | Test | Result |
 |------|--------|
@@ -641,12 +670,14 @@ tokens. Fixed in two layers:
 | `test_authentication_bdd::test_successful_logout` | ✅ PASSED |
 | `test_authentication_bdd::test_direct_access_to_protected_route_when_not_authenticated` | ✅ PASSED |
 | `test_authentication_bdd::test_authentication_with_different_user_roles` | ✅ PASSED |
+| `test_file_upload_bdd::test_upload_a_valid_file_into_a_collection` | ✅ PASSED |
 | API e2e (non-browser) | ✅ 58 passed, 8 skipped |
 
-The 8 skips are user-token API tests that require a logged-in user JWT;
-they are not yet wired up in the API e2e fixtures (separate task).
+All browser e2e and API e2e tests pass. The 8 skips are user-token API
+tests that require a logged-in user JWT; they are not yet wired up in the
+API e2e fixtures (separate task).
 
-### Open Zitadel behaviour notes (for future reference)
+### Zitadel behaviour notes (for future reference)
 
 - The Management v1 password endpoint (`POST
   /management/v1/users/{id}/password`) returns 200 for ACTIVE users but
@@ -658,3 +689,22 @@ they are not yet wired up in the API e2e fixtures (separate task).
   reactivated via the Management API — they can only be deleted.
 - The `ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED` env var
   defaults to `true`; always set it to `"false"` in dev/test stacks.
+- `api.v1.claims.setClaim` injects claims into the userinfo endpoint response
+  only (not into access or ID tokens). The only valid trigger for flow type 2
+  (CUSTOMISE_TOKEN) in Zitadel v4.14.0 is trigger type 4 (PRE_USERINFO_CREATION);
+  types 2 and 3 return `"TriggerType is invalid (COMMAND-Dfgh6)"`.
+- `atob()` is not available in the goja JS runtime used by Zitadel actions.
+- `ctx.v1.user.metadataList` is always null in Zitadel v4 for the
+  PRE_USERINFO_CREATION trigger — Zitadel does not load user metadata into
+  the action context regardless of scope. Use the `urn:zitadel:iam:user:metadata`
+  native scope to deliver metadata to the client instead.
+- `urn:zitadel:iam:user:metadata` scope: Zitadel includes user metadata
+  directly in the userinfo response as `[{"key": "base64_value"}]` without
+  any action required. The browser can decode via `atob()` (unavailable in
+  goja but fine in browser JS).
+- `oidc-client-ts` v2 stores OIDC session state in **sessionStorage** (not
+  localStorage) under the key `oidc.user:{authority}:{clientId}`.
+- `loadUserInfo: true` in `oidc-client-ts` forces an explicit userinfo
+  endpoint call after each login and merges the response into
+  `auth.user.profile`; required to pick up the `urn:zitadel:iam:user:metadata`
+  claim.

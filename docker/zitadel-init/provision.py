@@ -27,40 +27,22 @@ MACHINE_KEY_PATH = os.environ.get("MACHINE_KEY_PATH", "/bootstrap/zitadel-admin-
 BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
 FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
-# Injected into human-user access tokens via the PRE_ACCESS_TOKEN_CREATION trigger.
-# - preferred_username: not in Zitadel JWT access tokens by default; mirrors
-#   the Keycloak claim the STUF API middleware reads.
-# - collections: user metadata injected as a JSON object claim; mirrors the
-#   Keycloak stuf:access scope's collections attribute mapper.
-# Metadata values arrive as base64-encoded strings in ctx.v1.user.metadataList.
+# Fired on the PRE_USERINFO_CREATION trigger (flow 2, trigger type 4).
+# - preferred_username: not in Zitadel JWT userinfo by default; mirrors the
+#   Keycloak claim the STUF API middleware reads.
 #
-# IMPORTANT: In Zitadel v3+, the JavaScript function name must match the action
-# NAME (not the trigger-type camelCase name).  Our action is named
-# "injectCollections", so the function must also be "injectCollections".
+# NOTE: ctx.v1.user.metadataList is always null in Zitadel v4 for this trigger
+# regardless of what scope the client requests. User collections are instead
+# delivered to the SPA via the urn:zitadel:iam:user:metadata scope (native claim),
+# which Zitadel populates directly without needing an action.
 #
 # NOTE: ctx.v1.user is undefined for machine user (client_credentials) tokens.
-# api.v1.claims.setClaim is a no-op for those tokens in Zitadel v4.  Machine
-# user collection permissions are instead encoded in their project role names
-# (col-{collection}-{perm}) and extracted by the STUF API middleware.
+# Machine user collection permissions are instead encoded in their project role
+# names (col-{collection}-{perm}) and extracted by the STUF API middleware.
 COLLECTIONS_ACTION_SCRIPT = """\
 function injectCollections(ctx, api) {
   if (ctx.v1.user && ctx.v1.user.preferredLoginName) {
     api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
-  }
-  var md = ctx.v1.user && ctx.v1.user.metadataList;
-  if (!md) { return; }
-  for (var i = 0; i < md.length; i++) {
-    if (md[i].key === "collections") {
-      var val = md[i].value;
-      var parsed = null;
-      try { parsed = JSON.parse(atob(val)); } catch (e1) {
-        try { parsed = JSON.parse(val); } catch (e2) {}
-      }
-      if (parsed) {
-        api.v1.claims.setClaim("collections", parsed);
-      }
-      break;
-    }
   }
 }
 """
@@ -238,9 +220,13 @@ def main():
         action_id = action["id"]
         print(f"  action_id={action_id}")
 
-        # Flow type 2 = CUSTOMISE_TOKEN, trigger type 4 = PRE_ACCESS_TOKEN_CREATION
+        # Flow type 2 = CUSTOMISE_TOKEN ("Complement Token"), trigger type 4 = PRE_USERINFO_CREATION
+        # In Zitadel v4, trigger types 1-3 are invalid for flow 2; only type 4 works.
+        # NOTE: ctx.v1.user.metadataList is always null in this trigger — Zitadel does not
+        # load user metadata into the action context regardless of scope. The SPA instead
+        # reads metadata via the urn:zitadel:iam:user:metadata scope (native claim).
         api(client, "post", "/management/v1/flows/2/trigger/4", json={"actionIds": [action_id]})
-        print("  trigger set (CUSTOMISE_TOKEN / PRE_ACCESS_TOKEN_CREATION)")
+        print("  trigger set (CUSTOMISE_TOKEN / PRE_USERINFO_CREATION)")
 
         # ── Human users ───────────────────────────────────────────────────────
         print("Processing human users ...")
