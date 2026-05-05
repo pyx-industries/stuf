@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-const { oidcAuthority, oidcClientId } = getConfig();
+const { oidcAuthority, oidcClientId, oidcScope } = getConfig();
 
 const oidcConfig = {
   authority: oidcAuthority,
@@ -13,7 +13,7 @@ const oidcConfig = {
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",
-  scope: "openid profile email stuf:access urn:zitadel:iam:user:metadata",
+  scope: oidcScope,
   loadUserInfo: true,
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,

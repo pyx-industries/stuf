@@ -38,6 +38,7 @@ else
 fi
 
 COMPUTED_OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-${KEYCLOAK_CLIENT_ID:-$DEFAULT_KEYCLOAK_CLIENT_ID}}"
+COMPUTED_OIDC_SCOPE="${OIDC_SCOPE:-openid profile email stuf:access}"
 
 # Determine the mode (dev or prod) - default to prod
 MODE="${1:-prod}"
@@ -59,7 +60,8 @@ cat > "$CONFIG_PATH" <<EOF
 window.__STUF_CONFIG__ = {
   apiBaseUrl: "$API_BASE_URL",
   oidcAuthority: "$COMPUTED_OIDC_AUTHORITY",
-  oidcClientId: "$COMPUTED_OIDC_CLIENT_ID"
+  oidcClientId: "$COMPUTED_OIDC_CLIENT_ID",
+  oidcScope: "$COMPUTED_OIDC_SCOPE"
 };
 EOF
 
@@ -67,6 +69,7 @@ echo "Generated runtime configuration at $CONFIG_PATH:"
 echo "  API Base URL: $API_BASE_URL"
 echo "  OIDC Authority: $COMPUTED_OIDC_AUTHORITY"
 echo "  OIDC Client ID: $COMPUTED_OIDC_CLIENT_ID"
+echo "  OIDC Scope: $COMPUTED_OIDC_SCOPE"
 echo "  Port: $SPA_PORT"
 
 # Start the appropriate server based on mode

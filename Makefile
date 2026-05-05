@@ -164,6 +164,7 @@ test-e2e-zitadel:
 		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_AUTHORITY=http://zitadel-e2e:8080; \
 		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
+		export OIDC_SCOPE="openid profile email stuf:access urn:zitadel:iam:user:metadata"; \
 		export IDP_URL=http://zitadel-e2e:8080; \
 		export OIDC_SERVICE_ACCOUNT_CLIENT_ID="$${ZITADEL_BACKUP_SERVICE_CLIENT_ID}"; \
 		export OIDC_SERVICE_ACCOUNT_CLIENT_SECRET="$${ZITADEL_BACKUP_SERVICE_CLIENT_SECRET}"; \

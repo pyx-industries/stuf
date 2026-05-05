@@ -284,6 +284,7 @@ services:
       # OIDC_AUTHORITY=http://zitadel-e2e:8080 and OIDC_CLIENT_ID=<generated>.
       - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://keycloak-e2e:8080/realms/stuf}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
+      - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
     depends_on:
       - api-e2e
     networks:
