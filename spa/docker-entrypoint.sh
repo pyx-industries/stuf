@@ -39,6 +39,7 @@ fi
 
 COMPUTED_OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-${KEYCLOAK_CLIENT_ID:-$DEFAULT_KEYCLOAK_CLIENT_ID}}"
 COMPUTED_OIDC_SCOPE="${OIDC_SCOPE:-openid profile email stuf:access}"
+COMPUTED_OIDC_LOAD_USER_INFO="${OIDC_LOAD_USER_INFO:-false}"
 
 # Determine the mode (dev or prod) - default to prod
 MODE="${1:-prod}"
@@ -61,7 +62,8 @@ window.__STUF_CONFIG__ = {
   apiBaseUrl: "$API_BASE_URL",
   oidcAuthority: "$COMPUTED_OIDC_AUTHORITY",
   oidcClientId: "$COMPUTED_OIDC_CLIENT_ID",
-  oidcScope: "$COMPUTED_OIDC_SCOPE"
+  oidcScope: "$COMPUTED_OIDC_SCOPE",
+  oidcLoadUserInfo: $COMPUTED_OIDC_LOAD_USER_INFO
 };
 EOF
 
@@ -70,6 +72,7 @@ echo "  API Base URL: $API_BASE_URL"
 echo "  OIDC Authority: $COMPUTED_OIDC_AUTHORITY"
 echo "  OIDC Client ID: $COMPUTED_OIDC_CLIENT_ID"
 echo "  OIDC Scope: $COMPUTED_OIDC_SCOPE"
+echo "  OIDC Load User Info: $COMPUTED_OIDC_LOAD_USER_INFO"
 echo "  Port: $SPA_PORT"
 
 # Start the appropriate server based on mode

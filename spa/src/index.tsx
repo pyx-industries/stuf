@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-const { oidcAuthority, oidcClientId, oidcScope } = getConfig();
+const { oidcAuthority, oidcClientId, oidcScope, oidcLoadUserInfo } = getConfig();
 
 const oidcConfig = {
   authority: oidcAuthority,
@@ -14,7 +14,7 @@ const oidcConfig = {
   post_logout_redirect_uri: window.location.origin,
   response_type: "code",
   scope: oidcScope,
-  loadUserInfo: true,
+  loadUserInfo: oidcLoadUserInfo,
   automaticSilentRenew: true,
   includeIdTokenInSilentRenew: true,
   // Use default storage (localStorage) - works fine for most cases

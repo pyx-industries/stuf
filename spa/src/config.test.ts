@@ -37,6 +37,7 @@ describe("getConfig", () => {
       oidcAuthority: "http://localhost:8080/realms/stuf",
       oidcClientId: "stuf-spa",
       oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     });
   });
 
@@ -46,6 +47,7 @@ describe("getConfig", () => {
       oidcAuthority: "https://auth.example.com",
       oidcClientId: "prod-client",
       oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;
@@ -77,6 +79,7 @@ describe("getConfig", () => {
       oidcAuthority: "https://auth.example.com",
       oidcClientId: "prod-client",
       oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;
@@ -94,6 +97,7 @@ describe("getConfig", () => {
       oidcAuthority: "https://auth.example.com",
       oidcClientId: "prod-client",
       oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;

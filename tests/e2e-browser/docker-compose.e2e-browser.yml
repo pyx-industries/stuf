@@ -285,6 +285,7 @@ services:
       - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://keycloak-e2e:8080/realms/stuf}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
       - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
+      - OIDC_LOAD_USER_INFO=${OIDC_LOAD_USER_INFO:-false}
     depends_on:
       - api-e2e
     networks:
