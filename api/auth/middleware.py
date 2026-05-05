@@ -42,6 +42,22 @@ _discovery_doc: dict = {}
 _jwks_cache: dict = {"keys": [], "fetched_at": 0.0}
 _JWKS_TTL = 300  # seconds
 
+# Static collection permissions for machine users, keyed by client_id.
+# Written to generated.env by zitadel-init because Zitadel v4 cannot inject
+# custom claims into client_credentials (machine user) tokens via actions.
+# The value is base64-encoded JSON to avoid shell quoting issues in .env files.
+_MACHINE_USER_COLLECTIONS: dict = {}
+_raw_collections = os.environ.get("STUF_MACHINE_USER_COLLECTIONS", "")
+if _raw_collections:
+    import base64 as _base64
+
+    try:
+        _MACHINE_USER_COLLECTIONS = json.loads(_base64.b64decode(_raw_collections).decode())
+    except Exception:
+        logging.getLogger(__name__).warning(
+            "Failed to parse STUF_MACHINE_USER_COLLECTIONS; machine user collections will be empty"
+        )
+
 
 def _extract_roles(token_payload: dict) -> list:
     """Extract role list from a token, handling both Keycloak and Zitadel shapes.
@@ -58,6 +74,31 @@ def _extract_roles(token_payload: dict) -> list:
     if isinstance(zitadel_roles, dict):
         return list(zitadel_roles.keys())
     return []
+
+
+def _extract_collections_from_roles(roles: list) -> dict:
+    """Extract collection permissions from Zitadel col-{collection}-{perm} role names.
+
+    Zitadel v4 cannot inject custom claims into client_credentials (machine user)
+    tokens via actions, so collection permissions for machine users are encoded in
+    project role names following the convention col-{collection}-{perm}.  This
+    function decodes those roles back into the standard collections dict.
+
+    Only roles matching exactly three hyphen-delimited parts where the third part
+    is a known permission are decoded; all other roles are ignored.
+    """
+    collections: dict = {}
+    known_perms = {"read", "write", "delete"}
+    for role in roles:
+        if not role.startswith("col-"):
+            continue
+        parts = role.split("-", 2)
+        if len(parts) == 3 and parts[2] in known_perms:
+            collection, perm = parts[1], parts[2]
+            collections.setdefault(collection, [])
+            if perm not in collections[collection]:
+                collections[collection].append(perm)
+    return collections
 
 
 def _fetch_discovery() -> dict:
@@ -216,6 +257,7 @@ async def get_current_user(
         f"Successfully authenticated user: {username} with roles: {roles}, collections: {collections}"
     )
 
+
     # Ensure this is a user token, not a service account
     if not token_payload.get("preferred_username") and not token_payload.get(
         "username"
@@ -290,6 +332,19 @@ async def get_current_service_account(
         except (json.JSONDecodeError, TypeError) as e:
             logger.warning(f"Failed to parse collections claim: {e}")
 
+    # Zitadel v4 cannot inject custom claims into client_credentials tokens via
+    # actions.  Try two fallbacks:
+    # 1. Decode collection permissions from project role names (col-{col}-{perm}).
+    # 2. Read from the static STUF_MACHINE_USER_COLLECTIONS env var written by
+    #    zitadel-init (keyed by client_id).
+    if not collections:
+        collections = _extract_collections_from_roles(roles)
+        if collections:
+            logger.debug(f"Collections extracted from roles: {collections}")
+    if not collections and client_id in _MACHINE_USER_COLLECTIONS:
+        collections = _MACHINE_USER_COLLECTIONS[client_id]
+        logger.debug(f"Collections loaded from STUF_MACHINE_USER_COLLECTIONS for {client_id}")
+
     # Extract scopes
     scopes = (
         token_payload.get("scope", "").split() if token_payload.get("scope") else []
@@ -337,45 +392,24 @@ async def get_current_principal(
         logger.error("JWT verification failed - token_payload is None")
         raise credentials_exception
 
-    # Determine token type using provider-agnostic field-based detection
-    # Based on analysis of real Keycloak tokens
-
-    # Check for user-specific fields that service accounts typically don't have
+    # Discriminate user vs service-account using identity claims.
+    # Human user tokens (both Keycloak and Zitadel) carry email / given_name /
+    # family_name in the access token; machine-user tokens do not.  This is
+    # simpler and more reliable than inspecting scope or azp, which differ across
+    # providers and can include "openid" even for machine users in Zitadel.
     has_user_fields = bool(
         token_payload.get("email")
         or token_payload.get("given_name")
         or token_payload.get("family_name")
-        or token_payload.get("sid")  # Session ID - user sessions only
+        or token_payload.get("sid")  # session ID — human sessions only
     )
 
-    # Check for service account indicators
-    # Service accounts often have broader scopes or specific audience patterns
-    azp = token_payload.get("azp", "")
-    scope = token_payload.get("scope", "")
-
-    # Service accounts typically don't have openid/profile scopes and have specific azp
-    has_service_indicators = (
-        azp != OIDC_SPA_CLIENT_ID  # Users use the SPA OIDC client
-        and "openid" not in scope  # Service accounts usually don't have openid scope
-        and "profile" not in scope  # Service accounts usually don't have profile scope
-        and "email" not in scope  # Service accounts usually don't have email scope
-    )
-
-    if has_user_fields and not has_service_indicators:
-        # Token has user-specific fields → User token
-        logger.debug(f"Detected user token (has user-specific fields)")
+    if has_user_fields:
+        logger.debug("Detected user token (has user identity fields)")
         return await get_current_user(token)
-    elif has_service_indicators and not has_user_fields:
-        # Token has service indicators and no user fields → Service account token
-        logger.debug(
-            f"Detected service account token (service indicators, no user fields)"
-        )
-        return await get_current_service_account(token)
     else:
-        logger.error(
-            f"Cannot determine token type - has_user_fields: {bool(has_user_fields)}, has_service_indicators: {bool(has_service_indicators)}"
-        )
-        raise credentials_exception
+        logger.debug("Detected service account token (no user identity fields)")
+        return await get_current_service_account(token)
 
 
 def require_role(required_role: str):

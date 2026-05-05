@@ -13,12 +13,16 @@ export interface StufConfig {
   apiBaseUrl: string;
   oidcAuthority: string;
   oidcClientId: string;
+  oidcScope: string;
+  oidcLoadUserInfo: boolean;
 }
 
 const DEFAULTS: StufConfig = {
   apiBaseUrl: "http://localhost:8000",
   oidcAuthority: "http://localhost:8080/realms/stuf",
   oidcClientId: "stuf-spa",
+  oidcScope: "openid profile email stuf:access",
+  oidcLoadUserInfo: false,
 };
 
 let configCache: StufConfig | null = null;
