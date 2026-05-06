@@ -192,6 +192,7 @@ def main():
             "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
             "postLogoutRedirectUris": spa_cfg["postLogoutRedirectUris"],
             "version": "OIDC_VERSION_1_0",
+            "devMode": True,
             "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
             "accessTokenRoleAssertion": True,
             "idTokenRoleAssertion": True,
@@ -214,9 +215,9 @@ def main():
         print(f"  client_id={api_app_client_id}")
 
         # ── Action: inject collections + preferred_username ───────────────────
-        print("Creating 'injectCollections' action ...")
+        print("Creating 'preAccessTokenCreation' action ...")
         action = api(client, "post", "/management/v1/actions", json={
-            "name": "injectCollections",
+            "name": "preAccessTokenCreation",
             "script": COLLECTIONS_ACTION_SCRIPT,
             "timeout": "10s",
             "allowedToFail": True,
@@ -249,20 +250,24 @@ def main():
                 user_id = results[0]["id"]
                 print(f"  (existing) {email} → {user_id}")
             else:
-                u = api(client, "post", "/management/v1/users/human", json={
-                    "userName": user_def["username"],
+                # The v2 API creates users in USER_STATE_ACTIVE when
+                # email.isAlreadyVerified=True. The Management v1 API always
+                # creates users in USER_STATE_INITIAL, which blocks login via
+                # Zitadel Login v2 ("Initial User not supported").
+                u = api(client, "post", "/v2/users/human", json={
+                    "username": user_def["username"],
                     "profile": {
-                        "firstName": user_def["firstName"],
-                        "lastName": user_def["lastName"],
+                        "givenName": user_def["firstName"],
+                        "familyName": user_def["lastName"],
                         "displayName": f"{user_def['firstName']} {user_def['lastName']}",
                         "preferredLanguage": "en",
                     },
                     "email": {
                         "email": user_def["email"],
-                        "isEmailVerified": True,
+                        "isAlreadyVerified": True,
                     },
                     "password": {
-                        "value": user_def["password"],
+                        "password": user_def["password"],
                         "changeRequired": False,
                     },
                 })
@@ -279,10 +284,8 @@ def main():
                 set_collections_metadata(client, user_id, user_def["collections"])
 
             if user_def.get("disabled"):
-                # Newly-created users are in "initial" state and cannot be
-                # deactivated; locking works across all states.
-                api(client, "post", f"/management/v1/users/{user_id}/_lock", json={})
-                print(f"    (locked)")
+                api(client, "post", f"/management/v1/users/{user_id}/_deactivate", json={})
+                print(f"    (deactivated)")
 
         # ── Machine users ─────────────────────────────────────────────────────
         print("Creating machine users ...")

@@ -45,10 +45,11 @@ help:
 	@echo "  clean         Remove generated PNG files and documentation site"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test          Run fast tests (unit + integration)"
-	@echo "  test-e2e      Run end-to-end tests (API + browser)"
-	@echo "  test-all      Run all tests (fast + E2E)"
-	@echo "  test-cov      Run tests with coverage report"
+	@echo "  test              Run fast tests (unit + integration)"
+	@echo "  test-e2e          Run end-to-end tests against Keycloak (API + browser)"
+	@echo "  test-e2e-zitadel  Run end-to-end tests against Zitadel (API + browser)"
+	@echo "  test-all          Run all tests (fast + E2E)"
+	@echo "  test-cov          Run tests with coverage report"
 	@echo ""
 	@echo "SPA Development:"
 	@echo "  spa-dev       Start SPA in development mode with hot reloading"
@@ -114,27 +115,70 @@ clean:
 	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning Zitadel e2e bootstrap..."
+	@rm -f tests/e2e-browser/.zitadel-bootstrap/*.env tests/e2e-browser/.zitadel-bootstrap/*.json
 	@echo "Cleaning SPA generated config..."
 	@rm -f spa/public/config.js spa/build/config.js
 	@echo "Clean complete."
 
 # Test targets
-.PHONY: test test-e2e test-all test-cov
+.PHONY: test test-e2e test-e2e-zitadel test-all test-cov
 
 # Run fast tests (unit + integration) - default
 test: $(VENV_DIR)/dev-requirements.stamp
 	@echo "Running fast tests (unit + integration)..."
 	@$(PYTEST) -m "not e2e"
 
-# Run end-to-end tests (API + browser) with coverage
+# Run end-to-end tests (API + browser) with Keycloak (default)
 test-e2e:
-	@echo "Running end-to-end tests with coverage..."
+	@echo "Running end-to-end tests with coverage (Keycloak profile)..."
 	@echo "Starting browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner && docker compose -f docker-compose.e2e-browser.yml --profile testing up -d --wait
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner spa-e2e && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing up -d --wait
 	@echo "Running API E2E and browser E2E tests (inside container)..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x -v --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results . && python generate_presentation_report.py"
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x -v --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results . && python generate_presentation_report.py"
 	@echo "Stopping browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml down
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile keycloak down
+
+# Run end-to-end tests against Zitadel
+# Usage: make test-e2e-zitadel
+# After the Zitadel stack starts and init completes, the generated.env is written to
+# tests/e2e-browser/.zitadel-bootstrap/generated.env.  The make target sources it and
+# exports the Zitadel-specific OIDC env vars before running the tests.
+test-e2e-zitadel:
+	@echo "Running end-to-end tests against Zitadel..."
+	@mkdir -p tests/e2e-browser/.zitadel-bootstrap
+	@echo "Starting Zitadel stack and browser E2E services..."
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner zitadel-init-e2e api-e2e spa-e2e
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --wait zitadel-postgres-e2e zitadel-bootstrap-init-e2e zitadel-e2e
+	@echo "Running Zitadel provisioning (foreground; container kept so depends_on tracking works)..."
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up --no-deps zitadel-init-e2e
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --no-deps --wait zitadel-login-e2e minio-e2e
+	@echo "Reading generated Zitadel credentials..."
+	@test -f tests/e2e-browser/.zitadel-bootstrap/generated.env || (echo "ERROR: generated.env not found"; exit 1)
+	@echo "Starting API and SPA with Zitadel configuration..."
+	@( \
+		set -a; . tests/e2e-browser/.zitadel-bootstrap/generated.env; set +a; \
+		export OIDC_ISSUER_URL=http://zitadel-e2e:8080; \
+		export OIDC_BASE_URL=http://zitadel-e2e:8080; \
+		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
+		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
+		export OIDC_AUTHORITY=http://zitadel-e2e:8080; \
+		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
+		export OIDC_SCOPE="openid profile email stuf:access urn:zitadel:iam:user:metadata"; \
+		export OIDC_LOAD_USER_INFO="true"; \
+		export IDP_URL=http://zitadel-e2e:8080; \
+		export OIDC_SERVICE_ACCOUNT_CLIENT_ID="$${ZITADEL_BACKUP_SERVICE_CLIENT_ID}"; \
+		export OIDC_SERVICE_ACCOUNT_CLIENT_SECRET="$${ZITADEL_BACKUP_SERVICE_CLIENT_SECRET}"; \
+		export OIDC_SERVICE_ACCOUNT_SCOPES="openid urn:zitadel:iam:org:project:id:$${ZITADEL_STUF_PROJECT_ID}:aud"; \
+		cd tests/e2e-browser && \
+		docker compose -f docker-compose.e2e-browser.yml --profile zitadel --profile testing up -d --wait api-e2e spa-e2e && \
+		docker compose -f docker-compose.e2e-browser.yml --profile zitadel --profile testing run --rm -T test-runner bash -c \
+			"pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-zitadel-report.html --self-contained-html && \
+			 pytest --tb=short -s -x -v --html=reports/browser-e2e-zitadel-report.html --self-contained-html --alluredir=reports/allure-results-zitadel . && \
+			 python generate_presentation_report.py" \
+	)
+	@echo "Stopping Zitadel E2E services..."
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel down
 
 # Run all tests (fast + E2E)
 test-all:
@@ -175,6 +219,8 @@ spa-stop:
 	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning Zitadel e2e bootstrap..."
+	@rm -f tests/e2e-browser/.zitadel-bootstrap/*.env tests/e2e-browser/.zitadel-bootstrap/*.json
 	@echo "Cleaning generated config..."
 	@rm -f spa/public/config.js spa/build/config.js
 
