@@ -36,7 +36,9 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 #   entries with value already JSON-decoded (no atob/JSON.parse needed).
 COLLECTIONS_ACTION_SCRIPT = """\
 function preAccessTokenCreation(ctx, api) {
-  api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
+  if (ctx.v1.user.preferredLoginName) {
+    api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
+  }
   var md = ctx.v1.user.getMetadata();
   if (!md) { return; }
   for (var i = 0; i < md.length; i++) {

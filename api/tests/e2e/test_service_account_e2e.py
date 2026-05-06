@@ -34,10 +34,7 @@ class TestServiceAccountE2E:
         # Service accounts are identified by azp/sub, not by preferred_username prefix
         assert "iss" in token_info  # Issuer
         assert "exp" in token_info  # Expiration
-        # Keycloak injects 'collections' as a JWT claim; Zitadel v4 cannot inject
-        # custom claims into client_credentials tokens via actions (see issue #96).
-        if not _is_zitadel():
-            assert "collections" in token_info
+        assert "collections" in token_info
 
     def test_service_account_me_endpoint(self, e2e_service_account_client):
         """Test /api/me endpoint returns correct service account format"""
