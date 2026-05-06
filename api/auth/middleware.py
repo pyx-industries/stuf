@@ -333,7 +333,8 @@ async def get_current_service_account(
             logger.warning(f"Failed to parse collections claim: {e}")
 
     # Zitadel v4 cannot inject custom claims into client_credentials tokens via
-    # actions.  Try two fallbacks:
+    # actions (see https://github.com/pyx-industries/stuf/issues/96).  Try two
+    # fallbacks:
     # 1. Decode collection permissions from project role names (col-{col}-{perm}).
     # 2. Read from the static STUF_MACHINE_USER_COLLECTIONS env var written by
     #    zitadel-init (keyed by client_id).

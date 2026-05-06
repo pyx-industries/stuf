@@ -15,8 +15,8 @@ function parseCollections(profile: Record<string, unknown>): Record<string, stri
       if (entry.collections !== undefined) {
         try {
           return JSON.parse(atob(entry.collections)) as Record<string, string[]>;
-        } catch {
-          // ignore decode errors
+        } catch (e) {
+          console.warn("Failed to decode Zitadel metadata collections entry:", e);
         }
       }
     }

@@ -50,6 +50,11 @@ OIDC_SERVICE_ACCOUNT_CLIENT_SECRET = os.environ.get(
 _token_endpoint: str | None = None
 
 
+def _is_zitadel() -> bool:
+    """Return True when the active IDP is Zitadel rather than Keycloak."""
+    return "/realms/" not in OIDC_ISSUER_URL
+
+
 def _get_token_endpoint() -> str:
     """Fetch the token endpoint from OIDC discovery (cached)."""
     global _token_endpoint
