@@ -33,14 +33,16 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 # - preferred_username: not in Zitadel JWT access tokens by default; mirrors
 #   the Keycloak claim the STUF API middleware reads.
 # - collections: user metadata stored as a JSON object; getMetadata() returns
-#   entries with value already JSON-decoded (no atob/JSON.parse needed).
+#   a wrapper {metadata: [...]} where each entry's value is already decoded
+#   from base64+JSON (no atob/JSON.parse needed).
 COLLECTIONS_ACTION_SCRIPT = """\
 function preAccessTokenCreation(ctx, api) {
   if (ctx.v1.user.preferredLoginName) {
     api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
   }
-  var md = ctx.v1.user.getMetadata();
-  if (!md) { return; }
+  var result = ctx.v1.user.getMetadata();
+  if (!result || !result.metadata) { return; }
+  var md = result.metadata;
   for (var i = 0; i < md.length; i++) {
     if (md[i].key === "collections") {
       api.v1.claims.setClaim("collections", md[i].value);
