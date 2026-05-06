@@ -530,9 +530,11 @@ These need decisions or upstream investigation before implementation:
       `accessTokenRoleAssertion: True` on the SPA app.
     - `ctx.v1.user` is populated for both human and machine users; `sub`
       maps to the right user id in both cases.
-    - `ctx.v1.user.getMetadata()` returns the user's metadata array (works
-      for human and machine users alike). Each entry's `value` arrives as a
-      JSON-decoded object when the stored bytes are valid JSON, so
+    - `ctx.v1.user.getMetadata()` returns a **wrapper object**
+      `{count, sequence, timestamp, metadata: [...]}`, not the array
+      directly. Access `result.metadata` to get the `[{key, value}]` array
+      (works for human and machine users alike). Each entry's `value` arrives
+      as a JSON-decoded object when the stored bytes are valid JSON, so
       `api.v1.claims.setClaim("collections", entry.value)` is sufficient —
       no `atob`/JSON.parse dance, and `atob` is in fact not defined in
       Zitadel's goja runtime.
