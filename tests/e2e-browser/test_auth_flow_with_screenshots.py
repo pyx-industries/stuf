@@ -60,7 +60,7 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 4: At Keycloak login page
+        # Step 4: At IDP login page (Keycloak single-step or Zitadel first step)
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
         login_page.assert_login_form_visible()
@@ -72,9 +72,16 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 5: Enter credentials
-        login_page.fill_username("admin@example.com")
-        login_page.fill_password("password")
+        # Step 5: Enter credentials (provider-aware)
+        if login_page._is_zitadel():
+            # Zitadel two-step: login-name first, then password on a second page
+            login_page.fill_username("admin@example.com")
+            login_page.click_login()  # Advance to password page
+            login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+            login_page.fill_password("Password1!")
+        else:
+            login_page.fill_username("admin@example.com")
+            login_page.fill_password("Password1!")
         login_page.take_screenshot(
             "credentials-entered",
             scenario_name,
@@ -83,12 +90,18 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 6: Submit login and wait for redirect back
+        # Step 6: Submit login and wait for redirect back to the SPA.
+        # Zitadel may take several seconds to process the password and complete
+        # the OIDC code exchange, so wait for the URL to return to the SPA first.
         login_page.click_login()
-        page.wait_for_timeout(1000)  # Wait for navigation
+        try:
+            page.wait_for_url(f"*{SPA_HOST}*", timeout=20000)
+        except Exception:
+            pass
+        page.wait_for_timeout(2000)  # allow oidc-client-ts to exchange the auth code
 
         # Step 7: Back at SPA and authenticated
-        page.wait_for_selector('text="Recent files"', timeout=10000)
+        page.wait_for_selector('text="Recent files"', timeout=15000)
         dashboard.assert_user_logged_in()
         dashboard.take_screenshot(
             "back-at-spa-authenticated",
