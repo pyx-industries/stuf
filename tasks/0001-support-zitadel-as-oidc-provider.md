@@ -494,6 +494,91 @@ These need decisions or upstream investigation before implementation:
    already in `login_page.py`.  ROPC is no longer used anywhere in the test
    suite.
 
+10. **Can the `complement_token` / `pre_access_token_creation` flow simplify
+    collection delivery?** *(Resolved — 2026-05-06: yes, all three code paths can collapse to one)*
+
+    **Context:** STUF's core requirement is that each user and service account
+    carries a `collections` claim in their JWT (see [issue #96][i96] for the
+    full picture, including how Keycloak and Zitadel handle this today).
+
+    The current Zitadel implementation has three separate code paths where
+    Keycloak needs only one:
+
+    | Path | Owner |
+    |------|-------|
+    | `collections` injected by Keycloak scope mapper → access token | API middleware reads `token_payload["collections"]` directly |
+    | `urn:zitadel:iam:user:metadata` in Zitadel userinfo response | `useUser.ts` `parseCollections()` fallback decodes base64 metadata |
+    | Machine user tokens carry no claim at all | API middleware falls back to role-name encoding or `STUF_MACHINE_USER_COLLECTIONS` env var |
+
+    The earlier comments in `provision.py` claimed `setClaim` (flow 2,
+    `PRE_USERINFO_CREATION`, trigger 4) "only affects the userinfo endpoint
+    response, not access or ID tokens; and the trigger does not fire at all
+    for `client_credentials` grants." That claim was correct *for trigger 4*
+    but missed that **a sibling trigger `PRE_ACCESS_TOKEN_CREATION` (flow 2,
+    trigger 5) does exactly what we need.**
+
+    **Resolution.** Confirmed empirically against `ghcr.io/zitadel/zitadel:v4.14.0`
+    (registered the action, ran it, decoded resulting JWTs):
+
+    - `PRE_ACCESS_TOKEN_CREATION` is registered via
+      `POST /management/v1/flows/2/trigger/5` and accepted without
+      "TriggerType is invalid".
+    - It fires during access-token creation for **both** authorization-code
+      grants (human users) and `client_credentials` grants (machine users),
+      provided the project's access-token type is JWT — which STUF already
+      sets via `accessTokenType: "OIDC_TOKEN_TYPE_JWT"` on the API app, plus
+      `accessTokenRoleAssertion: True` on the SPA app.
+    - `ctx.v1.user` is populated for both human and machine users; `sub`
+      maps to the right user id in both cases.
+    - `ctx.v1.user.getMetadata()` returns the user's metadata array (works
+      for human and machine users alike). Each entry's `value` arrives as a
+      JSON-decoded object when the stored bytes are valid JSON, so
+      `api.v1.claims.setClaim("collections", entry.value)` is sufficient —
+      no `atob`/JSON.parse dance, and `atob` is in fact not defined in
+      Zitadel's goja runtime.
+    - The injected claim appears verbatim in the access token (for both
+      grants) at the top level — matching Keycloak's `collections` claim
+      shape exactly. Sample machine-user payload after the action ran:
+      `{"sub":"...","client_id":"backup-service","collections":{"shared":["read"],"test":["read"]},...}`.
+
+    Source-level confirmation (zitadel `v4.14.0`):
+    `internal/api/oidc/userinfo.go` runs both v1 and v2 actions through one
+    `userinfoFlows` function regardless of grant type;
+    `internal/api/oidc/token_client_credentials.go` confirms the
+    `client_credentials` path reaches `createJWT` which invokes the
+    trigger. Trigger enums live in `internal/domain/flow.go`.
+
+    **Implication for STUF.** The three divergent paths collapse to one:
+
+    - `provision.py` registers a single action body that calls
+      `setClaim("collections", entry.value)` and binds it to flow 2,
+      trigger 5 (replace the existing trigger-4 binding).
+    - `api/auth/middleware.py` always reads `token_payload["collections"]`
+      directly (matches Keycloak's path; remove the `STUF_MACHINE_USER_COLLECTIONS`
+      env-var fallback and any role-name decoding).
+    - `spa/src/hooks/user/useUser.ts` reads `auth.user.profile.collections`
+      with no Zitadel-specific fallback (drop `parseCollections()` /
+      `urn:zitadel:iam:user:metadata` handling; userinfo no longer needs
+      to be loaded for the SPA at all, so `oidcLoadUserInfo` can stay false).
+    - `STUF_MACHINE_USER_COLLECTIONS` and the per-client-id base64 map
+      written to `generated.env` become dead code and can be deleted.
+    - The `urn:zitadel:iam:user:metadata` scope is no longer required for
+      collection delivery (it remains harmless if requested).
+
+    **Out-of-scope quirk noted while testing.** Zitadel's
+    `POST /v2/sessions` `password.password` check returned
+    `"User has not set a password"` for users created via `/v2/users/human`
+    despite a password being supplied — `admin@stuf.localhost` (created via
+    `ZITADEL_FIRSTINSTANCE_*`) authenticates fine. The browser-based login
+    used by the e2e suite still works for these users, so this is a separate
+    provisioning concern, not a blocker for the trigger-5 migration.
+
+    Repro scripts are in `/tmp/zitadel-probe/` (not committed): `probe2.py`
+    drives the action update + machine-user JWT inspection, `probe_human3.py`
+    drives the human-user authorization-code flow via the v2 session API.
+
+[i96]: https://github.com/pyx-industries/stuf/issues/96
+
 ## Suggested implementation order
 
 Once the open questions above are answered, a low-risk sequence is:

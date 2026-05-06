@@ -27,22 +27,21 @@ MACHINE_KEY_PATH = os.environ.get("MACHINE_KEY_PATH", "/bootstrap/zitadel-admin-
 BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
 FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
-# Injected into every access token via the preAccessTokenCreation trigger.
+# Fired on the PRE_ACCESS_TOKEN_CREATION trigger (flow 2, trigger type 5).
+# Fires for both authorization-code (human) and client_credentials (machine)
+# grants when the project's access-token type is JWT.
 # - preferred_username: not in Zitadel JWT access tokens by default; mirrors
 #   the Keycloak claim the STUF API middleware reads.
-# - collections: user metadata injected as a JSON object claim; mirrors the
-#   Keycloak stuf:access scope's collections attribute mapper.
-# Metadata values arrive as base64-encoded strings in ctx.v1.user.metadataList.
+# - collections: user metadata stored as a JSON object; getMetadata() returns
+#   entries with value already JSON-decoded (no atob/JSON.parse needed).
 COLLECTIONS_ACTION_SCRIPT = """\
 function preAccessTokenCreation(ctx, api) {
   api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
-  var md = ctx.v1.user.metadataList;
+  var md = ctx.v1.user.getMetadata();
   if (!md) { return; }
   for (var i = 0; i < md.length; i++) {
     if (md[i].key === "collections") {
-      try {
-        api.v1.claims.setClaim("collections", JSON.parse(atob(md[i].value)));
-      } catch (e) {}
+      api.v1.claims.setClaim("collections", md[i].value);
       break;
     }
   }
@@ -221,8 +220,8 @@ def main():
         action_id = action["id"]
         print(f"  action_id={action_id}")
 
-        # Flow type 2 = CUSTOMISE_TOKEN, trigger type 4 = PRE_ACCESS_TOKEN_CREATION
-        api(client, "post", "/management/v1/flows/2/trigger/4", json={"actionIds": [action_id]})
+        # Flow type 2 = CUSTOMISE_TOKEN, trigger type 5 = PRE_ACCESS_TOKEN_CREATION
+        api(client, "post", "/management/v1/flows/2/trigger/5", json={"actionIds": [action_id]})
         print("  trigger set (CUSTOMISE_TOKEN / PRE_ACCESS_TOKEN_CREATION)")
 
         # ── Human users ───────────────────────────────────────────────────────

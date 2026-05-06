@@ -3,23 +3,9 @@ import { useAuth } from "react-oidc-context";
 import type { User } from "@/types";
 
 function parseCollections(profile: Record<string, unknown>): Record<string, string[]> {
-  // Direct claim (Keycloak mapper or Zitadel action when metadataList is available)
   const direct = profile?.collections;
   if (direct !== undefined && direct !== null) {
     return (typeof direct === "string" ? JSON.parse(direct) : direct) as Record<string, string[]>;
-  }
-  // Zitadel native metadata scope: urn:zitadel:iam:user:metadata is an array of {key: base64_value}
-  const zitadelMd = profile?.["urn:zitadel:iam:user:metadata"];
-  if (Array.isArray(zitadelMd)) {
-    for (const entry of zitadelMd as Array<Record<string, string>>) {
-      if (entry.collections !== undefined) {
-        try {
-          return JSON.parse(atob(entry.collections)) as Record<string, string[]>;
-        } catch (e) {
-          console.warn("Failed to decode Zitadel metadata collections entry:", e);
-        }
-      }
-    }
   }
   return {} as Record<string, string[]>;
 }
