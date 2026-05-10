@@ -212,11 +212,11 @@ spa-dev-zitadel:
 	@echo "Building services..."
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel build zitadel-init api spa
 	@echo "Starting Zitadel stack..."
-	@docker compose -f docker-compose.yml --profile zitadel up -d --wait zitadel-postgres zitadel-bootstrap-init zitadel
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --wait --remove-orphans zitadel-postgres zitadel-bootstrap-init zitadel
 	@echo "Running Zitadel provisioning..."
-	@docker compose -f docker-compose.yml --profile zitadel up --no-deps zitadel-init
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up --no-deps zitadel-init
 	@echo "Starting Zitadel login UI and MinIO..."
-	@docker compose -f docker-compose.yml --profile zitadel up -d --no-deps --wait zitadel-login minio
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --no-deps --wait zitadel-login minio
 	@echo "Reading generated Zitadel credentials..."
 	@test -f .zitadel-bootstrap/generated.env || (echo "ERROR: .zitadel-bootstrap/generated.env not found"; exit 1)
 	@echo "Starting API and SPA with Zitadel configuration..."
