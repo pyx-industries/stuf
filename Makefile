@@ -52,10 +52,11 @@ help:
 	@echo "  test-cov          Run tests with coverage report"
 	@echo ""
 	@echo "SPA Development:"
-	@echo "  spa-dev       Start SPA in development mode with hot reloading"
-	@echo "  spa-prod      Start SPA in production mode"
-	@echo "  spa-build     Build SPA for production"
-	@echo "  spa-stop      Stop SPA services"
+	@echo "  spa-dev           Start SPA in development mode (Keycloak IdP)"
+	@echo "  spa-dev-zitadel   Start SPA in development mode (Zitadel IdP)"
+	@echo "  spa-prod          Start SPA in production mode"
+	@echo "  spa-build         Build SPA for production"
+	@echo "  spa-stop          Stop SPA services"
 	@echo ""
 	@echo "Container Publishing:"
 	@echo "  build-containers    Build all containers for publishing"
@@ -115,6 +116,8 @@ clean:
 	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning Zitadel bootstrap..."
+	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Cleaning Zitadel e2e bootstrap..."
 	@rm -f tests/e2e-browser/.zitadel-bootstrap/*.env tests/e2e-browser/.zitadel-bootstrap/*.json
 	@echo "Cleaning SPA generated config..."
@@ -191,14 +194,43 @@ test-cov: $(VENV_DIR)/dev-requirements.stamp
 	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
 
 # SPA development and production targets
-.PHONY: spa-dev spa-prod spa-build spa-stop
+.PHONY: spa-dev spa-dev-zitadel spa-prod spa-build spa-stop
 
-# Start SPA in development mode with hot reloading
+# Start SPA in development mode with Keycloak IdP and hot reloading
 spa-dev:
-	@echo "Starting SPA in development mode with hot reloading..."
-	@echo "This includes full environment (API, IDP, MinIO) + fast SPA reloading"
+	@echo "Starting SPA in development mode (Keycloak IdP) with hot reloading..."
+	@echo "This includes full environment (API, Keycloak, MinIO) + fast SPA reloading"
 	@echo "Access at: http://localhost:3000"
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile keycloak up --build
+
+# Start SPA in development mode with Zitadel IdP and hot reloading
+# Mirrors the test-e2e-zitadel flow: starts the Zitadel stack, runs provisioning,
+# reads the generated OIDC credentials, then starts api + spa with those vars.
+spa-dev-zitadel:
+	@echo "Starting SPA in development mode (Zitadel IdP) with hot reloading..."
+	@mkdir -p .zitadel-bootstrap
+	@echo "Building services..."
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel build zitadel-init api spa
+	@echo "Starting Zitadel stack..."
+	@docker compose -f docker-compose.yml --profile zitadel up -d --wait zitadel-postgres zitadel-bootstrap-init zitadel
+	@echo "Running Zitadel provisioning..."
+	@docker compose -f docker-compose.yml --profile zitadel up --no-deps zitadel-init
+	@echo "Starting Zitadel login UI and MinIO..."
+	@docker compose -f docker-compose.yml --profile zitadel up -d --no-deps --wait zitadel-login minio
+	@echo "Reading generated Zitadel credentials..."
+	@test -f .zitadel-bootstrap/generated.env || (echo "ERROR: .zitadel-bootstrap/generated.env not found"; exit 1)
+	@echo "Starting API and SPA with Zitadel configuration..."
+	@( \
+		set -a; . .zitadel-bootstrap/generated.env; set +a; \
+		export OIDC_ISSUER_URL=http://localhost:8080; \
+		export OIDC_BASE_URL=http://zitadel:8080; \
+		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
+		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
+		export OIDC_AUTHORITY=http://localhost:8080; \
+		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
+		export OIDC_SCOPE="openid profile email stuf:access"; \
+		docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up api spa \
+	)
 
 # Start SPA in production mode
 spa-prod:
@@ -211,13 +243,15 @@ spa-build:
 	@echo "Building SPA for production..."
 	@docker compose build --target production spa
 
-# Stop SPA services
+# Stop SPA services (all profiles)
 spa-stop:
 	@echo "Stopping SPA services..."
-	@docker compose down
+	@docker compose --profile keycloak --profile zitadel down
 	@echo "Cleaning Keycloak local state..."
 	@rm -rf docker/keycloak/data/h2
 	@rm -rf docker/keycloak/data/transaction-logs
+	@echo "Cleaning Zitadel bootstrap..."
+	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Cleaning Zitadel e2e bootstrap..."
 	@rm -f tests/e2e-browser/.zitadel-bootstrap/*.env tests/e2e-browser/.zitadel-bootstrap/*.json
 	@echo "Cleaning generated config..."
