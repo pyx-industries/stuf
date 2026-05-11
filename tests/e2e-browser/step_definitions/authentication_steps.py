@@ -392,17 +392,16 @@ def still_see_dashboard(page: Page):
 @then("I should see the login form")
 def see_login_form(page: Page, bdd_screenshot_helper):
     """Verify login form is visible."""
-    # If we're at the SPA authentication required state, click Login to go to Keycloak
+    # If we're at the SPA authentication required state, click Login to go to the IDP
     try:
         login_button = page.locator('button:text("Sign in")')
         if login_button.is_visible():
             login_button.click()
-            # Wait for redirect to Keycloak
             page.wait_for_timeout(2000)
     except Exception:
         pass
 
-    # Now verify we're at the Keycloak login form
+    # Verify we're at the login form
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
     login_page.assert_login_form_visible()
@@ -432,7 +431,7 @@ def successfully_authenticated(page: Page, bdd_screenshot_helper):
 # IDP-agnostic step definitions
 @when("I am redirected to the IDP login page")
 def redirected_to_idp_login(page: Page, bdd_screenshot_helper):
-    """Wait for redirect to IDP login page (same as Keycloak)."""
+    """Wait for redirect to IDP login page."""
     # Reuse the same logic as the existing redirect step
     redirected_to_login(page, bdd_screenshot_helper)
     # Additional screenshot with IDP-specific naming

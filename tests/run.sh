@@ -105,12 +105,11 @@ wait_for_services_healthy() {
     return 1
 }
 
-# Wait for the active identity provider to be ready.
-# Supports both Keycloak (health/ready endpoint + realm discovery) and Zitadel
-# (debug/healthz endpoint + root OIDC discovery).  The IDP_PORT env var selects
-# the host port (default 8180 for e2e; 8080 for the main dev stack).
+# Wait for the Zitadel identity provider to be ready.
+# The IDP_PORT env var selects the host port (default 8280 for e2e; 8080 for
+# the main dev stack).
 wait_for_idp() {
-    local idp_port="${IDP_PORT:-8180}"
+    local idp_port="${IDP_PORT:-8280}"
     log_info "Waiting for IDP to be ready on port ${idp_port}..."
 
     local max_attempts=30  # 5 minutes total (30 * 10 seconds)
@@ -120,11 +119,6 @@ wait_for_idp() {
         # Zitadel readiness probe
         if curl -s -f "http://localhost:${idp_port}/debug/healthz" > /dev/null 2>&1; then
             log_success "IDP (Zitadel) is ready"
-            return 0
-        fi
-        # Keycloak readiness probe
-        if curl -s -f "http://localhost:${idp_port}/health/ready" > /dev/null 2>&1; then
-            log_success "IDP (Keycloak) is ready"
             return 0
         fi
         # Generic OIDC discovery fallback

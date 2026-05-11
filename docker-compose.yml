@@ -1,31 +1,4 @@
 services:
-  keycloak:
-    profiles:
-      - keycloak
-    build:
-      context: ./docker/keycloak
-      dockerfile: Dockerfile
-    environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
-      - KEYCLOAK_SPA_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
-      - KEYCLOAK_API_CLIENT_ID=${KEYCLOAK_API_CLIENT_ID:-stuf-api}
-      - KEYCLOAK_API_CLIENT_SECRET=${KEYCLOAK_API_CLIENT_SECRET:-some-secret-value}
-      - KEYCLOAK_ADMIN_ROLE=${KEYCLOAK_ADMIN_ROLE:-admin}
-    ports:
-      - "${KEYCLOAK_PORT:-8080}:8080"
-      - "9990:9000" # Management port for health checks
-    command: start-dev --import-realm --health-enabled=true
-    volumes:
-      - ./docker/keycloak/data:/opt/keycloak/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 45s
-
   minio:
     image: minio/minio:latest
     environment:
@@ -50,8 +23,8 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://localhost:8080/realms/stuf}
-      - OIDC_BASE_URL=${OIDC_BASE_URL:-http://keycloak:8080/realms/stuf}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://localhost:8080}
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-http://zitadel:8080}
       - OIDC_ISSUER_HOST=${OIDC_ISSUER_HOST:-}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
@@ -72,7 +45,7 @@ services:
       - "${SPA_PORT:-3000}:3000"
     environment:
       - API_URL=${API_URL:-http://localhost:8000}
-      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://localhost:8080/realms/stuf}
+      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://localhost:8080}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
       - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
     depends_on:

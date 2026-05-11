@@ -34,7 +34,7 @@ export enum UserRole {
  * Represents a user in the system
  */
 export interface User {
-  username: string; // Keycloak preferred_username - used for file ownership
+  username: string; // preferred_username claim - used for file ownership
   name: string; // Display name (full name or username)
   email: string;
   avatarUrl?: string;

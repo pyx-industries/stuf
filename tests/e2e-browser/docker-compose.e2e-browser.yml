@@ -3,46 +3,16 @@
 # Test runner executes on the host, services run in Docker
 #
 # Port mapping to avoid conflicts with main docker-compose:
-# Main:    Keycloak:8080, MinIO:9000/9001, API:8000, SPA:3000
-# E2E:     Keycloak:8180, MinIO:9100/9101, API:8100, SPA:3100
-#          Zitadel:8280,  Zitadel-login:8290
+# Main:  MinIO:9000/9001, API:8000, SPA:3000, Zitadel:8080
+# E2E:   MinIO:9100/9101, API:8100, SPA:3100, Zitadel:8280, Zitadel-login:8290
 #
-# IDP profile selection:
-#   Keycloak (default): docker compose --profile keycloak --profile testing up
-#   Zitadel:            docker compose --profile zitadel --profile testing up
-#                       (requires OIDC_ISSUER_URL etc. set from .zitadel-bootstrap/generated.env)
+# Usage: docker compose --profile zitadel --profile testing up
 
 networks:
   stuf-e2e-test-net:
     driver: bridge
 
 services:
-  # ── Keycloak identity provider ────────────────────────────────────────────
-  keycloak-e2e:
-    profiles:
-      - keycloak
-    build:
-      context: ../../docker/keycloak
-      dockerfile: Dockerfile
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - KC_HEALTH_ENABLED=true
-    ports:
-      - "8180:8080" # Different port to avoid conflict
-      - "9191:9000" # Management port (different from main 9990)
-    command: start-dev --import-realm --health-enabled=true
-    volumes:
-      - ../../docker/keycloak/data:/opt/keycloak/data
-    networks:
-      - stuf-e2e-test-net
-    healthcheck:
-      test: ["CMD", "sh", "-c", "curl -s http://127.0.0.1:8080/ > /dev/null"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
-
   # ── Zitadel identity provider stack ──────────────────────────────────────
   # All Zitadel e2e services run on the bridge network so that the Playwright
   # browser inside the test-runner container can reach them by hostname.
@@ -229,12 +199,9 @@ services:
     ports:
       - "8100:8000" # Different port
     environment:
-      # OIDC configuration — defaults to Keycloak; override for Zitadel by
-      # setting OIDC_ISSUER_URL, OIDC_BASE_URL, OIDC_VALID_AUDIENCES, and
-      # OIDC_SPA_CLIENT_ID in the shell before running docker compose.
-      # For Zitadel, source .zitadel-bootstrap/generated.env after init completes.
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}
-      - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}}
+      # OIDC configuration — source .zitadel-bootstrap/generated.env after init completes.
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       # MinIO configuration (internal network)
@@ -275,10 +242,7 @@ services:
       # API configuration (internal Docker network URL)
       - API_URL=http://api-e2e:8000
 
-      # OIDC authority passed directly so docker-entrypoint.sh needs no realm
-      # path assembly. Defaults to Keycloak; override for Zitadel by setting
-      # OIDC_AUTHORITY=http://zitadel-e2e:8080 and OIDC_CLIENT_ID=<generated>.
-      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://keycloak-e2e:8080/realms/stuf}
+      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://zitadel-e2e:8080}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
       - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
       - OIDC_LOAD_USER_INFO=${OIDC_LOAD_USER_INFO:-false}
@@ -308,13 +272,13 @@ services:
       # Use internal Docker network URLs
       - SPA_URL=http://spa-e2e:3000
       - API_URL=http://api-e2e:8000
-      - IDP_URL=${IDP_URL:-http://keycloak-e2e:8080}
+      - IDP_URL=${IDP_URL:-http://zitadel-e2e:8080}
       - MINIO_URL=http://minio-e2e:9000
-      # OIDC configuration (provider-agnostic; mirror of api-e2e vars above)
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}
+      # OIDC configuration (mirror of api-e2e vars above)
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
-      # Service-account credentials (Keycloak defaults; override for Zitadel)
+      # Service-account credentials (from .zitadel-bootstrap/generated.env)
       - OIDC_SERVICE_ACCOUNT_CLIENT_ID=${OIDC_SERVICE_ACCOUNT_CLIENT_ID:-backup-service}
       - OIDC_SERVICE_ACCOUNT_CLIENT_SECRET=${OIDC_SERVICE_ACCOUNT_CLIENT_SECRET:-backup-service-secret}
       - OIDC_SERVICE_ACCOUNT_SCOPES=${OIDC_SERVICE_ACCOUNT_SCOPES:-stuf:access}

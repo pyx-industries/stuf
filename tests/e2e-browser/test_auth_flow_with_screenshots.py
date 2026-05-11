@@ -60,7 +60,7 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 4: At IDP login page (Keycloak single-step or Zitadel first step)
+        # Step 4: At Zitadel login page
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
         login_page.assert_login_form_visible()

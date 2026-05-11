@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 STUF (Secure Trusted Upload Facility) is a secure file upload system consisting of:
 - **FastAPI backend** (`api/`) for authentication and file management
 - **React SPA** (`spa/`) for user interface
-- **Docker Compose** setup with OIDC authentication (Keycloak or Zitadel) and MinIO object storage
+- **Docker Compose** setup with Zitadel OIDC authentication and MinIO object storage
 - **Comprehensive documentation** using MkDocs
 
 ## Development Commands
@@ -27,10 +27,10 @@ make test-cov          # Tests with coverage report
 
 ### Docker Environment
 ```bash
-# Start full development environment (Keycloak profile, default)
-docker compose --profile keycloak up -d
+# Start full development environment with hot reloading
+make spa-dev
 
-# Start with Zitadel instead
+# Start Zitadel + MinIO only (without SPA dev)
 docker compose --profile zitadel up -d
 
 # Stop and clean up
@@ -56,7 +56,7 @@ npm run build # Production build
 
 ### API Layer (`api/`)
 - **FastAPI application** with modular router organization
-- **Provider-agnostic OIDC authentication** via OIDC discovery and JWT signature verification (supports both Keycloak and Zitadel)
+- **Zitadel OIDC authentication** via OIDC discovery and JWT signature verification
 - **Dual authentication support** for both user accounts and service accounts
 - **Attribute-based authorization** with collection-level permissions stored in JWT collections claim
 - **MinIO integration** for S3-compatible object storage
@@ -73,7 +73,7 @@ npm run build # Production build
 ### Environment Configuration
 All services configured via environment variables with development defaults:
 - OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`
-- SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` (or legacy `KEYCLOAK_URL`/`KEYCLOAK_REALM` for backwards compatibility)
+- SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID`
 - MinIO credentials and endpoints
 - API/SPA port configuration
 
@@ -88,7 +88,7 @@ All services configured via environment variables with development defaults:
 ### Authentication Flow
 
 #### User Authentication
-1. React SPA uses `react-oidc-context` for OIDC flow (provider-agnostic; configured via `OIDC_AUTHORITY`)
+1. React SPA uses `react-oidc-context` for OIDC flow (configured via `OIDC_AUTHORITY`)
 2. FastAPI backend validates tokens via JWT signature verification using OIDC discovery (`OIDC_ISSUER_URL`)
 3. Users must have appropriate collection permissions in their JWT collections claim or admin role
 
@@ -124,22 +124,22 @@ All services configured via environment variables with development defaults:
 ## Development Workflow
 
 ### Authentication Setup
-1. Keycloak auto-configures with realm `stuf` and test users; Zitadel is provisioned by `docker/zitadel-init/`
-2. Default admin user: `admin@example.com` / `Password1!` (both Keycloak and Zitadel)
+1. Zitadel is provisioned by `docker/zitadel-init/` (run via `make spa-dev`)
+2. Default admin user: `admin@example.com` / `Password1!`
 3. Collection permissions stored in JWT collections claim as JSON: `{"collection-name": ["read", "write", "delete"]}`
-4. Service accounts: Keycloak clients with service-account roles enabled; Zitadel machine users with JWT access tokens
+4. Service accounts: Zitadel machine users with JWT access tokens
 5. Both users and service accounts use same collection permission format
 
 ### File Upload Flow
-1. User authenticates via OIDC (Keycloak or Zitadel)
+1. User authenticates via OIDC
 2. Frontend uploads files with metadata to API
 3. API validates permissions and stores in MinIO with user-specific paths
 4. Metadata and audit information stored with files
 
 ### Testing Authentication
 - Use `@pytest.fixture` for auth tokens in tests
-- Integration tests mock JWT verification with both Keycloak-shaped and Zitadel-shaped payloads
-- E2E tests use a real IDP (Keycloak or Zitadel); user tokens obtained via Playwright browser login
+- Integration tests mock JWT verification with Zitadel-shaped token payloads
+- E2E tests use real Zitadel; user tokens obtained via Playwright browser login
 - Test both user and service account authentication flows
 - Service account tokens obtained via client credentials grant (`requests.post` to token endpoint)
 
@@ -148,9 +148,8 @@ All services configured via environment variables with development defaults:
 ### Development URLs
 - SPA: http://localhost:3000
 - API: http://localhost:8000
-- Keycloak Admin: http://localhost:8080/admin (admin/admin) — when using `--profile keycloak`
-- Zitadel Admin: http://localhost:8080/ui/console (admin@example.com / Password1!) — when using `--profile zitadel`
-- Zitadel Login UI: http://localhost:8090 — when using `--profile zitadel`
+- Zitadel Admin: http://localhost:8080/ui/console (admin@example.com / Password1!)
+- Zitadel Login UI: http://localhost:8090
 - MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
 
 ### API Endpoints
