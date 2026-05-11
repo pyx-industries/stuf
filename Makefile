@@ -208,7 +208,10 @@ spa-dev:
 # reads the generated OIDC credentials, then starts api + spa with those vars.
 spa-dev-zitadel:
 	@echo "Starting SPA in development mode (Zitadel IdP) with hot reloading..."
+	@echo "Cleaning up any previous run..."
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile keycloak --profile zitadel down --remove-orphans 2>/dev/null || true
 	@mkdir -p .zitadel-bootstrap
+	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Building services..."
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel build zitadel-init api spa
 	@echo "Starting Zitadel stack..."
@@ -224,6 +227,7 @@ spa-dev-zitadel:
 		set -a; . .zitadel-bootstrap/generated.env; set +a; \
 		export OIDC_ISSUER_URL=http://localhost:8080; \
 		export OIDC_BASE_URL=http://zitadel:8080; \
+		export OIDC_ISSUER_HOST=localhost:8080; \
 		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
 		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_AUTHORITY=http://localhost:8080; \

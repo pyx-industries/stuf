@@ -3,7 +3,6 @@ import logging
 import os
 import time
 from typing import Optional, Union
-from urllib.parse import urlparse
 
 import requests
 from domain.models import ServiceAccount, User
@@ -43,14 +42,12 @@ _discovery_doc: dict = {}
 _jwks_cache: dict = {"keys": [], "fetched_at": 0.0}
 _JWKS_TTL = 300  # seconds
 
-# When the issuer URL (as seen by clients/tokens) differs from the base URL
-# used for internal fetching, some providers (e.g. Zitadel) validate the Host
-# header against their configured external domain and return 404 for requests
-# that arrive on an internal hostname.  We override Host to the issuer's
-# netloc and rebase any URLs in discovery responses back through _OIDC_BASE_URL.
-_issuer_host: str = (
-    urlparse(OIDC_ISSUER_URL).netloc if _OIDC_BASE_URL != OIDC_ISSUER_URL else ""
-)
+# OIDC_ISSUER_HOST: when set, requests to the discovery document and JWKS
+# endpoint are sent with this value as the Host header. Required when
+# OIDC_BASE_URL is a Docker-internal hostname and the provider validates the
+# Host header against its configured external domain (e.g. Zitadel in a
+# split-horizon dev setup). Leave unset in standard deployments.
+_issuer_host: str = os.environ.get("OIDC_ISSUER_HOST", "")
 
 
 def _rebase_url(url: str) -> str:

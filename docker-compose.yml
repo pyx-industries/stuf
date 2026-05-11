@@ -52,6 +52,7 @@ services:
     environment:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://localhost:8080/realms/stuf}
       - OIDC_BASE_URL=${OIDC_BASE_URL:-http://keycloak:8080/realms/stuf}
+      - OIDC_ISSUER_HOST=${OIDC_ISSUER_HOST:-}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       - MINIO_ENDPOINT=minio:9000
