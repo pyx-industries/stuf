@@ -82,8 +82,8 @@ jobs:
       - name: Prepare bootstrap directory
         run: mkdir -p tests/e2e-browser/.zitadel-bootstrap
 
-      - name: Run E2E tests against Zitadel
-        run: make test-e2e-zitadel
+      - name: Run E2E tests
+        run: make test-e2e
 
       - name: Show Docker containers and logs on failure
         if: failure()
