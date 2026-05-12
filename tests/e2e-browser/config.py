@@ -7,16 +7,13 @@ SPA_URL = os.getenv("SPA_URL", "http://spa-e2e:3000")
 API_URL = os.getenv("API_URL", "http://api-e2e:8000")
 
 # IDP base URL for service health checks.
-IDP_URL = os.getenv("IDP_URL", "http://keycloak-e2e:8080")
+IDP_URL = os.getenv("IDP_URL", "http://zitadel-e2e:8080")
 
 # OIDC discovery base URL (issuer as seen by clients).
-# For Keycloak: http://<host>/realms/<realm>
-# For Zitadel:  http://<host>  (no realm path)
-OIDC_ISSUER_URL = os.getenv("OIDC_ISSUER_URL", f"{IDP_URL}/realms/stuf")
+OIDC_ISSUER_URL = os.getenv("OIDC_ISSUER_URL", IDP_URL)
 
-# Login UI base URL — for Zitadel the login screens are served by a separate
-# zitadel-login container (default port 8090) rather than by the main IDP.
-# Empty string means the IDP itself serves the login UI (Keycloak default).
+# Login UI base URL — the Zitadel login screens are served by a separate
+# zitadel-login container (routed through the Nginx proxy on the same port).
 IDP_LOGIN_URL = os.getenv("IDP_LOGIN_URL", "")
 
 # Playwright configuration

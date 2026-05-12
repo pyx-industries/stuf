@@ -12,7 +12,7 @@ From the project root:
 make spa-dev
 ```
 
-This starts the full stack (Keycloak, MinIO, API, SPA) with hot reloading. Configuration is automatically injected from the root `.env` file.
+This starts the full stack (Zitadel, MinIO, API, SPA) with hot reloading. OIDC configuration is read from `.zitadel-bootstrap/generated.env` after provisioning.
 
 ### Without Docker
 
@@ -24,14 +24,13 @@ npm run dev
 
 **Note:** When running without Docker, the SPA uses hardcoded defaults:
 
-| Setting            | Default Value           |
-| ------------------ | ----------------------- |
-| API URL            | `http://localhost:8000` |
-| Keycloak URL       | `http://localhost:8080` |
-| Keycloak Realm     | `stuf`                  |
-| Keycloak Client ID | `stuf-spa`              |
+| Setting        | Default Value           |
+| -------------- | ----------------------- |
+| API URL        | `http://localhost:8000` |
+| OIDC Authority | `http://localhost:8080` |
+| OIDC Client ID | `stuf-spa`              |
 
-If your local setup differs from these defaults, use `make spa-dev` instead, which reads from the root `.env` file.
+If your local setup differs from these defaults, use `make spa-dev` instead, which reads OIDC configuration from `.zitadel-bootstrap/generated.env`.
 
 ### Switching Between Docker and Non-Docker
 

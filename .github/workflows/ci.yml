@@ -36,96 +36,6 @@ jobs:
         run: make test
 
   e2e-tests:
-    name: E2E Tests (API + Browser)
-    runs-on: ubuntu-latest
-    needs: fast-tests
-    if: success()
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: spa/package-lock.json
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          pip install -r api/requirements.txt
-
-      - name: Install SPA dependencies
-        working-directory: spa
-        run: |
-          npm ci
-
-      - name: Update system packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg
-
-      - name: Install browser E2E test dependencies
-        run: |
-          pip install -r tests/e2e-browser/requirements.txt
-          playwright install --with-deps chromium
-
-      - name: Verify Playwright installation
-        run: |
-          playwright --version
-          python -c "from playwright.sync_api import sync_playwright; print('Playwright Python binding OK')"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Prepare Keycloak data directories
-        run: |
-          sudo mkdir -p docker/keycloak/data/h2
-          sudo chmod -R 777 docker/keycloak/data
-
-      - name: Run E2E tests
-        run: make test-e2e
-
-      - name: Show Docker containers and logs on failure
-        if: failure()
-        run: |
-          echo "=== Docker containers ==="
-          docker ps -a
-          echo "=== Docker compose services ==="
-          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile keycloak ps
-          echo "=== Keycloak logs ==="
-          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile keycloak logs keycloak-e2e || echo "No Keycloak logs available"
-          echo "=== API logs ==="
-          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile keycloak logs api-e2e || echo "No API logs available"
-          echo "=== MinIO logs ==="
-          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile keycloak logs minio-e2e || echo "No MinIO logs available"
-          echo "=== SPA logs ==="
-          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile keycloak logs spa-e2e || echo "No SPA logs available"
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: coverage-report
-          path: api/htmlcov/
-          retention-days: 3
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: test-reports
-          path: tests/e2e-browser/reports/
-          retention-days: 3
-
-  e2e-tests-zitadel:
     name: E2E Tests (Zitadel)
     runs-on: ubuntu-latest
     needs: fast-tests
@@ -172,8 +82,8 @@ jobs:
       - name: Prepare bootstrap directory
         run: mkdir -p tests/e2e-browser/.zitadel-bootstrap
 
-      - name: Run E2E tests against Zitadel
-        run: make test-e2e-zitadel
+      - name: Run E2E tests
+        run: make test-e2e
 
       - name: Show Docker containers and logs on failure
         if: failure()
@@ -206,7 +116,7 @@ jobs:
   publish-containers:
     name: Publish Container Images
     runs-on: ubuntu-latest
-    needs: [e2e-tests, e2e-tests-zitadel]
+    needs: [e2e-tests]
     if: success() && github.ref == 'refs/heads/master'
     permissions:
       contents: read

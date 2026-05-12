@@ -22,9 +22,8 @@ except ImportError:
     # Fallback if import fails
     ensure_services_ready = None
 
-# OIDC configuration — use discovery to find the token endpoint so the fixtures
-# are provider-agnostic (works with both Keycloak and Zitadel).
-OIDC_ISSUER_URL = os.environ.get("OIDC_ISSUER_URL", "http://keycloak-e2e:8080/realms/stuf")
+# OIDC configuration — use discovery to find the token endpoint.
+OIDC_ISSUER_URL = os.environ.get("OIDC_ISSUER_URL", "http://zitadel-e2e:8080")
 
 # SPA URL for browser-based token acquisition.
 # The test-runner container has Playwright+Chromium installed and the SPA is
@@ -36,8 +35,7 @@ SPA_HOST = SPA_URL.replace("http://", "").replace("https://", "")
 # Override this env var when running against Zitadel.
 OIDC_SERVICE_ACCOUNT_SCOPES = os.environ.get("OIDC_SERVICE_ACCOUNT_SCOPES", "stuf:access")
 
-# Service-account credentials — written to /bootstrap/generated.env by zitadel-init
-# for the Zitadel profile; defaults match the Keycloak realm-export.json fixture.
+# Service-account credentials — written to /bootstrap/generated.env by zitadel-init.
 OIDC_SERVICE_ACCOUNT_CLIENT_ID = os.environ.get(
     "OIDC_SERVICE_ACCOUNT_CLIENT_ID",
     os.environ.get("ZITADEL_BACKUP_SERVICE_CLIENT_ID", "backup-service"),
@@ -50,33 +48,22 @@ OIDC_SERVICE_ACCOUNT_CLIENT_SECRET = os.environ.get(
 _token_endpoint: str | None = None
 
 
-def _is_zitadel() -> bool:
-    """Return True when the active IDP is Zitadel rather than Keycloak."""
-    return "/realms/" not in OIDC_ISSUER_URL
-
-
 def _get_token_endpoint() -> str:
     """Fetch the token endpoint from OIDC discovery (cached)."""
     global _token_endpoint
     if not _token_endpoint:
-        try:
-            resp = requests.get(
-                f"{OIDC_ISSUER_URL}/.well-known/openid-configuration", timeout=10
-            )
-            resp.raise_for_status()
-            _token_endpoint = resp.json()["token_endpoint"]
-        except Exception:
-            # Fallback for backwards compatibility when discovery is not reachable
-            _token_endpoint = (
-                f"{OIDC_ISSUER_URL}/protocol/openid-connect/token"
-            )
+        resp = requests.get(
+            f"{OIDC_ISSUER_URL}/.well-known/openid-configuration", timeout=10
+        )
+        resp.raise_for_status()
+        _token_endpoint = resp.json()["token_endpoint"]
     return _token_endpoint
 
 
 def _get_user_token_via_browser(username: str, password: str) -> str:
     """Get an access token by completing the OIDC login flow through the SPA.
 
-    Works with both Keycloak (single-step) and Zitadel (two-step) login UIs.
+    Uses the Zitadel two-step login UI.
     Requires Playwright with Chromium (pre-installed in the test-runner container).
     """
     from playwright.sync_api import sync_playwright
@@ -92,22 +79,13 @@ def _get_user_token_via_browser(username: str, password: str) -> str:
             page.wait_for_selector('button:text("Sign in")', timeout=10000)
             page.click('button:text("Sign in")')
 
-            # Wait for login form — combined selector handles both Keycloak and Zitadel
-            combined = 'input[name="username"], input[name="loginName"]'
-            page.wait_for_selector(combined, timeout=15000)
-
-            if page.locator('input[name="loginName"]').count() > 0:
-                # Zitadel two-step: login name → Next → password → Sign in
-                page.fill('input[name="loginName"]', username)
-                page.click('button[type="submit"]')
-                page.wait_for_selector('input[name="password"]', timeout=10000)
-                page.fill('input[name="password"]', password)
-                page.click('button[type="submit"]')
-            else:
-                # Keycloak single-step
-                page.fill('input[name="username"]', username)
-                page.fill('input[name="password"]', password)
-                page.click('button[type="submit"], input[type="submit"]')
+            # Zitadel two-step: login name → Next → password → Sign in
+            page.wait_for_selector('input[name="loginName"]', timeout=15000)
+            page.fill('input[name="loginName"]', username)
+            page.click('button[type="submit"]')
+            page.wait_for_selector('input[name="password"]', timeout=10000)
+            page.fill('input[name="password"]', password)
+            page.click('button[type="submit"]')
 
             # Wait for the OIDC callback redirect back to the SPA
             page.wait_for_url(f"*{SPA_HOST}*", timeout=15000)

@@ -21,7 +21,7 @@ except Exception:
     # Fallback values
     BASE_URL = "http://spa-e2e:3000"
     API_URL = "http://api-e2e:8000"
-    IDP_URL = "http://keycloak-e2e:8080"
+    IDP_URL = "http://zitadel-e2e:8080"
     SPA_HOST = "spa-e2e:3000"
 
 STORAGE_STATE_FILE = Path(__file__).parent / "auth-storage-state.json"
@@ -127,8 +127,7 @@ def authenticated_page(page):
     except Exception as e:
         raise RuntimeError(f"Failed to start login flow: {e}")
 
-    # Complete the login using the provider-agnostic LoginPage abstraction.
-    # This handles both Keycloak (single-step) and Zitadel (two-step) flows.
+    # Complete the login using the LoginPage abstraction.
     try:
         from pages.login_page import LoginPage
 

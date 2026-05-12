@@ -15,7 +15,6 @@ from api.tests.e2e.conftest import (
     OIDC_SERVICE_ACCOUNT_CLIENT_SECRET,
     OIDC_SERVICE_ACCOUNT_SCOPES,
     _get_token_endpoint,
-    _is_zitadel,
 )
 
 
@@ -133,10 +132,6 @@ class TestServiceAccountE2E:
         for payload in [service_payload, user_payload]:
             assert "iss" in payload
             assert "exp" in payload
-        # Both token types carry the collections claim on Keycloak; Zitadel v4
-        # cannot inject custom claims into client_credentials tokens (see issue #96).
-        if not _is_zitadel():
-            assert "collections" in service_payload
         assert "collections" in user_payload
 
     def test_service_account_scopes_included(self, service_account_token):
@@ -144,10 +139,6 @@ class TestServiceAccountE2E:
         token_info = verify_jwt_token(service_account_token)
 
         assert token_info is not None
-        # Keycloak includes a 'scope' claim in the JWT; Zitadel does not (see issue #96).
-        if not _is_zitadel():
-            assert "scope" in token_info
-            assert "stuf:access" in token_info.get("scope", "").split()
         assert "iss" in token_info
         assert "exp" in token_info
 

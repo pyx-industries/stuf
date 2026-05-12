@@ -141,25 +141,17 @@ STUF can be run locally using Docker Compose for development and testing purpose
    - API: http://localhost:8000
      - Health check: http://localhost:8000/api/health
      - API info: http://localhost:8000/api/info
-   - **Keycloak** (default profile): Admin console at http://localhost:8080/admin (admin/admin)
-   - **Zitadel** (zitadel profile): Admin console at http://localhost:8080/ui/console (admin / Password1!)
+   - **Zitadel**: Admin console at http://localhost:8080/ui/console (admin@example.com / Password1!)
    - MinIO:
      - API endpoint: http://localhost:9000
      - Web console: http://localhost:9001 (minioadmin/minioadmin)
 
-Use `docker compose --profile keycloak up -d` for Keycloak (default) or
-`docker compose --profile zitadel up -d` for Zitadel.
+Use `make spa-dev` to start the full development environment (Zitadel + API + SPA with hot reloading).
 
 ### Environment Components
 
-- **Keycloak** (default profile): OIDC identity provider
-  - Development-only admin credentials: admin/admin
-  - Configured from `docker/keycloak/data/import/realm-export.json`
-  - Clients: stuf-spa (public), stuf-api (confidential/service accounts)
-  - Roles: admin, trust-architect, project-participant, collection-test, service
-
-- **Zitadel** (zitadel profile): alternative OIDC identity provider
-  - Admin credentials: admin / Password1!
+- **Zitadel**: OIDC identity provider
+  - Admin credentials: admin@example.com / Password1!
   - Provisioned by `docker/zitadel-init/` from `docker/zitadel-init/dev/instance.yaml`
   - Login UI served at http://localhost:8090
   - Test users:

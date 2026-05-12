@@ -105,15 +105,11 @@ def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
 
-    if login_page._is_zitadel():
-        # Two-step: login name → Next → password (don't submit final step yet)
-        login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "admin@example.com")
-        login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
-        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
-        login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "Password1!")
-    else:
-        login_page.fill_input(login_page.KC_USERNAME_INPUT, "admin@example.com")
-        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "Password1!")
+    # Zitadel two-step: login name → Next → password (don't submit final step yet)
+    login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "admin@example.com")
+    login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
+    login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+    login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "Password1!")
 
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "credentials-entered", "And I enter valid admin credentials"
@@ -126,18 +122,14 @@ def enter_invalid_credentials(page: Page, bdd_screenshot_helper):
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
 
-    if login_page._is_zitadel():
-        # Two-step: login name → Next → password (unknown user may fail at step 1)
-        login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "invalid@example.com")
-        login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
-        try:
-            login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=5000)
-            login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "wrongpassword")
-        except Exception:
-            pass  # Unknown user may have already shown an error at the login-name step
-    else:
-        login_page.fill_input(login_page.KC_USERNAME_INPUT, "invalid@example.com")
-        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "wrongpassword")
+    # Zitadel two-step: login name → Next → password (unknown user may fail at step 1)
+    login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "invalid@example.com")
+    login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
+    try:
+        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=5000)
+        login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "wrongpassword")
+    except Exception:
+        pass  # Unknown user may have already shown an error at the login-name step
 
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "invalid-credentials-entered", "And I enter invalid credentials"
@@ -216,11 +208,10 @@ def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
         raise ValueError(f"Unknown user type: {user_type}")
 
     username, password = credentials[user_type.lower()]
+    # Zitadel two-step: login-name page → Next → password page
     login_page.fill_username(username)
-    if login_page._is_zitadel():
-        # Zitadel two-step: advance from login-name page to password page
-        login_page.click_login()
-        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+    login_page.click_login()
+    login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
     login_page.fill_password(password)
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page,
@@ -392,17 +383,16 @@ def still_see_dashboard(page: Page):
 @then("I should see the login form")
 def see_login_form(page: Page, bdd_screenshot_helper):
     """Verify login form is visible."""
-    # If we're at the SPA authentication required state, click Login to go to Keycloak
+    # If we're at the SPA authentication required state, click Login to go to the IDP
     try:
         login_button = page.locator('button:text("Sign in")')
         if login_button.is_visible():
             login_button.click()
-            # Wait for redirect to Keycloak
             page.wait_for_timeout(2000)
     except Exception:
         pass
 
-    # Now verify we're at the Keycloak login form
+    # Verify we're at the login form
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
     login_page.assert_login_form_visible()
@@ -432,7 +422,7 @@ def successfully_authenticated(page: Page, bdd_screenshot_helper):
 # IDP-agnostic step definitions
 @when("I am redirected to the IDP login page")
 def redirected_to_idp_login(page: Page, bdd_screenshot_helper):
-    """Wait for redirect to IDP login page (same as Keycloak)."""
+    """Wait for redirect to IDP login page."""
     # Reuse the same logic as the existing redirect step
     redirected_to_login(page, bdd_screenshot_helper)
     # Additional screenshot with IDP-specific naming

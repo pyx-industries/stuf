@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from api.tests.fixtures.test_data import SAMPLE_TOKEN_RESPONSES, SAMPLE_FILES
+from api.tests.fixtures.test_data import SAMPLE_FILES
 
 from api.main import app
 from api.storage.minio import MinioClient  # Import for type hinting
@@ -34,23 +34,13 @@ def mock_minio_client():
 
 
 @pytest.fixture
-def mock_keycloak_validation():
-    """Mock Keycloak token validation for unit tests"""
-    with patch("api.auth.middleware.validate_token") as mock:
-        mock.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
-        yield mock
-
-
-@pytest.fixture
-def unit_client(mock_minio_client, mock_keycloak_validation):
+def unit_client(mock_minio_client):
     """
     TestClient for unit tests - all external dependencies should be mocked.
     It depends on other fixtures to ensure app.dependency_overrides are set.
     """
     # The app instance will have its dependencies overridden by the
-    # mock_minio_client and mock_keycloak_validation fixtures.
-    # We directly import app here, which refers to the global app instance
-    # in api.main.py that has been modified by the fixtures.
+    # mock_minio_client fixture.
     with TestClient(app) as client:
         yield client
 

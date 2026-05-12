@@ -15,18 +15,7 @@ from api.tests.fixtures.test_data import (
 
 
 @pytest.fixture
-def mock_keycloak_requests():
-    """Mocks requests.post for Keycloak token validation (function-scoped)."""
-    mock_keycloak_response = MagicMock()
-    mock_keycloak_response.status_code = 200
-    mock_keycloak_response.json.return_value = SAMPLE_TOKEN_RESPONSES["valid"]
-
-    with patch("requests.post", return_value=mock_keycloak_response) as mock_post:
-        yield mock_post
-
-
-@pytest.fixture
-def integration_client(mock_keycloak_requests, mock_jwt_verification):
+def integration_client(mock_jwt_verification):
     """
     TestClient for integration tests. This fixture is function-scoped,
     meaning a fresh TestClient instance and its associated app.dependency_overrides
@@ -98,7 +87,6 @@ def integration_client(mock_keycloak_requests, mock_jwt_verification):
 
         with TestClient(app) as client:
             client.storage_repo_mock = storage_repo_mock
-            client.keycloak_post_mock = mock_keycloak_requests
             yield client
 
     finally:
@@ -109,119 +97,18 @@ def integration_client(mock_keycloak_requests, mock_jwt_verification):
 
 @pytest.fixture
 def mock_jwt_verification():
-    """Mock JWT verification to avoid needing real Keycloak keys"""
+    """Mock JWT verification to return Zitadel-shaped token payloads."""
 
     def mock_verify_jwt_token(token):
         if token == "valid-integration-test-token":
-            # Return a valid token payload for test user
             return {
-                "sub": "testuser",
-                "preferred_username": "testuser",
-                "email": "testuser@example.com",
-                "name": "Test User",
-                "given_name": "Test",
-                "family_name": "User",
-                "azp": "stuf-spa",  # SPA client for users
-                "scope": "openid profile email stuf:access",  # User scopes
-                "realm_access": {"roles": ["user", "collection-test"]},
-                "collections": json.dumps({"test": ["read", "write", "delete"]}),
-                "aud": ["stuf-api"],
-                "iss": "http://localhost:8080/realms/stuf",
-                "exp": int(time.time()) + 3600,  # Valid for 1 hour
-                "iat": int(time.time()),
-            }
-        elif token == "admin-integration-test-token":
-            # Return a valid token payload for admin user
-            return {
-                "sub": "admin",
-                "preferred_username": "admin",
-                "email": "admin@example.com",
-                "name": "Admin User",
-                "given_name": "Admin",
-                "family_name": "User",
-                "azp": "stuf-spa",  # SPA client for users
-                "scope": "openid profile email stuf:access",  # User scopes
-                "realm_access": {
-                    "roles": ["admin", "collection-test", "collection-restricted"]
-                },
-                "collections": json.dumps(
-                    {
-                        "test": ["read", "write", "delete"],
-                        "restricted": ["read", "write", "delete"],
-                    }
-                ),
-                "aud": ["stuf-api"],
-                "iss": "http://localhost:8080/realms/stuf",
-                "exp": int(time.time()) + 3600,
-                "iat": int(time.time()),
-            }
-        elif token == "limited-integration-test-token":
-            # Return a valid token payload for limited user (only has access to "other" collection, not "test")
-            return {
-                "sub": "limiteduser",
-                "preferred_username": "limiteduser",
-                "email": "limiteduser@example.com",
-                "name": "Limited User",
-                "given_name": "Limited",
-                "family_name": "User",
-                "azp": "stuf-spa",  # SPA client for users
-                "scope": "openid profile email stuf:access",  # User scopes
-                "realm_access": {"roles": ["user", "collection-other"]},
-                "collections": json.dumps(
-                    {"other": ["read", "write", "delete"]}
-                ),  # No access to "test" collection
-                "aud": ["stuf-api"],
-                "iss": "http://localhost:8080/realms/stuf",
-                "exp": int(time.time()) + 3600,
-                "iat": int(time.time()),
-            }
-        elif token == "service-account-integration-test-token":
-            # Return a valid token payload for service account
-            return {
-                "sub": "service-account-backup",
-                "azp": "backup-service",  # Service account identifier
-                "client_id": "backup-service",
-                "preferred_username": "service-account-backup-service",  # Service account pattern
-                "name": "Backup Service Account",
-                "description": "Service account for integration tests",
-                "realm_access": {"roles": ["service", "backup-admin"]},
-                "collections": json.dumps({"test": ["read", "write", "delete"]}),
-                "scope": "stuf:access",
-                "aud": ["stuf-api"],
-                "iss": "http://localhost:8080/realms/stuf",
-                "exp": int(time.time()) + 3600,
-                "iat": int(time.time()),
-            }
-        elif token == "limited-service-account-integration-test-token":
-            # Return a valid token payload for limited service account (only has access to "other" collection)
-            return {
-                "sub": "service-account-limited",
-                "azp": "limited-service",
-                "client_id": "limited-service",
-                "preferred_username": "service-account-limited-service",  # Service account pattern
-                "name": "Limited Service Account",
-                "description": "Limited service account for integration tests",
-                "realm_access": {"roles": ["service"]},
-                "collections": json.dumps(
-                    {"other": ["read", "write", "delete"]}
-                ),  # No access to "test" collection
-                "scope": "stuf:access",
-                "aud": ["stuf-api"],
-                "iss": "http://localhost:8080/realms/stuf",
-                "exp": int(time.time()) + 3600,
-                "iat": int(time.time()),
-            }
-        # --- Zitadel-shaped tokens ---
-        # Roles in urn:zitadel:iam:org:project:roles (dict), issuer has no realm path.
-        elif token == "zitadel-user-integration-test-token":
-            return {
-                "sub": "testuser-zitadel-id",
+                "sub": "testuser-id",
                 "preferred_username": "testuser@example.com",
                 "email": "testuser@example.com",
                 "given_name": "Test",
                 "family_name": "User",
-                "azp": "abc123-spa-client-id",  # Zitadel auto-generated SPA client ID
-                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "azp": "abc123-spa-client-id",
+                "scope": "openid profile email stuf:access",
                 "urn:zitadel:iam:org:project:roles": {
                     "project-participant": {"orgId": "orgDomain"},
                     "collection-test": {"orgId": "orgDomain"},
@@ -232,15 +119,15 @@ def mock_jwt_verification():
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
             }
-        elif token == "zitadel-admin-integration-test-token":
+        elif token == "admin-integration-test-token":
             return {
-                "sub": "admin-zitadel-id",
+                "sub": "admin-id",
                 "preferred_username": "admin@example.com",
                 "email": "admin@example.com",
                 "given_name": "Admin",
                 "family_name": "User",
                 "azp": "abc123-spa-client-id",
-                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "scope": "openid profile email stuf:access",
                 "urn:zitadel:iam:org:project:roles": {
                     "admin": {"orgId": "orgDomain"},
                     "collection-test": {"orgId": "orgDomain"},
@@ -255,13 +142,33 @@ def mock_jwt_verification():
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
             }
-        elif token == "zitadel-service-account-integration-test-token":
+        elif token == "limited-integration-test-token":
+            return {
+                "sub": "limiteduser-id",
+                "preferred_username": "limiteduser@example.com",
+                "email": "limiteduser@example.com",
+                "given_name": "Limited",
+                "family_name": "User",
+                "azp": "abc123-spa-client-id",
+                "scope": "openid profile email stuf:access",
+                "urn:zitadel:iam:org:project:roles": {
+                    "project-participant": {"orgId": "orgDomain"},
+                },
+                "collections": {"other": ["read", "write", "delete"]},
+                "aud": ["abc123-spa-client-id", "12345"],
+                "iss": "http://localhost:8080",
+                "exp": int(time.time()) + 3600,
+                "iat": int(time.time()),
+            }
+        elif token == "service-account-integration-test-token":
             return {
                 "sub": "backup-service",
                 "azp": "backup-service",
+                "client_id": "backup-service",
                 "scope": "openid urn:zitadel:iam:org:project:id:12345:aud",
                 "urn:zitadel:iam:org:project:roles": {
                     "service": {"orgId": "orgDomain"},
+                    "backup-admin": {"orgId": "orgDomain"},
                 },
                 "collections": {"test": ["read", "write", "delete"]},
                 "aud": ["backup-service", "12345"],
@@ -269,20 +176,17 @@ def mock_jwt_verification():
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
             }
-        elif token == "zitadel-limited-user-integration-test-token":
+        elif token == "limited-service-account-integration-test-token":
             return {
-                "sub": "limiteduser-zitadel-id",
-                "preferred_username": "limiteduser@example.com",
-                "email": "limiteduser@example.com",
-                "given_name": "Limited",
-                "family_name": "User",
-                "azp": "abc123-spa-client-id",
-                "scope": "openid profile email urn:zitadel:iam:org:project:roles urn:zitadel:iam:org:project:id:12345:aud",
+                "sub": "limited-service",
+                "azp": "limited-service",
+                "client_id": "limited-service",
+                "scope": "openid urn:zitadel:iam:org:project:id:12345:aud",
                 "urn:zitadel:iam:org:project:roles": {
-                    "project-participant": {"orgId": "orgDomain"},
+                    "service": {"orgId": "orgDomain"},
                 },
                 "collections": {"other": ["read", "write", "delete"]},
-                "aud": ["abc123-spa-client-id", "12345"],
+                "aud": ["limited-service", "12345"],
                 "iss": "http://localhost:8080",
                 "exp": int(time.time()) + 3600,
                 "iat": int(time.time()),
@@ -321,27 +225,3 @@ def service_account_headers():
 def limited_service_account_headers():
     """Headers with limited service account authentication token (no access to test collection)"""
     return {"Authorization": "Bearer limited-service-account-integration-test-token"}
-
-
-@pytest.fixture
-def zitadel_authenticated_headers():
-    """Headers with Zitadel-shaped user token (project roles claim, no realm_access)"""
-    return {"Authorization": "Bearer zitadel-user-integration-test-token"}
-
-
-@pytest.fixture
-def zitadel_admin_headers():
-    """Headers with Zitadel-shaped admin token"""
-    return {"Authorization": "Bearer zitadel-admin-integration-test-token"}
-
-
-@pytest.fixture
-def zitadel_service_account_headers():
-    """Headers with Zitadel-shaped service account token (project roles claim)"""
-    return {"Authorization": "Bearer zitadel-service-account-integration-test-token"}
-
-
-@pytest.fixture
-def zitadel_limited_user_headers():
-    """Headers with Zitadel-shaped limited user token (no access to test collection)"""
-    return {"Authorization": "Bearer zitadel-limited-user-integration-test-token"}

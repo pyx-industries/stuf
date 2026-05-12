@@ -3,41 +3,26 @@ set -e
 
 # Default values
 DEFAULT_API_BASE_URL="http://localhost:8000"
-DEFAULT_KEYCLOAK_URL="http://localhost:8080"
-DEFAULT_KEYCLOAK_REALM="stuf"
-DEFAULT_KEYCLOAK_CLIENT_ID="stuf-spa"
+DEFAULT_OIDC_AUTHORITY="http://localhost:8080"
+DEFAULT_OIDC_CLIENT_ID="stuf-spa"
 
 # Check for missing environment variables and warn
 if [ -z "$API_URL" ]; then
   echo "WARNING: API_URL not set, using default: $DEFAULT_API_BASE_URL"
 fi
 
-if [ -z "$KEYCLOAK_URL" ] && [ -z "$OIDC_AUTHORITY" ]; then
-  echo "WARNING: KEYCLOAK_URL not set, using default: $DEFAULT_KEYCLOAK_URL"
+if [ -z "$OIDC_AUTHORITY" ]; then
+  echo "WARNING: OIDC_AUTHORITY not set, using default: $DEFAULT_OIDC_AUTHORITY"
 fi
 
-if [ -z "$KEYCLOAK_REALM" ] && [ -z "$OIDC_AUTHORITY" ]; then
-  echo "WARNING: KEYCLOAK_REALM not set, using default: $DEFAULT_KEYCLOAK_REALM"
-fi
-
-if [ -z "$KEYCLOAK_CLIENT_ID" ] && [ -z "$OIDC_CLIENT_ID" ]; then
-  echo "WARNING: KEYCLOAK_CLIENT_ID not set, using default: $DEFAULT_KEYCLOAK_CLIENT_ID"
+if [ -z "$OIDC_CLIENT_ID" ]; then
+  echo "WARNING: OIDC_CLIENT_ID not set, using default: $DEFAULT_OIDC_CLIENT_ID"
 fi
 
 # Get values from environment or use defaults
 API_BASE_URL="${API_URL:-$DEFAULT_API_BASE_URL}"
-
-# OIDC_AUTHORITY may be set directly (provider-agnostic) or computed from
-# KEYCLOAK_URL + KEYCLOAK_REALM for backwards-compatible Keycloak deployments.
-if [ -n "$OIDC_AUTHORITY" ]; then
-  COMPUTED_OIDC_AUTHORITY="$OIDC_AUTHORITY"
-else
-  _KC_URL="${KEYCLOAK_URL:-$DEFAULT_KEYCLOAK_URL}"
-  _KC_REALM="${KEYCLOAK_REALM:-$DEFAULT_KEYCLOAK_REALM}"
-  COMPUTED_OIDC_AUTHORITY="${_KC_URL}/realms/${_KC_REALM}"
-fi
-
-COMPUTED_OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-${KEYCLOAK_CLIENT_ID:-$DEFAULT_KEYCLOAK_CLIENT_ID}}"
+COMPUTED_OIDC_AUTHORITY="${OIDC_AUTHORITY:-$DEFAULT_OIDC_AUTHORITY}"
+COMPUTED_OIDC_CLIENT_ID="${OIDC_CLIENT_ID:-$DEFAULT_OIDC_CLIENT_ID}"
 COMPUTED_OIDC_SCOPE="${OIDC_SCOPE:-openid profile email stuf:access}"
 COMPUTED_OIDC_LOAD_USER_INFO="${OIDC_LOAD_USER_INFO:-false}"
 

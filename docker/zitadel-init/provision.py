@@ -30,8 +30,8 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 # Fired on the PRE_ACCESS_TOKEN_CREATION trigger (flow 2, trigger type 5).
 # Fires for both authorization-code (human) and client_credentials (machine)
 # grants when the project's access-token type is JWT.
-# - preferred_username: not in Zitadel JWT access tokens by default; mirrors
-#   the Keycloak claim the STUF API middleware reads.
+# - preferred_username: not in Zitadel JWT access tokens by default; injected
+#   here so the STUF API middleware can use it for the username claim.
 # - collections: user metadata stored as a JSON object; getMetadata() returns
 #   a wrapper {metadata: [...]} where each entry's value is already decoded
 #   from base64+JSON (no atob/JSON.parse needed).

@@ -46,14 +46,12 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test              Run fast tests (unit + integration)"
-	@echo "  test-e2e          Run end-to-end tests against Keycloak (API + browser)"
-	@echo "  test-e2e-zitadel  Run end-to-end tests against Zitadel (API + browser)"
+	@echo "  test-e2e          Run end-to-end tests against Zitadel (API + browser)"
 	@echo "  test-all          Run all tests (fast + E2E)"
 	@echo "  test-cov          Run tests with coverage report"
 	@echo ""
 	@echo "SPA Development:"
-	@echo "  spa-dev           Start SPA in development mode (Keycloak IdP)"
-	@echo "  spa-dev-zitadel   Start SPA in development mode (Zitadel IdP)"
+	@echo "  spa-dev           Start SPA in development mode with hot reloading"
 	@echo "  spa-prod          Start SPA in production mode"
 	@echo "  spa-build         Build SPA for production"
 	@echo "  spa-stop          Stop SPA services"
@@ -113,9 +111,6 @@ clean:
 	@rm -f api/.coverage
 	@rm -rf $(VENV_DIR)
 	@tests/run.sh clean
-	@echo "Cleaning Keycloak local state..."
-	@rm -rf docker/keycloak/data/h2
-	@rm -rf docker/keycloak/data/transaction-logs
 	@echo "Cleaning Zitadel bootstrap..."
 	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Cleaning Zitadel e2e bootstrap..."
@@ -125,29 +120,18 @@ clean:
 	@echo "Clean complete."
 
 # Test targets
-.PHONY: test test-e2e test-e2e-zitadel test-all test-cov
+.PHONY: test test-e2e test-all test-cov
 
 # Run fast tests (unit + integration) - default
 test: $(VENV_DIR)/dev-requirements.stamp
 	@echo "Running fast tests (unit + integration)..."
 	@$(PYTEST) -m "not e2e"
 
-# Run end-to-end tests (API + browser) with Keycloak (default)
-test-e2e:
-	@echo "Running end-to-end tests with coverage (Keycloak profile)..."
-	@echo "Starting browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml build test-runner spa-e2e && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing up -d --wait
-	@echo "Running API E2E and browser E2E tests (inside container)..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile keycloak --profile testing run --rm -T test-runner bash -c "pytest --tb=short -s -x -m e2e /app/api/tests/e2e/ --html=reports/api-e2e-report.html --self-contained-html && pytest --tb=short -s -x -v --html=reports/browser-e2e-report.html --self-contained-html --alluredir=reports/allure-results . && python generate_presentation_report.py"
-	@echo "Stopping browser E2E services..."
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile keycloak down
-
-# Run end-to-end tests against Zitadel
-# Usage: make test-e2e-zitadel
+# Run end-to-end tests (API + browser) against Zitadel.
 # After the Zitadel stack starts and init completes, the generated.env is written to
 # tests/e2e-browser/.zitadel-bootstrap/generated.env.  The make target sources it and
 # exports the Zitadel-specific OIDC env vars before running the tests.
-test-e2e-zitadel:
+test-e2e:
 	@echo "Running end-to-end tests against Zitadel..."
 	@mkdir -p tests/e2e-browser/.zitadel-bootstrap
 	@echo "Starting Zitadel stack and browser E2E services..."
@@ -182,7 +166,7 @@ test-e2e-zitadel:
 	@echo "Stopping Zitadel E2E services..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel down
 
-# Run all tests (fast + E2E)
+# Run all tests (fast + e2e)
 test-all:
 	@echo "Running all tests (fast + E2E)..."
 	@$(MAKE) test
@@ -194,22 +178,15 @@ test-cov: $(VENV_DIR)/dev-requirements.stamp
 	@$(PYTEST) -m "not e2e" --cov=api --cov-report=html --cov-report=term-missing
 
 # SPA development and production targets
-.PHONY: spa-dev spa-dev-zitadel spa-prod spa-build spa-stop
+.PHONY: spa-dev spa-prod spa-build spa-stop
 
-# Start SPA in development mode with Keycloak IdP and hot reloading
+# Start SPA in development mode with Zitadel IdP and hot reloading.
+# Starts the Zitadel stack, runs provisioning, reads the generated OIDC
+# credentials, then starts api + spa with those vars.
 spa-dev:
-	@echo "Starting SPA in development mode (Keycloak IdP) with hot reloading..."
-	@echo "This includes full environment (API, Keycloak, MinIO) + fast SPA reloading"
-	@echo "Access at: http://localhost:3000"
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile keycloak up --build
-
-# Start SPA in development mode with Zitadel IdP and hot reloading
-# Mirrors the test-e2e-zitadel flow: starts the Zitadel stack, runs provisioning,
-# reads the generated OIDC credentials, then starts api + spa with those vars.
-spa-dev-zitadel:
 	@echo "Starting SPA in development mode (Zitadel IdP) with hot reloading..."
 	@echo "Cleaning up any previous run..."
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile keycloak --profile zitadel down --remove-orphans 2>/dev/null || true
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel down --remove-orphans 2>/dev/null || true
 	@mkdir -p .zitadel-bootstrap
 	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Building services..."
@@ -247,13 +224,10 @@ spa-build:
 	@echo "Building SPA for production..."
 	@docker compose build --target production spa
 
-# Stop SPA services (all profiles)
+# Stop SPA services
 spa-stop:
 	@echo "Stopping SPA services..."
-	@docker compose --profile keycloak --profile zitadel down
-	@echo "Cleaning Keycloak local state..."
-	@rm -rf docker/keycloak/data/h2
-	@rm -rf docker/keycloak/data/transaction-logs
+	@docker compose --profile zitadel down
 	@echo "Cleaning Zitadel bootstrap..."
 	@rm -f .zitadel-bootstrap/*.env .zitadel-bootstrap/*.json
 	@echo "Cleaning Zitadel e2e bootstrap..."

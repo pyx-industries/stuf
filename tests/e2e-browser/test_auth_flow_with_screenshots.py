@@ -60,7 +60,7 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 4: At IDP login page (Keycloak single-step or Zitadel first step)
+        # Step 4: At Zitadel login page
         login_page = LoginPage(page)
         login_page.wait_for_login_form(timeout=15000)
         login_page.assert_login_form_visible()
@@ -72,16 +72,11 @@ class TestAuthFlowWithScreenshots:
             "direct",
         )
 
-        # Step 5: Enter credentials (provider-aware)
-        if login_page._is_zitadel():
-            # Zitadel two-step: login-name first, then password on a second page
-            login_page.fill_username("admin@example.com")
-            login_page.click_login()  # Advance to password page
-            login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
-            login_page.fill_password("Password1!")
-        else:
-            login_page.fill_username("admin@example.com")
-            login_page.fill_password("Password1!")
+        # Step 5: Enter credentials (Zitadel two-step: login-name first, then password)
+        login_page.fill_username("admin@example.com")
+        login_page.click_login()  # Advance to password page
+        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+        login_page.fill_password("Password1!")
         login_page.take_screenshot(
             "credentials-entered",
             scenario_name,

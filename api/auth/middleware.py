@@ -14,13 +14,13 @@ from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
 # OIDC_ISSUER_URL: the issuer URL as it appears in tokens. Used to validate the
 # `iss` claim and (when OIDC_BASE_URL is not set) to fetch the discovery document.
 OIDC_ISSUER_URL = os.environ.get(
-    "OIDC_ISSUER_URL", "http://localhost:8080/realms/stuf"
+    "OIDC_ISSUER_URL", "http://localhost:8080"
 )
 
 # OIDC_BASE_URL: optional override for the base URL used to fetch the discovery
 # document and JWKS. Set this to the container-internal hostname when the issuer
 # URL visible to clients (OIDC_ISSUER_URL) differs from the URL reachable by the
-# API process (e.g. docker-compose where keycloak is on an internal network).
+# API process (e.g. split-horizon Docker networking).
 # Defaults to OIDC_ISSUER_URL when not set.
 _OIDC_BASE_URL = os.environ.get("OIDC_BASE_URL", OIDC_ISSUER_URL)
 
@@ -31,9 +31,8 @@ OIDC_VALID_AUDIENCES = set(
 )
 
 # Client ID of the SPA OIDC application. Used to distinguish user tokens (where
-# azp matches the SPA client) from service-account tokens. For Keycloak the SPA
-# client ID is the stable string "stuf-spa"; for Zitadel it is an auto-generated
-# UUID written to /bootstrap/generated.env by zitadel-init.
+# azp matches the SPA client) from service-account tokens. Written to
+# /bootstrap/generated.env by zitadel-init.
 OIDC_SPA_CLIENT_ID = os.environ.get("OIDC_SPA_CLIENT_ID", "stuf-spa")
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -66,16 +65,11 @@ def _oidc_get(url: str) -> requests.Response:
     return resp
 
 def _extract_roles(token_payload: dict) -> list:
-    """Extract role list from a token, handling both Keycloak and Zitadel shapes.
+    """Extract role list from a Zitadel token.
 
-    Keycloak puts roles at realm_access.roles (flat list).
     Zitadel puts project roles at urn:zitadel:iam:org:project:roles
-    (dict of {role_key: {org_id: org_domain}}).
+    as a dict of {role_key: {org_id: org_domain}}.
     """
-    realm_access = token_payload.get("realm_access", {})
-    roles = realm_access.get("roles", [])
-    if roles:
-        return roles
     zitadel_roles = token_payload.get("urn:zitadel:iam:org:project:roles", {})
     if isinstance(zitadel_roles, dict):
         return list(zitadel_roles.keys())
@@ -360,10 +354,10 @@ async def get_current_principal(
         raise credentials_exception
 
     # Discriminate user vs service-account using identity claims.
-    # Human user tokens (both Keycloak and Zitadel) carry email / given_name /
-    # family_name in the access token; machine-user tokens do not.  This is
-    # simpler and more reliable than inspecting scope or azp, which differ across
-    # providers and can include "openid" even for machine users in Zitadel.
+    # Human user tokens carry email / given_name / family_name in the access
+    # token; machine-user tokens do not.  This is simpler and more reliable
+    # than inspecting scope or azp, which can include "openid" even for
+    # machine users.
     has_user_fields = bool(
         token_payload.get("email")
         or token_payload.get("given_name")
