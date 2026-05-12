@@ -33,9 +33,6 @@ docker compose --profile keycloak up -d
 # Start with Zitadel instead
 docker compose --profile zitadel up -d
 
-# Start E2E test environment (Keycloak)
-docker compose -f docker-compose.e2e.yml --profile keycloak up -d
-
 # Stop and clean up
 docker compose down
 docker compose down -v  # Remove volumes/data
