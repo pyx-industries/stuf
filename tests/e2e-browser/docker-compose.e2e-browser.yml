@@ -5,14 +5,22 @@
 # Port mapping to avoid conflicts with main docker-compose:
 # Main:    Keycloak:8080, MinIO:9000/9001, API:8000, SPA:3000
 # E2E:     Keycloak:8180, MinIO:9100/9101, API:8100, SPA:3100
+#          Zitadel:8280,  Zitadel-login:8290
+#
+# IDP profile selection:
+#   Keycloak (default): docker compose --profile keycloak --profile testing up
+#   Zitadel:            docker compose --profile zitadel --profile testing up
+#                       (requires OIDC_ISSUER_URL etc. set from .zitadel-bootstrap/generated.env)
 
 networks:
   stuf-e2e-test-net:
     driver: bridge
 
 services:
-  # Keycloak - Identity Provider
+  # ── Keycloak identity provider ────────────────────────────────────────────
   keycloak-e2e:
+    profiles:
+      - keycloak
     build:
       context: ../../docker/keycloak
       dockerfile: Dockerfile
@@ -23,7 +31,7 @@ services:
     ports:
       - "8180:8080" # Different port to avoid conflict
       - "9191:9000" # Management port (different from main 9990)
-    command: start-dev --import-realm
+    command: start-dev --import-realm --health-enabled=true
     volumes:
       - ../../docker/keycloak/data:/opt/keycloak/data
     networks:
@@ -35,7 +43,164 @@ services:
       retries: 30
       start_period: 60s
 
-  # MinIO - Object Storage
+  # ── Zitadel identity provider stack ──────────────────────────────────────
+  # All Zitadel e2e services run on the bridge network so that the Playwright
+  # browser inside the test-runner container can reach them by hostname.
+  # ZITADEL_EXTERNALDOMAIN=zitadel-e2e makes Zitadel accept requests on that
+  # hostname.  An Nginx reverse proxy (zitadel-e2e) sits in front, routing
+  # /ui/v2/login/* to the login UI and everything else to the Zitadel backend.
+  # This means the browser always uses zitadel-e2e:8080 as the OIDC authority,
+  # which matches EXTERNALDOMAIN and avoids "public domain not trusted" errors
+  # from the login UI making server-side calls to Zitadel.
+  zitadel-postgres-e2e:
+    image: postgres:17
+    profiles:
+      - zitadel
+    environment:
+      POSTGRES_USER: zitadel
+      POSTGRES_PASSWORD: zitadel
+      POSTGRES_DB: zitadel
+    networks:
+      - stuf-e2e-test-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zitadel -d zitadel"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  zitadel-bootstrap-init-e2e:
+    image: busybox:1.37
+    profiles:
+      - zitadel
+    command: ["chmod", "777", "/bootstrap"]
+    volumes:
+      - ./.zitadel-bootstrap:/bootstrap
+    networks:
+      - stuf-e2e-test-net
+    restart: "no"
+
+  zitadel-backend-e2e:
+    image: ghcr.io/zitadel/zitadel:v4.14.0
+    profiles:
+      - zitadel
+    command: start-from-init --masterkey "MasterkeyNeedsToHave32Characters" --tlsMode disabled
+    environment:
+      ZITADEL_DATABASE_POSTGRES_HOST: zitadel-postgres-e2e
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_TLS_ENABLED: "false"
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALPORT: 8080
+      # External domain matches the Nginx proxy hostname so all containers
+      # (including the browser in the test-runner) use http://zitadel-e2e:8080.
+      ZITADEL_EXTERNALDOMAIN: zitadel-e2e
+      # LOGINV2_BASEURI routes the browser through the Nginx proxy so the
+      # login UI's server-side API calls carry the zitadel-e2e origin.
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: http://zitadel-e2e:8080/ui/v2/login
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: STUF
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: Password1!
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: admin@example.com
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: Admin
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: User
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Zitadel Admin SA
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
+      ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /bootstrap/zitadel-admin-sa.json
+    volumes:
+      - ./.zitadel-bootstrap:/bootstrap
+    networks:
+      - stuf-e2e-test-net
+    depends_on:
+      zitadel-postgres-e2e:
+        condition: service_healthy
+      zitadel-bootstrap-init-e2e:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/app/zitadel", "ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 60s
+
+  # Nginx reverse proxy: presents a single zitadel-e2e:8080 hostname to all
+  # clients.  Routes /ui/v2/login/* to the login UI and everything else to the
+  # Zitadel backend.  Because the browser always hits zitadel-e2e:8080, the
+  # login UI's server-side API calls carry Host: zitadel-e2e, matching
+  # EXTERNALDOMAIN and avoiding "public domain not trusted" errors.
+  zitadel-e2e:
+    image: nginx:alpine
+    profiles:
+      - zitadel
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8280:8080"
+    networks:
+      - stuf-e2e-test-net
+    depends_on:
+      zitadel-backend-e2e:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -qO- http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  zitadel-init-e2e:
+    build:
+      context: ../../docker/zitadel-init
+      dockerfile: Dockerfile
+    profiles:
+      - zitadel
+    # Call the Nginx proxy so the Host header is zitadel-e2e:8080, matching
+    # EXTERNALDOMAIN=zitadel-e2e (direct calls to zitadel-backend-e2e would
+    # have the wrong Host and fail instance routing).
+    environment:
+      ZITADEL_DOMAIN: http://zitadel-e2e:8080
+      MACHINE_KEY_PATH: /bootstrap/zitadel-admin-sa.json
+      BOOTSTRAP_DIR: /bootstrap
+      FIXTURE_PATH: /fixtures/dev/instance.yaml
+    volumes:
+      - ./.zitadel-bootstrap:/bootstrap
+      - ../../docker/zitadel-init:/fixtures:ro
+    networks:
+      - stuf-e2e-test-net
+    depends_on:
+      zitadel-e2e:
+        condition: service_healthy
+    restart: "no"
+
+  zitadel-login-e2e:
+    image: ghcr.io/zitadel/zitadel-login:v4.14.0
+    profiles:
+      - zitadel
+    entrypoint: ["/bin/sh", "-c", "export ZITADEL_SERVICE_USER_TOKEN=$(cat /bootstrap/login-token) && exec /app/entrypoint.sh node apps/login/server.js"]
+    environment:
+      # Use the Nginx proxy URL so that when the login UI makes server-side
+      # API calls the Host header is zitadel-e2e:8080, matching EXTERNALDOMAIN.
+      ZITADEL_API_URL: http://zitadel-e2e:8080
+      PORT: 8090
+    volumes:
+      - ./.zitadel-bootstrap:/bootstrap:ro
+    ports:
+      - "8290:8090"
+    networks:
+      - stuf-e2e-test-net
+    depends_on:
+      zitadel-init-e2e:
+        condition: service_completed_successfully
+
+  # ── MinIO - Object Storage (shared by both IDP profiles) ─────────────────
   minio-e2e:
     image: minio/minio:latest
     environment:
@@ -56,7 +221,7 @@ services:
       retries: 15
       start_period: 10s
 
-  # FastAPI Backend
+  # ── FastAPI Backend ───────────────────────────────────────────────────────
   api-e2e:
     build:
       context: ../../api
@@ -64,10 +229,14 @@ services:
     ports:
       - "8100:8000" # Different port
     environment:
-      # OIDC configuration (internal network; issuer and fetch URL are the same in e2e)
-      - OIDC_ISSUER_URL=http://keycloak-e2e:8080/realms/stuf
-      - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
-
+      # OIDC configuration — defaults to Keycloak; override for Zitadel by
+      # setting OIDC_ISSUER_URL, OIDC_BASE_URL, OIDC_VALID_AUDIENCES, and
+      # OIDC_SPA_CLIENT_ID in the shell before running docker compose.
+      # For Zitadel, source .zitadel-bootstrap/generated.env after init completes.
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}}
+      - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
+      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       # MinIO configuration (internal network)
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
@@ -78,8 +247,6 @@ services:
       - CORS_ORIGINS=http://spa-e2e:3000
     depends_on:
       minio-e2e:
-        condition: service_healthy
-      keycloak-e2e:
         condition: service_healthy
     networks:
       - stuf-e2e-test-net
@@ -96,7 +263,7 @@ services:
       retries: 15
       start_period: 30s
 
-  # React SPA Frontend
+  # ── React SPA Frontend ────────────────────────────────────────────────────
   spa-e2e:
     build:
       context: ../../spa
@@ -109,10 +276,12 @@ services:
       - API_URL=http://api-e2e:8000
 
       # OIDC authority passed directly so docker-entrypoint.sh needs no realm
-      # path assembly. For Keycloak the value is keycloakUrl/realms/realm;
-      # for Zitadel it is just the issuer URL (no realm segment).
-      - OIDC_AUTHORITY=http://keycloak-e2e:8080/realms/stuf
-      - OIDC_CLIENT_ID=stuf-spa
+      # path assembly. Defaults to Keycloak; override for Zitadel by setting
+      # OIDC_AUTHORITY=http://zitadel-e2e:8080 and OIDC_CLIENT_ID=<generated>.
+      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://keycloak-e2e:8080/realms/stuf}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
+      - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
+      - OIDC_LOAD_USER_INFO=${OIDC_LOAD_USER_INFO:-false}
     depends_on:
       - api-e2e
     networks:
@@ -130,7 +299,7 @@ services:
       retries: 15
       start_period: 15s
 
-  # Test runner - runs Playwright tests inside Docker network
+  # ── Test runner ────────────────────────────────────────────────────────────
   test-runner:
     build:
       context: ../.. # Build from project root to access both tests/e2e-browser and api
@@ -139,11 +308,16 @@ services:
       # Use internal Docker network URLs
       - SPA_URL=http://spa-e2e:3000
       - API_URL=http://api-e2e:8000
-      - IDP_URL=http://keycloak-e2e:8080
+      - IDP_URL=${IDP_URL:-http://keycloak-e2e:8080}
       - MINIO_URL=http://minio-e2e:9000
-      # OIDC configuration (provider-agnostic)
-      - OIDC_ISSUER_URL=http://keycloak-e2e:8080/realms/stuf
-      - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
+      # OIDC configuration (provider-agnostic; mirror of api-e2e vars above)
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://keycloak-e2e:8080/realms/stuf}
+      - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
+      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
+      # Service-account credentials (Keycloak defaults; override for Zitadel)
+      - OIDC_SERVICE_ACCOUNT_CLIENT_ID=${OIDC_SERVICE_ACCOUNT_CLIENT_ID:-backup-service}
+      - OIDC_SERVICE_ACCOUNT_CLIENT_SECRET=${OIDC_SERVICE_ACCOUNT_CLIENT_SECRET:-backup-service-secret}
+      - OIDC_SERVICE_ACCOUNT_SCOPES=${OIDC_SERVICE_ACCOUNT_SCOPES:-stuf:access}
       # MinIO configuration for API E2E tests
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
@@ -154,8 +328,6 @@ services:
         condition: service_healthy
       api-e2e:
         condition: service_healthy
-      keycloak-e2e:
-        condition: service_healthy
       minio-e2e:
         condition: service_healthy
     networks:
@@ -165,6 +337,8 @@ services:
       - .:/app
       # Mount the entire API directory for imports and tests
       - ../../api:/app/api
+      # Zitadel bootstrap dir (present when running --profile zitadel; read-only)
+      - ./.zitadel-bootstrap:/bootstrap:ro
     profiles:
       - testing
 
