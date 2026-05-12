@@ -50,6 +50,11 @@ OIDC_SERVICE_ACCOUNT_CLIENT_SECRET = os.environ.get(
 _token_endpoint: str | None = None
 
 
+def _is_zitadel() -> bool:
+    """Return True when the active IDP is Zitadel rather than Keycloak."""
+    return "/realms/" not in OIDC_ISSUER_URL
+
+
 def _get_token_endpoint() -> str:
     """Fetch the token endpoint from OIDC discovery (cached)."""
     global _token_endpoint
@@ -136,7 +141,7 @@ def _get_user_token_via_browser(username: str, password: str) -> str:
 def user_token(ensure_services_ready):  # noqa: F811
     """Get a real user token via browser-based OIDC login."""
     try:
-        return _get_user_token_via_browser("testuser@example.com", "password")
+        return _get_user_token_via_browser("testuser@example.com", "Password1!")
     except Exception as e:
         pytest.skip(f"Could not get user token via browser login: {e}")
 
@@ -145,7 +150,7 @@ def user_token(ensure_services_ready):  # noqa: F811
 def limited_user_token(ensure_services_ready):  # noqa: F811
     """Get a token for a user with limited permissions via browser-based OIDC login."""
     try:
-        return _get_user_token_via_browser("limiteduser@example.com", "password")
+        return _get_user_token_via_browser("limiteduser@example.com", "Password1!")
     except Exception as e:
         pytest.skip(f"Could not get limited user token via browser login: {e}")
 

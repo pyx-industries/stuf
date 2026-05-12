@@ -27,6 +27,10 @@ tests/e2e-browser/reports/
 tests/e2e-browser/auth-storage-state.json
 tests/.venv/
 
+# Zitadel e2e bootstrap (generated at runtime; keep directory, ignore contents)
+tests/e2e-browser/.zitadel-bootstrap/*
+!tests/e2e-browser/.zitadel-bootstrap/.gitkeep
+
 # SPA build artifacts
 spa/build/
 spa/dist/

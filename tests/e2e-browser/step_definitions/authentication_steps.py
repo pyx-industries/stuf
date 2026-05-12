@@ -101,29 +101,19 @@ def redirected_to_login(page: Page, bdd_screenshot_helper):
 
 @when("I enter valid admin credentials")
 def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
-    """Enter valid admin credentials."""
+    """Enter valid admin credentials (provider-agnostic)."""
     login_page = LoginPage(page)
+    login_page.wait_for_login_form()
 
-    # Use more explicit interaction - click and type rather than just fill
-    page.click('input[name="username"]')
-    page.type('input[name="username"]', "admin@example.com")
-
-    page.click('input[name="password"]')
-    page.type('input[name="password"]', "password")
-
-    # Wait for visual updates to complete
-    page.wait_for_timeout(1000)
-
-    # Verify both fields show content (username text, password asterisks)
-    page.wait_for_function("""
-        () => {
-            const usernameInput = document.querySelector('input[name="username"]');
-            const passwordInput = document.querySelector('input[name="password"]');
-            return usernameInput && passwordInput &&
-                   usernameInput.value.length > 0 &&
-                   passwordInput.value.length > 0;
-        }
-    """)
+    if login_page._is_zitadel():
+        # Two-step: login name → Next → password (don't submit final step yet)
+        login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "admin@example.com")
+        login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
+        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+        login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "Password1!")
+    else:
+        login_page.fill_input(login_page.KC_USERNAME_INPUT, "admin@example.com")
+        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "Password1!")
 
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "credentials-entered", "And I enter valid admin credentials"
@@ -132,29 +122,22 @@ def enter_valid_admin_credentials(page: Page, bdd_screenshot_helper):
 
 @when("I enter invalid credentials")
 def enter_invalid_credentials(page: Page, bdd_screenshot_helper):
-    """Enter invalid credentials."""
+    """Enter invalid credentials (provider-agnostic)."""
     login_page = LoginPage(page)
+    login_page.wait_for_login_form()
 
-    # Use more explicit interaction - click and type rather than just fill
-    page.click('input[name="username"]')
-    page.type('input[name="username"]', "invalid@example.com")
-
-    page.click('input[name="password"]')
-    page.type('input[name="password"]', "wrongpassword")
-
-    # Wait for visual updates to complete
-    page.wait_for_timeout(1000)
-
-    # Verify both fields show content (username text, password asterisks)
-    page.wait_for_function("""
-        () => {
-            const usernameInput = document.querySelector('input[name="username"]');
-            const passwordInput = document.querySelector('input[name="password"]');
-            return usernameInput && passwordInput &&
-                   usernameInput.value.length > 0 &&
-                   passwordInput.value.length > 0;
-        }
-    """)
+    if login_page._is_zitadel():
+        # Two-step: login name → Next → password (unknown user may fail at step 1)
+        login_page.fill_input(login_page.ZD_LOGINNAME_INPUT, "invalid@example.com")
+        login_page.click_element(login_page.ZD_SUBMIT_BUTTON)
+        try:
+            login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=5000)
+            login_page.fill_input(login_page.ZD_PASSWORD_INPUT, "wrongpassword")
+        except Exception:
+            pass  # Unknown user may have already shown an error at the login-name step
+    else:
+        login_page.fill_input(login_page.KC_USERNAME_INPUT, "invalid@example.com")
+        login_page.fill_input(login_page.KC_PASSWORD_INPUT, "wrongpassword")
 
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "invalid-credentials-entered", "And I enter invalid credentials"
@@ -224,41 +207,34 @@ def login_as_user_type(page: Page, user_type: str, bdd_screenshot_helper):
     login_page = LoginPage(page)
     login_page.wait_for_login_form()
 
-    if user_type.lower() == "regular":
-        login_page.fill_username("testuser@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    elif user_type.lower() == "admin":
-        login_page.fill_username("admin@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    elif user_type.lower() == "limited":
-        login_page.fill_username("limiteduser@example.com")
-        login_page.fill_password("password")
-        # Take screenshot before clicking login to show the filled form
-        bdd_screenshot_helper.take_bdd_screenshot(
-            login_page,
-            f"login-form-filled-{user_type.lower()}",
-            f'When I log in as a "{user_type}" user',
-        )
-        login_page.click_login()
-    else:
+    credentials = {
+        "regular": ("testuser@example.com", "Password1!"),
+        "admin": ("admin@example.com", "Password1!"),
+        "limited": ("limiteduser@example.com", "Password1!"),
+    }
+    if user_type.lower() not in credentials:
         raise ValueError(f"Unknown user type: {user_type}")
 
+    username, password = credentials[user_type.lower()]
+    login_page.fill_username(username)
+    if login_page._is_zitadel():
+        # Zitadel two-step: advance from login-name page to password page
+        login_page.click_login()
+        login_page.wait_for_selector(login_page.ZD_PASSWORD_INPUT, timeout=10000)
+    login_page.fill_password(password)
+    bdd_screenshot_helper.take_bdd_screenshot(
+        login_page,
+        f"login-form-filled-{user_type.lower()}",
+        f'When I log in as a "{user_type}" user',
+    )
+    login_page.click_login()
+
     # Wait for redirect back to SPA
-    page.wait_for_timeout(3000)
+    try:
+        page.wait_for_url(f"*{SPA_HOST}*", timeout=15000)
+    except Exception:
+        pass
+    page.wait_for_timeout(2000)
 
 
 @then("I should be redirected back to the application")
@@ -470,10 +446,11 @@ def redirected_to_idp_login(page: Page, bdd_screenshot_helper):
 
 @when("I click the IDP login button")
 def click_idp_login_button(page: Page, bdd_screenshot_helper):
-    """Click the IDP login button to submit credentials."""
+    """Click the IDP login submit button (provider-agnostic)."""
     login_page = LoginPage(page)
+    # For Zitadel, the final submit was already handled in enter_valid_admin_credentials
+    # (two-step flow needs the password field filled before clicking submit here).
     login_page.click_login()
-    # Wait for navigation to start and take screenshot showing the consequence
     page.wait_for_timeout(1000)
     bdd_screenshot_helper.take_bdd_screenshot(
         login_page, "after-login-click", "And I click the IDP login button"

@@ -34,18 +34,20 @@ describe("getConfig", () => {
 
     expect(config).toEqual({
       apiBaseUrl: "http://localhost:8000",
-      keycloakUrl: "http://localhost:8080",
-      keycloakRealm: "stuf",
-      keycloakClientId: "stuf-spa",
+      oidcAuthority: "http://localhost:8080/realms/stuf",
+      oidcClientId: "stuf-spa",
+      oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     });
   });
 
   it("returns runtime config when window.__STUF_CONFIG__ is set", async () => {
     const runtimeConfig: StufConfig = {
       apiBaseUrl: "https://api.example.com",
-      keycloakUrl: "https://auth.example.com",
-      keycloakRealm: "production",
-      keycloakClientId: "prod-client",
+      oidcAuthority: "https://auth.example.com",
+      oidcClientId: "prod-client",
+      oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;
@@ -74,9 +76,10 @@ describe("getConfig", () => {
   it("caches the config after first call", () => {
     const runtimeConfig: StufConfig = {
       apiBaseUrl: "https://api.example.com",
-      keycloakUrl: "https://auth.example.com",
-      keycloakRealm: "production",
-      keycloakClientId: "prod-client",
+      oidcAuthority: "https://auth.example.com",
+      oidcClientId: "prod-client",
+      oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;
@@ -91,9 +94,10 @@ describe("getConfig", () => {
   it("does not log warning when runtime config is set", async () => {
     const runtimeConfig: StufConfig = {
       apiBaseUrl: "https://api.example.com",
-      keycloakUrl: "https://auth.example.com",
-      keycloakRealm: "production",
-      keycloakClientId: "prod-client",
+      oidcAuthority: "https://auth.example.com",
+      oidcClientId: "prod-client",
+      oidcScope: "openid profile email stuf:access",
+      oidcLoadUserInfo: false,
     };
 
     window.__STUF_CONFIG__ = runtimeConfig;

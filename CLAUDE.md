@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 STUF (Secure Trusted Upload Facility) is a secure file upload system consisting of:
 - **FastAPI backend** (`api/`) for authentication and file management
 - **React SPA** (`spa/`) for user interface
-- **Docker Compose** setup with Keycloak authentication and MinIO object storage
+- **Docker Compose** setup with OIDC authentication (Keycloak or Zitadel) and MinIO object storage
 - **Comprehensive documentation** using MkDocs
 
 ## Development Commands
@@ -27,15 +27,18 @@ make test-cov          # Tests with coverage report
 
 ### Docker Environment
 ```bash
-# Start full development environment
-docker-compose up -d
+# Start full development environment (Keycloak profile, default)
+docker compose --profile keycloak up -d
 
-# Start E2E test environment
-docker-compose -f docker-compose.e2e.yml up -d
+# Start with Zitadel instead
+docker compose --profile zitadel up -d
+
+# Start E2E test environment (Keycloak)
+docker compose -f docker-compose.e2e.yml --profile keycloak up -d
 
 # Stop and clean up
-docker-compose down
-docker-compose down -v  # Remove volumes/data
+docker compose down
+docker compose down -v  # Remove volumes/data
 ```
 
 ### Documentation
@@ -56,7 +59,7 @@ npm run build # Production build
 
 ### API Layer (`api/`)
 - **FastAPI application** with modular router organization
-- **Keycloak integration** for OAuth2/OIDC authentication using JWT signature verification
+- **Provider-agnostic OIDC authentication** via OIDC discovery and JWT signature verification (supports both Keycloak and Zitadel)
 - **Dual authentication support** for both user accounts and service accounts
 - **Attribute-based authorization** with collection-level permissions stored in JWT collections claim
 - **MinIO integration** for S3-compatible object storage
@@ -72,7 +75,8 @@ npm run build # Production build
 
 ### Environment Configuration
 All services configured via environment variables with development defaults:
-- Keycloak realm/client configuration
+- OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`
+- SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID` (or legacy `KEYCLOAK_URL`/`KEYCLOAK_REALM` for backwards compatibility)
 - MinIO credentials and endpoints
 - API/SPA port configuration
 
@@ -87,8 +91,8 @@ All services configured via environment variables with development defaults:
 ### Authentication Flow
 
 #### User Authentication
-1. React SPA uses `react-oidc-context` for Keycloak OIDC flow
-2. FastAPI backend validates tokens via JWT signature verification against Keycloak public keys
+1. React SPA uses `react-oidc-context` for OIDC flow (provider-agnostic; configured via `OIDC_AUTHORITY`)
+2. FastAPI backend validates tokens via JWT signature verification using OIDC discovery (`OIDC_ISSUER_URL`)
 3. Users must have appropriate collection permissions in their JWT collections claim or admin role
 
 #### Service Account Authentication
@@ -111,7 +115,7 @@ All services configured via environment variables with development defaults:
 
 ### API Requirements
 - FastAPI >=0.104.0 with Uvicorn
-- Keycloak integration via python-jose and requests
+- OIDC integration via python-jose (JWT) and requests (discovery/JWKS)
 - MinIO client for S3-compatible storage
 - Pydantic 2.3.0 for data validation
 
@@ -123,31 +127,33 @@ All services configured via environment variables with development defaults:
 ## Development Workflow
 
 ### Authentication Setup
-1. Keycloak auto-configures with realm `stuf` and test users
-2. Default admin user: `admin@example.com` / `password`
+1. Keycloak auto-configures with realm `stuf` and test users; Zitadel is provisioned by `docker/zitadel-init/`
+2. Default admin user: `admin@example.com` / `Password1!` (both Keycloak and Zitadel)
 3. Collection permissions stored in JWT collections claim as JSON: `{"collection-name": ["read", "write", "delete"]}`
-4. Service accounts created as Keycloak clients with service account roles enabled
+4. Service accounts: Keycloak clients with service-account roles enabled; Zitadel machine users with JWT access tokens
 5. Both users and service accounts use same collection permission format
 
 ### File Upload Flow
-1. User authenticates via Keycloak OIDC
+1. User authenticates via OIDC (Keycloak or Zitadel)
 2. Frontend uploads files with metadata to API
 3. API validates permissions and stores in MinIO with user-specific paths
 4. Metadata and audit information stored with files
 
 ### Testing Authentication
 - Use `@pytest.fixture` for auth tokens in tests
-- Mock Keycloak responses for unit tests
-- E2E tests use real Keycloak instance
+- Integration tests mock JWT verification with both Keycloak-shaped and Zitadel-shaped payloads
+- E2E tests use a real IDP (Keycloak or Zitadel); user tokens obtained via Playwright browser login
 - Test both user and service account authentication flows
-- Service account tokens can be generated using client credentials flow
+- Service account tokens obtained via client credentials grant (`requests.post` to token endpoint)
 
 ## Service Endpoints
 
 ### Development URLs
 - SPA: http://localhost:3000
 - API: http://localhost:8000
-- Keycloak Admin: http://localhost:8080/admin (admin/admin)
+- Keycloak Admin: http://localhost:8080/admin (admin/admin) — when using `--profile keycloak`
+- Zitadel Admin: http://localhost:8080/ui/console (admin@example.com / Password1!) — when using `--profile zitadel`
+- Zitadel Login UI: http://localhost:8090 — when using `--profile zitadel`
 - MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
 
 ### API Endpoints

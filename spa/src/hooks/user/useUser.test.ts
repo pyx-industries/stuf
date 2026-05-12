@@ -1,23 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { useUser } from "./useUser";
 import { useAuth } from "react-oidc-context";
+import apiClient from "@/services/api";
 import type { User as OidcUser } from "oidc-client-ts";
 import type { AuthContextProps } from "react-oidc-context";
 
-// Mock react-oidc-context
 vi.mock("react-oidc-context", () => ({
   useAuth: vi.fn(),
 }));
 
-// Helper function to create mock auth context
+vi.mock("@/services/api", () => ({
+  default: {
+    request: vi.fn(),
+  },
+}));
+
 function createMockAuth(user?: OidcUser | null): AuthContextProps {
-  return { user } as unknown as AuthContextProps;
+  return {
+    user,
+    isAuthenticated: !!(user?.access_token),
+  } as unknown as AuthContextProps;
 }
+
+const BASE_PROFILE = {
+  preferred_username: "johndoe",
+  given_name: "John",
+  family_name: "Doe",
+  email: "john.doe@example.com",
+};
 
 describe("useUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(apiClient.request).mockResolvedValue({ collections: {} });
   });
 
   describe("when user is not authenticated", () => {
@@ -49,32 +65,30 @@ describe("useUser", () => {
   });
 
   describe("when user is authenticated", () => {
-    it("returns user with full name when given_name and family_name are present", () => {
+    it("returns user with full name and collections from /api/me", async () => {
+      const mockCollections = {
+        "collection-1": ["read", "write"],
+        "collection-2": ["read"],
+      };
+      vi.mocked(apiClient.request).mockResolvedValue({ collections: mockCollections });
       vi.mocked(useAuth).mockReturnValue(
         createMockAuth({
-          profile: {
-            preferred_username: "johndoe",
-            given_name: "John",
-            family_name: "Doe",
-            email: "john.doe@example.com",
-            collections: {
-              "collection-1": ["read", "write"],
-              "collection-2": ["read"],
-            },
-          },
+          profile: BASE_PROFILE,
+          access_token: "test-token",
         } as unknown as OidcUser),
       );
 
       const { result } = renderHook(() => useUser());
 
+      await waitFor(() => {
+        expect(result.current?.collections).toEqual(mockCollections);
+      });
+
       expect(result.current).toEqual({
         username: "johndoe",
         name: "John Doe",
         email: "john.doe@example.com",
-        collections: {
-          "collection-1": ["read", "write"],
-          "collection-2": ["read"],
-        },
+        collections: mockCollections,
         roles: [],
       });
     });
@@ -86,7 +100,6 @@ describe("useUser", () => {
             family_name: "Doe",
             preferred_username: "johndoe",
             email: "john.doe@example.com",
-            collections: {},
           },
         } as unknown as OidcUser),
       );
@@ -104,7 +117,6 @@ describe("useUser", () => {
             given_name: "John",
             preferred_username: "johndoe",
             email: "john.doe@example.com",
-            collections: {},
           },
         } as unknown as OidcUser),
       );
@@ -121,7 +133,6 @@ describe("useUser", () => {
           profile: {
             preferred_username: "johndoe",
             email: "john.doe@example.com",
-            collections: {},
           },
         } as unknown as OidcUser),
       );
@@ -137,7 +148,6 @@ describe("useUser", () => {
         createMockAuth({
           profile: {
             email: "user@example.com",
-            collections: {},
           },
         } as unknown as OidcUser),
       );
@@ -154,7 +164,6 @@ describe("useUser", () => {
           profile: {
             given_name: "John",
             family_name: "Doe",
-            collections: {},
           },
         } as unknown as OidcUser),
       );
@@ -164,7 +173,7 @@ describe("useUser", () => {
       expect(result.current?.email).toBe("");
     });
 
-    it("handles missing collections field", () => {
+    it("returns empty collections when no access token", () => {
       vi.mocked(useAuth).mockReturnValue(
         createMockAuth({
           profile: {
@@ -177,22 +186,23 @@ describe("useUser", () => {
 
       const { result } = renderHook(() => useUser());
 
-      expect(result.current?.collections).toBeUndefined();
+      expect(result.current?.collections).toEqual({});
     });
 
-    it("handles empty collections object", () => {
+    it("returns empty collections when /api/me call fails", async () => {
+      vi.mocked(apiClient.request).mockRejectedValue(new Error("Network error"));
       vi.mocked(useAuth).mockReturnValue(
         createMockAuth({
-          profile: {
-            given_name: "John",
-            family_name: "Doe",
-            email: "john.doe@example.com",
-            collections: {},
-          },
+          profile: BASE_PROFILE,
+          access_token: "test-token",
         } as unknown as OidcUser),
       );
 
       const { result } = renderHook(() => useUser());
+
+      await waitFor(() => {
+        expect(vi.mocked(apiClient.request)).toHaveBeenCalled();
+      });
 
       expect(result.current?.collections).toEqual({});
     });
@@ -204,8 +214,6 @@ describe("useUser", () => {
             given_name: "John",
             family_name: "Doe",
             email: "john.doe@example.com",
-            collections: {},
-            roles: ["admin", "user"], // Even if present in profile
           },
         } as unknown as OidcUser),
       );
@@ -215,28 +223,24 @@ describe("useUser", () => {
       expect(result.current?.roles).toEqual([]);
     });
 
-    it("handles complex collection permissions structure", () => {
+    it("fetches complex collection permissions from /api/me", async () => {
+      const mockCollections = {
+        "project-alpha": ["read", "write", "delete"],
+        "project-beta": ["read"],
+        "project-gamma": ["read", "write"],
+      };
+      vi.mocked(apiClient.request).mockResolvedValue({ collections: mockCollections });
       vi.mocked(useAuth).mockReturnValue(
         createMockAuth({
-          profile: {
-            given_name: "John",
-            family_name: "Doe",
-            email: "john.doe@example.com",
-            collections: {
-              "project-alpha": ["read", "write", "delete"],
-              "project-beta": ["read"],
-              "project-gamma": ["read", "write"],
-            },
-          },
+          profile: BASE_PROFILE,
+          access_token: "test-token",
         } as unknown as OidcUser),
       );
 
       const { result } = renderHook(() => useUser());
 
-      expect(result.current?.collections).toEqual({
-        "project-alpha": ["read", "write", "delete"],
-        "project-beta": ["read"],
-        "project-gamma": ["read", "write"],
+      await waitFor(() => {
+        expect(result.current?.collections).toEqual(mockCollections);
       });
     });
   });
