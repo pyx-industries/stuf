@@ -27,6 +27,10 @@ tests/e2e-browser/reports/
 tests/e2e-browser/auth-storage-state.json
 tests/.venv/
 
+# Zitadel bootstrap (generated at runtime; keep directory, ignore contents)
+.zitadel-bootstrap/*
+!.zitadel-bootstrap/.gitkeep
+
 # Zitadel e2e bootstrap (generated at runtime; keep directory, ignore contents)
 tests/e2e-browser/.zitadel-bootstrap/*
 !tests/e2e-browser/.zitadel-bootstrap/.gitkeep

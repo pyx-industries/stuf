@@ -42,6 +42,29 @@ _discovery_doc: dict = {}
 _jwks_cache: dict = {"keys": [], "fetched_at": 0.0}
 _JWKS_TTL = 300  # seconds
 
+# OIDC_ISSUER_HOST: when set, requests to the discovery document and JWKS
+# endpoint are sent with this value as the Host header. Required when
+# OIDC_BASE_URL is a Docker-internal hostname and the provider validates the
+# Host header against its configured external domain (e.g. Zitadel in a
+# split-horizon dev setup). Leave unset in standard deployments.
+_issuer_host: str = os.environ.get("OIDC_ISSUER_HOST", "")
+
+
+def _rebase_url(url: str) -> str:
+    """Replace OIDC_ISSUER_URL prefix with _OIDC_BASE_URL for internal routing."""
+    if _OIDC_BASE_URL != OIDC_ISSUER_URL and url.startswith(OIDC_ISSUER_URL):
+        return _OIDC_BASE_URL + url[len(OIDC_ISSUER_URL):]
+    return url
+
+
+def _oidc_get(url: str) -> requests.Response:
+    """GET an OIDC URL, routing through _OIDC_BASE_URL and spoofing Host when needed."""
+    target = _rebase_url(url)
+    headers = {"Host": _issuer_host} if _issuer_host else {}
+    resp = requests.get(target, timeout=10, headers=headers)
+    resp.raise_for_status()
+    return resp
+
 def _extract_roles(token_payload: dict) -> list:
     """Extract role list from a token, handling both Keycloak and Zitadel shapes.
 
@@ -63,10 +86,8 @@ def _fetch_discovery() -> dict:
     """Fetch and cache the OIDC discovery document."""
     global _discovery_doc
     if not _discovery_doc:
-        url = f"{_OIDC_BASE_URL}/.well-known/openid-configuration"
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        _discovery_doc = resp.json()
+        url = f"{OIDC_ISSUER_URL}/.well-known/openid-configuration"
+        _discovery_doc = _oidc_get(url).json()
     return _discovery_doc
 
 
@@ -76,9 +97,10 @@ def _get_jwks(force_refresh: bool = False) -> list:
     now = time.monotonic()
     if force_refresh or now - _jwks_cache["fetched_at"] > _JWKS_TTL:
         discovery = _fetch_discovery()
-        resp = requests.get(discovery["jwks_uri"], timeout=10)
-        resp.raise_for_status()
-        _jwks_cache = {"keys": resp.json().get("keys", []), "fetched_at": now}
+        _jwks_cache = {
+            "keys": _oidc_get(discovery["jwks_uri"]).json().get("keys", []),
+            "fetched_at": now,
+        }
     return _jwks_cache["keys"]
 
 

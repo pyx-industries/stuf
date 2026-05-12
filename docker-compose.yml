@@ -50,9 +50,11 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      - OIDC_ISSUER_URL=http://localhost:8080/realms/${KEYCLOAK_REALM:-stuf}
-      - OIDC_BASE_URL=http://keycloak:8080/realms/${KEYCLOAK_REALM:-stuf}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://localhost:8080/realms/stuf}
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-http://keycloak:8080/realms/stuf}
+      - OIDC_ISSUER_HOST=${OIDC_ISSUER_HOST:-}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
+      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -70,9 +72,9 @@ services:
       - "${SPA_PORT:-3000}:3000"
     environment:
       - API_URL=${API_URL:-http://localhost:8000}
-      - KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:8080}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-stuf}
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_SPA_CLIENT_ID:-stuf-spa}
+      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://localhost:8080/realms/stuf}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
+      - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
     depends_on:
       - api
 
@@ -104,7 +106,7 @@ services:
       - zitadel
     command: ["chmod", "777", "/bootstrap"]
     volumes:
-      - zitadel-bootstrap:/bootstrap
+      - ./.zitadel-bootstrap:/bootstrap
     restart: "no"
 
   zitadel:
@@ -141,7 +143,7 @@ services:
       ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
       ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /bootstrap/zitadel-admin-sa.json
     volumes:
-      - zitadel-bootstrap:/bootstrap
+      - ./.zitadel-bootstrap:/bootstrap
     ports:
       - "${ZITADEL_PORT:-8080}:8080"
     depends_on:
@@ -172,7 +174,7 @@ services:
       BOOTSTRAP_DIR: /bootstrap
       FIXTURE_PATH: /fixtures/dev/instance.yaml
     volumes:
-      - zitadel-bootstrap:/bootstrap
+      - ./.zitadel-bootstrap:/bootstrap
       - ./docker/zitadel-init:/fixtures:ro
     depends_on:
       zitadel:
@@ -196,11 +198,10 @@ services:
       ZITADEL_API_URL: http://localhost:${ZITADEL_PORT:-8080}
       PORT: ${ZITADEL_LOGIN_PORT:-8090}
     volumes:
-      - zitadel-bootstrap:/bootstrap:ro
+      - ./.zitadel-bootstrap:/bootstrap:ro
     depends_on:
       zitadel-init:
         condition: service_completed_successfully
 
 volumes:
   minio_data:
-  zitadel-bootstrap:
