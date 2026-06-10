@@ -251,13 +251,7 @@ services:
     networks:
       - stuf-e2e-test-net
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "const http = require('http'); const req = http.request('http://127.0.0.1:80', res => process.exit(0)); req.on('error', () => process.exit(1)); req.end();",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 5s
       timeout: 2s
       retries: 15
