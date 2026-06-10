@@ -18,11 +18,15 @@ apps:
     redirectUris:
       - http://localhost:3000
       - http://localhost:3100
+      - http://localhost
       - http://spa-e2e:3000
+      - http://spa-e2e
     postLogoutRedirectUris:
       - http://localhost:3000
       - http://localhost:3100
+      - http://localhost
       - http://spa-e2e:3000
+      - http://spa-e2e
   api:
     name: stuf-api
 
