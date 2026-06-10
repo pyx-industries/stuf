@@ -17,6 +17,10 @@ export default defineConfig({
     // Allow Docker container hostnames
     allowedHosts: ["spa-e2e", "localhost", "127.0.0.1", "all"],
   },
+  preview: {
+    host: "0.0.0.0",
+    allowedHosts: true,
+  },
   build: {
     outDir: "build",
   },
