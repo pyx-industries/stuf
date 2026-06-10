@@ -1,6 +1,7 @@
 """Centralized configuration for STUF Browser E2E Tests."""
 
 import os
+from urllib.parse import urlparse
 
 # Test environment URLs - Docker container defaults
 SPA_URL = os.getenv("SPA_URL", "http://spa-e2e:3000")
@@ -23,13 +24,20 @@ PLAYWRIGHT_WORKERS = os.getenv("PLAYWRIGHT_WORKERS")
 PLAYWRIGHT_BASE_URL = os.getenv("PLAYWRIGHT_BASE_URL")
 
 
-# Extract just the hostname:port for URL matching (for both localhost and internal Docker names)
-# SLOP: this is a stupid function and it's not clear why it needs to exist.
 def get_spa_host():
-    """Get SPA host for URL matching (e.g., 'localhost:3100' or 'spa-e2e:3000')"""
-    if "spa-e2e:3000" in SPA_URL:
-        return "spa-e2e:3000"
-    return "localhost:3100"
+    """Return the host[:port] to match in browser URLs after OIDC redirects.
+
+    Browsers suppress the default port (80 for HTTP, 443 for HTTPS), so a SPA
+    running on port 80 will appear as 'http://spa-e2e/' not 'http://spa-e2e:80/'.
+    """
+    parsed = urlparse(SPA_URL)
+    host = parsed.hostname or "localhost"
+    port = parsed.port
+    scheme = parsed.scheme or "http"
+    default_port = 443 if scheme == "https" else 80
+    if port and port != default_port:
+        return f"{host}:{port}"
+    return host
 
 
 SPA_HOST = get_spa_host()
