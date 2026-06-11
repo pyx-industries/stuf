@@ -16,6 +16,8 @@ services:
       context: ./spa
       dockerfile: Dockerfile
       target: development
+    ports:
+      - "${SPA_PORT:-3000}:3000"
     volumes:
       # Mount source code for hot reloading
       - ./spa/src:/app/src:cached

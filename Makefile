@@ -120,7 +120,7 @@ clean:
 	@echo "Clean complete."
 
 # Test targets
-.PHONY: test test-e2e test-all test-cov
+.PHONY: test test-e2e test-e2e-dev test-all test-cov
 
 # Run fast tests (unit + integration) - default
 test: $(VENV_DIR)/dev-requirements.stamp
@@ -165,6 +165,9 @@ test-e2e:
 	)
 	@echo "Stopping Zitadel E2E services..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel down
+
+test-e2e-dev:
+	SPA_BUILD_TARGET=development SPA_CONTAINER_PORT=3000 $(MAKE) test-e2e
 
 # Run all tests (fast + e2e)
 test-all:
