@@ -211,7 +211,7 @@ services:
       - MINIO_BUCKET_NAME=stuf-uploads-e2e
 
       # CORS configuration for browser testing
-      - CORS_ORIGINS=http://spa-e2e:3000
+      - CORS_ORIGINS=http://spa-e2e:${SPA_CONTAINER_PORT:-80}
     depends_on:
       minio-e2e:
         condition: service_healthy
@@ -235,9 +235,9 @@ services:
     build:
       context: ../../spa
       dockerfile: Dockerfile
-      target: development
+      target: ${SPA_BUILD_TARGET:-production}
     ports:
-      - "3100:3000" # Different port
+      - "3100:${SPA_CONTAINER_PORT:-80}"
     environment:
       # API configuration (internal Docker network URL)
       - API_URL=http://api-e2e:8000
@@ -251,13 +251,8 @@ services:
     networks:
       - stuf-e2e-test-net
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "const http = require('http'); const req = http.request('http://127.0.0.1:3000', res => process.exit(0)); req.on('error', () => process.exit(1)); req.end();",
-        ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider",
+             "http://127.0.0.1:${SPA_CONTAINER_PORT:-80}/"]
       interval: 5s
       timeout: 2s
       retries: 15
@@ -270,7 +265,7 @@ services:
       dockerfile: tests/e2e-browser/Dockerfile.test-runner
     environment:
       # Use internal Docker network URLs
-      - SPA_URL=http://spa-e2e:3000
+      - SPA_URL=http://spa-e2e:${SPA_CONTAINER_PORT:-80}
       - API_URL=http://api-e2e:8000
       - IDP_URL=${IDP_URL:-http://zitadel-e2e:8080}
       - MINIO_URL=http://minio-e2e:9000

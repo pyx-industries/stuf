@@ -27,40 +27,34 @@ RUN chmod +x /app/docker-entrypoint.sh
 # Use entrypoint with "dev" argument
 ENTRYPOINT ["/app/docker-entrypoint.sh", "dev"]
 
-# Production stage
-FROM node:20-alpine AS production
+# Build stage (intermediate — not published)
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
+RUN npm ci
 
-# Install only production dependencies
-RUN npm ci --only=production
-
-# Copy configuration files needed for build
 COPY vite.config.ts ./
 COPY tailwind.config.js ./
 COPY components.json ./
 COPY tsconfig.json ./
 COPY tsconfig.node.json ./
 COPY index.html ./
-
-# Copy source code
 COPY src/ ./src/
-
-# Copy public assets (icons, etc.)
 COPY public/ ./public/
 
-# Install dev dependencies needed for build
-RUN npm install vite @vitejs/plugin-react --save-dev
-
-# Build the application
 RUN npm run build
 
-# Copy and set up the entrypoint script
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+# Deploy stage — nginx serving the built assets
+FROM nginx:alpine AS production
 
-# Use entrypoint with "prod" argument (default)
-ENTRYPOINT ["/app/docker-entrypoint.sh", "prod"]
+COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx-entrypoint.sh /docker-entrypoint.d/10-runtime-config.sh
+RUN chmod +x /docker-entrypoint.d/10-runtime-config.sh
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost || exit 1

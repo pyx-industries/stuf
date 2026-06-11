@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile
       target: production
     ports:
-      - "${SPA_PORT:-3000}:3000"
+      - "${SPA_PORT:-3000}:80"
     environment:
       - API_URL=${API_URL:-http://localhost:8000}
       - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://localhost:8080}

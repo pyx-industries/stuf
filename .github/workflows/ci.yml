@@ -36,10 +36,19 @@ jobs:
         run: make test
 
   e2e-tests:
-    name: E2E Tests (Zitadel)
+    name: E2E Tests (${{ matrix.name }})
     runs-on: ubuntu-latest
     needs: fast-tests
     if: success()
+    strategy:
+      matrix:
+        include:
+          - name: production
+            spa_build_target: production
+            spa_container_port: 80
+          - name: development
+            spa_build_target: development
+            spa_container_port: 3000
 
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +93,9 @@ jobs:
 
       - name: Run E2E tests
         run: make test-e2e
+        env:
+          SPA_BUILD_TARGET: ${{ matrix.spa_build_target }}
+          SPA_CONTAINER_PORT: ${{ matrix.spa_container_port }}
 
       - name: Show Docker containers and logs on failure
         if: failure()
