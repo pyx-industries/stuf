@@ -2,6 +2,11 @@
 # Provides fast hot-reloading development environment
 services:
   api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      # development target runs uvicorn with --reload
+      target: development
     volumes:
       # Mount API source code for hot reloading
       - ./api:/app:cached

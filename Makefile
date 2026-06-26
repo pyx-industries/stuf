@@ -247,7 +247,7 @@ build-containers:
 	@echo "SPA Image: $(SPA_IMAGE)"
 	@echo ""
 	@echo "Building API container..."
-	@docker build -t $(API_IMAGE):latest ./api
+	@docker build --target production -t $(API_IMAGE):latest ./api
 	@echo "Building SPA container..."
 	@docker build --target production -t $(SPA_IMAGE):latest ./spa
 	@echo "All containers built successfully!"
