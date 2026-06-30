@@ -83,5 +83,8 @@ def get_current_principal_info(
 
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
+    # Auto-reload is a development convenience; off by default so this entry
+    # point is never accidentally a dev server in front of public traffic.
+    reload = os.environ.get("API_RELOAD", "false").lower() == "true"
 
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)
