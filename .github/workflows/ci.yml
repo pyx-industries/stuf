@@ -114,6 +114,7 @@ jobs:
           docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile zitadel logs api-e2e || echo "No API logs available"
           echo "=== SPA logs ==="
           docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile zitadel logs spa-e2e || echo "No SPA logs available"
+          docker compose -f tests/e2e-browser/docker-compose.e2e-browser.yml --profile zitadel logs rustfs-e2e || echo "No RustFS logs available"
           echo "=== Bootstrap generated.env ==="
           cat tests/e2e-browser/.zitadel-bootstrap/generated.env || echo "No generated.env"
 

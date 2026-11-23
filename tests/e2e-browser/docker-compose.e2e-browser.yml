@@ -176,6 +176,7 @@ services:
     environment:
       - RUSTFS_ACCESS_KEY=rustfsadmin
       - RUSTFS_SECRET_KEY=rustfsadmin
+      - RUSTFS_CONSOLE_ENABLE=false
     ports:
       - "9100:9000" # Different API port
     volumes:
