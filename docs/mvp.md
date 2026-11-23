@@ -230,7 +230,7 @@ Acceptance Criteria:
 docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:latest start-dev
 
 # Run RustFS (S3-compatible storage)
-docker run -p 9000:9000 -p 9001:9001 -e "RUSTFS_ACCESS_KEY=admin" -e "RUSTFS_SECRET_KEY=password" -e "RUSTFS_CONSOLE_ENABLE=true" rustfs/rustfs:1.0.6
+docker run -p 9000:9000 -p 9001:9001 -e "RUSTFS_ACCESS_KEY=admin" -e "RUSTFS_SECRET_KEY=password" rustfs/rustfs:1.0.6
 
 # Run FastAPI backend
 uvicorn app.main:app --reload

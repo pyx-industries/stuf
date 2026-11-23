@@ -4,7 +4,6 @@ services:
     environment:
       - RUSTFS_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - RUSTFS_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
-      - RUSTFS_CONSOLE_ENABLE=true
     ports:
       - "${RUSTFS_API_PORT:-9000}:9000"
       - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
