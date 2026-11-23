@@ -102,7 +102,7 @@ class TestFilesAPIIntegration:
         assert result["collection"] == "test"
         assert len(result["files"]) == len(SAMPLE_FILES[:2])
 
-        # Verify MinIO list was called with correct prefix
+        # Verify the storage listing was called with correct prefix
         integration_client.storage_repo_mock.list_files_in_collection.assert_called_once_with(
             "test"
         )

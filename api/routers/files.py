@@ -168,7 +168,7 @@ async def download_file(
 #     object_name: str,
 #     expires: int = 3600,
 #     current_user: User = Depends(get_current_user),
-#     minio_client: MinioClient = Depends(MinioClient)
+#     s3_client: S3Client = Depends(S3Client)
 # ):
 #     """
 #     Get a presigned URL for downloading a file - COMMENTED OUT (YAGNI)
@@ -190,7 +190,7 @@ async def download_file(
 #
 #     try:
 #         # Generate presigned URL
-#         url = minio_client.get_presigned_url(full_object_name, expires)
+#         url = s3_client.get_presigned_url(full_object_name, expires)
 #
 #         return {
 #             "status": "success",

@@ -144,7 +144,7 @@ STUF can be run locally using Docker Compose for development and testing purpose
    - **Zitadel**: Admin console at http://localhost:8080/ui/console (admin@example.com / Password1!)
    - RustFS (development object store):
      - S3 endpoint: http://localhost:9000
-     - Web console: http://localhost:9001 (minioadmin/minioadmin)
+     - Web console: http://localhost:9001 (rustfsadmin/rustfsadmin)
 
 Use `make spa-dev` to start the full development environment (Zitadel + API + SPA with hot reloading).
 
@@ -159,6 +159,19 @@ Use `make spa-dev` to start the full development environment (Zitadel + API + SP
 - **RustFS**: S3-compatible object storage for development; any S3-compatible store works
 - **API**: FastAPI backend service
 - **SPA**: React frontend application
+
+### Storage Settings
+
+The API stores files in any S3-compatible store, configured by these environment
+variables:
+
+| Variable | Meaning | Default |
+|---|---|---|
+| `S3_ENDPOINT_URL` | The store's URL, such as `http://rustfs:9000`; unset for AWS S3 itself | unset |
+| `S3_ACCESS_KEY_ID` | Access key; unset to use boto3's own credential chain (an IAM role, say) | unset |
+| `S3_SECRET_ACCESS_KEY` | Secret key, with the access key | unset |
+| `S3_REGION` | Region to sign requests for | `us-east-1` |
+| `S3_BUCKET_NAME` | Bucket to store files in, created on first use if missing | `stuf-uploads` |
 
 ### Development Tools
 
