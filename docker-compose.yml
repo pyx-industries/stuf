@@ -1,17 +1,17 @@
 services:
-  minio:
-    image: minio/minio:latest
+  rustfs:
+    image: rustfs/rustfs:1.0.6
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - RUSTFS_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - RUSTFS_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - RUSTFS_CONSOLE_ENABLE=true
     ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${RUSTFS_API_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
+      - rustfs_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/ready"]
       interval: 5s
       timeout: 2s
       retries: 15
@@ -29,12 +29,12 @@ services:
       - OIDC_ISSUER_HOST=${OIDC_ISSUER_HOST:-}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
-      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ENDPOINT=rustfs:9000
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-stuf-uploads}
     depends_on:
-      minio:
+      rustfs:
         condition: service_healthy
 
   spa:
@@ -178,4 +178,4 @@ services:
         condition: service_completed_successfully
 
 volumes:
-  minio_data:
+  rustfs_data:

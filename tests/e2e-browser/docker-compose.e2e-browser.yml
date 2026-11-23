@@ -3,8 +3,8 @@
 # Test runner executes on the host, services run in Docker
 #
 # Port mapping to avoid conflicts with main docker-compose:
-# Main:  MinIO:9000/9001, API:8000, SPA:3000, Zitadel:8080
-# E2E:   MinIO:9100/9101, API:8100, SPA:3100, Zitadel:8280, Zitadel-login:8290
+# Main:  RustFS:9000/9001, API:8000, SPA:3000, Zitadel:8080
+# E2E:   RustFS:9100, API:8100, SPA:3100, Zitadel:8280, Zitadel-login:8290
 #
 # Usage: docker compose --profile zitadel --profile testing up
 
@@ -170,22 +170,20 @@ services:
       zitadel-init-e2e:
         condition: service_completed_successfully
 
-  # ── MinIO - Object Storage (shared by both IDP profiles) ─────────────────
-  minio-e2e:
-    image: minio/minio:latest
+  # ── RustFS - S3-compatible object storage (shared by both IDP profiles) ──
+  rustfs-e2e:
+    image: rustfs/rustfs:1.0.6
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - RUSTFS_ACCESS_KEY=minioadmin
+      - RUSTFS_SECRET_KEY=minioadmin
     ports:
       - "9100:9000" # Different API port
-      - "9101:9001" # Different Console port
     volumes:
-      - minio_e2e_data:/data
-    command: server /data --console-address ":9001"
+      - rustfs_e2e_data:/data
     networks:
       - stuf-e2e-test-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/health/ready"]
       interval: 5s
       timeout: 2s
       retries: 15
@@ -204,8 +202,8 @@ services:
       - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
       - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
-      # MinIO configuration (internal network)
-      - MINIO_ENDPOINT=minio-e2e:9000
+      # Object store configuration (internal network)
+      - MINIO_ENDPOINT=rustfs-e2e:9000
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
       - MINIO_BUCKET_NAME=stuf-uploads-e2e
@@ -213,7 +211,7 @@ services:
       # CORS configuration for browser testing
       - CORS_ORIGINS=http://spa-e2e:${SPA_CONTAINER_PORT:-80}
     depends_on:
-      minio-e2e:
+      rustfs-e2e:
         condition: service_healthy
     networks:
       - stuf-e2e-test-net
@@ -268,7 +266,6 @@ services:
       - SPA_URL=http://spa-e2e:${SPA_CONTAINER_PORT:-80}
       - API_URL=http://api-e2e:8000
       - IDP_URL=${IDP_URL:-http://zitadel-e2e:8080}
-      - MINIO_URL=http://minio-e2e:9000
       # OIDC configuration (mirror of api-e2e vars above)
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
@@ -277,8 +274,8 @@ services:
       - OIDC_SERVICE_ACCOUNT_CLIENT_ID=${OIDC_SERVICE_ACCOUNT_CLIENT_ID:-backup-service}
       - OIDC_SERVICE_ACCOUNT_CLIENT_SECRET=${OIDC_SERVICE_ACCOUNT_CLIENT_SECRET:-backup-service-secret}
       - OIDC_SERVICE_ACCOUNT_SCOPES=${OIDC_SERVICE_ACCOUNT_SCOPES:-stuf:access}
-      # MinIO configuration for API E2E tests
-      - MINIO_ENDPOINT=minio-e2e:9000
+      # Object store configuration for API E2E tests
+      - MINIO_ENDPOINT=rustfs-e2e:9000
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
       - MINIO_BUCKET_NAME=stuf-uploads-e2e
@@ -287,7 +284,7 @@ services:
         condition: service_healthy
       api-e2e:
         condition: service_healthy
-      minio-e2e:
+      rustfs-e2e:
         condition: service_healthy
     networks:
       - stuf-e2e-test-net
@@ -303,5 +300,5 @@ services:
 
 # Named volumes for E2E test data (separate from main volumes)
 volumes:
-  minio_e2e_data:
+  rustfs_e2e_data:
     driver: local

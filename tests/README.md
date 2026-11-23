@@ -50,7 +50,7 @@ This gap has led to situations where all tests pass but manual testing through t
 │  │  • reports/test-report.html││    │  └─────────────────────┘  │
 │  │                             ││    │                           │
 │  └─────────────────────────────┘│    │  ┌─────────────────────┐  │
-└─────────────────────────────────┘    │  │       MinIO         │  │
+└─────────────────────────────────┘    │  │       RustFS        │  │
                                        │  │   localhost:9000    │  │
                                        │  └─────────────────────┘  │
                                        └───────────────────────────┘
@@ -395,7 +395,7 @@ tests/
 # 1. Start test environment
 make test-e2e-browser-env-up
 # → docker-compose -f tests/e2e-browser/docker-compose.e2e-browser.yml up -d
-# → Services: Keycloak:8080, SPA:3000, API:8000, MinIO:9000
+# → Services: Keycloak:8080, SPA:3000, API:8000, RustFS:9000
 
 # 2. Run browser tests (host-based)
 make test-e2e-browser  

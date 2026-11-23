@@ -229,8 +229,8 @@ Acceptance Criteria:
 # Run Keycloak
 docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:latest start-dev
 
-# Run MinIO (S3-compatible storage)
-docker run -p 9000:9000 -p 9001:9001 -e "MINIO_ROOT_USER=admin" -e "MINIO_ROOT_PASSWORD=password" minio/minio server /data --console-address ":9001"
+# Run RustFS (S3-compatible storage)
+docker run -p 9000:9000 -p 9001:9001 -e "RUSTFS_ACCESS_KEY=admin" -e "RUSTFS_SECRET_KEY=password" -e "RUSTFS_CONSOLE_ENABLE=true" rustfs/rustfs:1.0.6
 
 # Run FastAPI backend
 uvicorn app.main:app --reload
