@@ -149,7 +149,9 @@ async def download_file(
             io.BytesIO(file_content.read()),
             media_type=file_metadata.content_type,
             headers={
-                "Content-Disposition": f"attachment; filename={original_filename}"
+                "Content-Disposition": 'attachment; filename="{}"'.format(
+                    original_filename.replace("\\", "\\\\").replace('"', '\\"')
+                )
             },
         )
     except InsufficientPermissionsError as e:

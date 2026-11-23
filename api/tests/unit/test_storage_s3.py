@@ -62,12 +62,16 @@ class TestS3Client:
         assert content_type == "text/plain"
 
     def test_object_exists(self, boto_client):
-        """Test the existence check, both ways"""
+        """Not found is False; any other error is raised"""
         client = S3Client(ensure_bucket=False)
         assert client.object_exists("test/file.txt") is True
 
         boto_client.head_object.side_effect = client_error("404", "HeadObject")
         assert client.object_exists("test/missing.txt") is False
+
+        boto_client.head_object.side_effect = client_error("403", "HeadObject")
+        with pytest.raises(ClientError):
+            client.object_exists("test/file.txt")
 
     def test_list_objects_success(self, boto_client):
         """Test successful object listing, across pages"""
@@ -106,3 +110,15 @@ class TestS3Client:
         S3Client().delete_object("test/file.txt")
 
         boto_client.create_bucket.assert_called_once_with(Bucket=S3_BUCKET_NAME)
+
+    def test_failed_bucket_check_is_retried(self, boto_client):
+        """A store unreachable on first use is tried again on the next call"""
+        boto_client.head_bucket.side_effect = [client_error("503", "HeadBucket"), {}]
+        client = S3Client()
+
+        with pytest.raises(ClientError):
+            client.delete_object("test/file.txt")
+        client.delete_object("test/file.txt")
+
+        boto_client.create_bucket.assert_not_called()
+        boto_client.delete_object.assert_called_once()

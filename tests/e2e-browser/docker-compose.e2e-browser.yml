@@ -207,6 +207,7 @@ services:
       - S3_ENDPOINT_URL=http://rustfs-e2e:9000
       - S3_ACCESS_KEY_ID=rustfsadmin
       - S3_SECRET_ACCESS_KEY=rustfsadmin
+      - S3_REGION=us-east-1
       - S3_BUCKET_NAME=stuf-uploads-e2e
 
       # CORS configuration for browser testing
@@ -279,6 +280,7 @@ services:
       - S3_ENDPOINT_URL=http://rustfs-e2e:9000
       - S3_ACCESS_KEY_ID=rustfsadmin
       - S3_SECRET_ACCESS_KEY=rustfsadmin
+      - S3_REGION=us-east-1
       - S3_BUCKET_NAME=stuf-uploads-e2e
     depends_on:
       spa-e2e:

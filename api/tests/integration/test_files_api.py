@@ -129,6 +129,9 @@ class TestFilesAPIIntegration:
         assert response.status_code == 200
         assert response.content == b"test content"  # From conftest mock
         assert "text/plain" in response.headers["content-type"]
+        assert (
+            response.headers["content-disposition"] == 'attachment; filename="test.txt"'
+        )
 
         # Verify storage repository download was called
         integration_client.storage_repo_mock.retrieve_file.assert_called_once_with(

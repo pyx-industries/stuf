@@ -5,7 +5,7 @@ import logging
 from domain.models import File
 from domain.services import FileParsingService, FileMetadataService
 from domain.repositories import StorageError, StorageFileNotFoundError
-from .s3 import S3Client
+from .s3 import S3Client, is_not_found
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class S3StorageRepository:
             return BytesIO(data), file
 
         except Exception as e:
-            if "NoSuchKey" in str(e) or "not found" in str(e).lower():
+            if is_not_found(e):
                 raise StorageFileNotFoundError(f"File not found: {object_name}")
             logger.error(f"Failed to retrieve file {object_name}: {e}")
             raise StorageError(f"Failed to retrieve file: {str(e)}")

@@ -11,11 +11,19 @@ from botocore.exceptions import ClientError
 S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL") or None
 S3_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY_ID") or None
 S3_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_ACCESS_KEY") or None
-S3_REGION = os.environ.get("S3_REGION", "us-east-1")
-S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "stuf-uploads")
+S3_REGION = os.environ.get("S3_REGION") or "us-east-1"
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME") or "stuf-uploads"
 
 
 logger = logging.getLogger(__name__)
+
+
+def is_not_found(e: Exception) -> bool:
+    """Whether an S3 error says the bucket or object does not exist"""
+    code = (
+        e.response.get("Error", {}).get("Code") if isinstance(e, ClientError) else None
+    )
+    return code in {"404", "NoSuchKey", "NoSuchBucket", "NotFound"}
 
 
 class S3Client:
@@ -29,10 +37,11 @@ class S3Client:
     def _ensure_client(self):
         """
         Creates the boto3 client on first use and returns it, creating the
-        bucket then too if configured to.
+        bucket then too if configured to. If that fails, the next call tries
+        again.
         """
         if self.client is None:
-            self.client = boto3.client(
+            client = boto3.client(
                 "s3",
                 endpoint_url=S3_ENDPOINT_URL,
                 aws_access_key_id=S3_ACCESS_KEY_ID,
@@ -40,26 +49,29 @@ class S3Client:
                 region_name=S3_REGION,
                 # Self-hosted stores route path-style requests without
                 # needing a wildcard DNS name for each bucket.
+                # boto3 adds checksums to every request by default, which
+                # many S3-compatible stores reject; send them only when an
+                # operation requires one.
                 config=Config(
-                    s3={"addressing_style": "path" if S3_ENDPOINT_URL else "auto"}
+                    s3={"addressing_style": "path" if S3_ENDPOINT_URL else "auto"},
+                    request_checksum_calculation="when_required",
+                    response_checksum_validation="when_required",
                 ),
             )
             if self._should_ensure_bucket:
-                try:
-                    self._ensure_bucket_exists(S3_BUCKET_NAME)
-                except Exception as e:
-                    logger.warning(
-                        f"Could not ensure bucket exists during lazy init: {e}"
-                    )
+                self._ensure_bucket_exists(client, S3_BUCKET_NAME)
+            self.client = client
         return self.client
 
-    def _ensure_bucket_exists(self, bucket_name: str):
+    @staticmethod
+    def _ensure_bucket_exists(client, bucket_name: str):
         """Ensure the bucket exists, create it if it doesn't"""
         try:
-            self.client.head_bucket(Bucket=bucket_name)
-            logger.info(f"Bucket '{bucket_name}' already exists")
-        except ClientError:
-            self.client.create_bucket(Bucket=bucket_name)
+            client.head_bucket(Bucket=bucket_name)
+        except ClientError as e:
+            if not is_not_found(e):
+                raise
+            client.create_bucket(Bucket=bucket_name)
             logger.info(f"Bucket '{bucket_name}' created successfully")
 
     def upload_file(
@@ -94,8 +106,10 @@ class S3Client:
         try:
             self._ensure_client().head_object(Bucket=bucket_name, Key=object_name)
             return True
-        except ClientError:
-            return False
+        except ClientError as e:
+            if is_not_found(e):
+                return False
+            raise
 
     def get_presigned_url(
         self, object_name: str, expires: int = 3600, bucket_name: str = S3_BUCKET_NAME
