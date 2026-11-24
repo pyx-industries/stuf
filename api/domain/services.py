@@ -4,6 +4,8 @@ from typing import Dict, Any
 from datetime import datetime
 import json
 
+from .exceptions import ReservedMetadataError
+
 
 class FilePathService:
     """Domain service for generating file storage paths according to business rules"""
@@ -34,13 +36,18 @@ class FilePathService:
 class FileMetadataService:
     """Domain service for handling file metadata transformations"""
 
+    RESERVED_FIELDS = frozenset(
+        {"uploader", "upload_time", "collection", "original_filename"}
+    )
+
     @staticmethod
     def parse_metadata_json(metadata_json: str) -> Dict[str, Any]:
         """Parse and validate metadata JSON string"""
         try:
-            return json.loads(metadata_json)
+            parsed = json.loads(metadata_json)
         except json.JSONDecodeError:
             return {}
+        return parsed if isinstance(parsed, dict) else {}
 
     @staticmethod
     def create_upload_metadata(
@@ -51,6 +58,17 @@ class FileMetadataService:
         user_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Create complete upload metadata combining system and user metadata"""
+        # Storage treats keys case-insensitively, with or without this prefix
+        reserved = {
+            key
+            for key in user_metadata
+            if str(key).lower().removeprefix("x-amz-meta-")
+            in FileMetadataService.RESERVED_FIELDS
+        }
+        if reserved:
+            raise ReservedMetadataError(
+                f"Metadata cannot set reserved fields: {', '.join(sorted(map(str, reserved)))}"
+            )
         # System keys come last, so user metadata cannot override them
         return {
             **user_metadata,

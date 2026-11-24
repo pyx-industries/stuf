@@ -11,6 +11,7 @@ from domain import (
     FileUploadError,
     InsufficientPermissionsError,
     InvalidMetadataError,
+    ReservedMetadataError,
     StorageRepository,
 )
 from fastapi import (
@@ -75,6 +76,10 @@ async def upload_file(
         )
     except InsufficientPermissionsError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ReservedMetadataError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+        )
     except InvalidMetadataError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except FileUploadError as e:
