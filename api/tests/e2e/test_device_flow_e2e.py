@@ -1,5 +1,6 @@
 import io
 import os
+import time
 
 import pytest
 import requests
@@ -22,12 +23,16 @@ def _bootstrap():
 
 
 @pytest.fixture(scope="module")
-def device_flow_token(ensure_services_ready):  # noqa: F811
+def device_flow_token(ensure_services_ready):
     """A token for testuser from the device flow, approved without a browser."""
+    # Fails rather than skips, unlike the other token fixtures, so that a
+    # broken device flow can't pass as a skip.
     client_id, login_pat = _bootstrap()
     discovery = requests.get(
         f"{OIDC_ISSUER_URL}/.well-known/openid-configuration", timeout=10
-    ).json()
+    )
+    discovery.raise_for_status()
+    discovery = discovery.json()
     device = requests.post(
         discovery["device_authorization_endpoint"],
         data={"client_id": client_id, "scope": "openid offline_access"},
@@ -65,16 +70,26 @@ def device_flow_token(ensure_services_ready):  # noqa: F811
         timeout=10,
     ).raise_for_status()
 
-    response = requests.post(
-        discovery["token_endpoint"],
-        data={
-            "grant_type": DEVICE_GRANT,
-            "device_code": device["device_code"],
-            "client_id": client_id,
-        },
-        timeout=10,
-    )
-    assert response.ok, response.json().get("error")
+    # Poll as a client would, in case the approval isn't visible at once.
+    interval = device.get("interval", 5)
+    for _ in range(6):
+        response = requests.post(
+            discovery["token_endpoint"],
+            data={
+                "grant_type": DEVICE_GRANT,
+                "device_code": device["device_code"],
+                "client_id": client_id,
+            },
+            timeout=10,
+        )
+        if response.ok or not any(
+            e in response.text for e in ("authorization_pending", "slow_down")
+        ):
+            break
+        if "slow_down" in response.text:
+            interval += 5
+        time.sleep(interval)
+    assert response.ok, f"{response.status_code} {response.text}"
     return response.json()["access_token"]
 
 
@@ -93,13 +108,13 @@ class TestDeviceFlowE2E:
 
         assert token_info is not None
         assert token_info.get("idtyp") == "user"
-        assert "write" in token_info["collections"]["test"]
 
-    def test_me_reports_the_user(self, device_flow_client):
+    def test_me_reports_the_user_and_collections(self, device_flow_client):
         me = device_flow_client.get("/api/me").json()
 
         assert me["type"] == "user"
         assert me["username"] == "testuser"
+        assert "write" in me["collections"]["test"]
 
     def test_upload_records_the_user_as_uploader(self, device_flow_client):
         response = device_flow_client.post(
@@ -109,3 +124,7 @@ class TestDeviceFlowE2E:
 
         assert response.status_code == 200
         assert response.json()["metadata"]["uploader"] == "testuser"
+
+        file_path = response.json()["object_name"].split("/", 1)[1]
+        response = device_flow_client.delete(f"/api/files/test/{file_path}")
+        assert response.status_code == 200
