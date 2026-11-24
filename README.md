@@ -142,8 +142,8 @@ STUF can be run locally using Docker Compose for development and testing purpose
      - Health check: http://localhost:8000/api/health
      - API info: http://localhost:8000/api/info
    - **Zitadel**: Admin console at http://localhost:8080/ui/console (admin@example.com / Password1!)
-   - MinIO:
-     - API endpoint: http://localhost:9000
+   - RustFS (development object store):
+     - S3 endpoint: http://localhost:9000
      - Web console: http://localhost:9001 (minioadmin/minioadmin)
 
 Use `make spa-dev` to start the full development environment (Zitadel + API + SPA with hot reloading).
@@ -156,7 +156,7 @@ Use `make spa-dev` to start the full development environment (Zitadel + API + SP
   - Login UI served at http://localhost:8090
   - Test users:
     - admin@example.com / password (admin role)
-- **MinIO**: S3-compatible object storage
+- **RustFS**: S3-compatible object storage for development; any S3-compatible store works
 - **API**: FastAPI backend service
 - **SPA**: React frontend application
 
