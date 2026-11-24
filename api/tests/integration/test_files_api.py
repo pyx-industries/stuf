@@ -139,6 +139,77 @@ class TestFilesAPIIntegration:
         )
 
     @pytest.mark.parametrize("auth_fixture", AUTH_FIXTURES)
+    def test_get_file_metadata_with_valid_auth(
+        self, integration_client, request, auth_fixture
+    ):
+        """Metadata, system fields and content type are returned without the content"""
+        from domain.models import File
+
+        headers = request.getfixturevalue(auth_fixture)
+        integration_client.storage_repo_mock.get_file_info.return_value = File(
+            object_name="test/alice/20250101-120000-test.txt",
+            collection="test",
+            owner="alice",
+            original_filename="test.txt",
+            upload_time="20250101-120000",
+            content_type="text/plain",
+            size=12,
+            metadata={"uploader": "alice", "description": "Integration test file"},
+        )
+
+        response = integration_client.get(
+            "/api/files/test/alice/20250101-120000-test.txt/metadata",
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["content_type"] == "text/plain"
+        assert result["size"] == 12
+        assert result["metadata"] == {
+            "uploader": "alice",
+            "description": "Integration test file",
+        }
+        integration_client.storage_repo_mock.get_file_info.assert_called_once_with(
+            "test/alice/20250101-120000-test.txt"
+        )
+        integration_client.storage_repo_mock.retrieve_file.assert_not_called()
+
+    @pytest.mark.parametrize("auth_fixture", LIMITED_AUTH_FIXTURES)
+    def test_get_file_metadata_wrong_collection(
+        self, integration_client, request, auth_fixture
+    ):
+        """Metadata needs the same read access as fetching the file"""
+        headers = request.getfixturevalue(auth_fixture)
+
+        response = integration_client.get(
+            "/api/files/test/user/test.txt/metadata", headers=headers
+        )
+
+        assert response.status_code == 403
+        integration_client.storage_repo_mock.get_file_info.assert_not_called()
+
+    def test_get_file_metadata_without_auth(self, integration_client):
+        response = integration_client.get("/api/files/test/user/test.txt/metadata")
+
+        assert response.status_code == 401
+
+    def test_get_file_metadata_not_found(
+        self, integration_client, authenticated_headers
+    ):
+        from domain.repositories import StorageFileNotFoundError
+
+        integration_client.storage_repo_mock.get_file_info.side_effect = (
+            StorageFileNotFoundError("gone")
+        )
+
+        response = integration_client.get(
+            "/api/files/test/user/missing.txt/metadata", headers=authenticated_headers
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize("auth_fixture", AUTH_FIXTURES)
     def test_invalid_metadata_format(self, integration_client, request, auth_fixture):
         """Test upload with invalid metadata JSON (both user and service account)"""
         headers = request.getfixturevalue(auth_fixture)

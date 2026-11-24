@@ -86,9 +86,16 @@ class FileParsingService:
             owner = parts[1]
             timestamp_and_filename = parts[2]
 
-            # Try to split timestamp and filename
-            if "-" in timestamp_and_filename:
-                timestamp_part, filename_part = timestamp_and_filename.split("-", 1)
+            # The timestamp itself contains a "-", so split after its full length
+            ts_len = len(
+                datetime(2000, 1, 1).strftime(FilePathService.TIMESTAMP_FORMAT)
+            )
+            if (
+                len(timestamp_and_filename) > ts_len
+                and timestamp_and_filename[ts_len] == "-"
+            ):
+                timestamp_part = timestamp_and_filename[:ts_len]
+                filename_part = timestamp_and_filename[ts_len + 1 :]
             else:
                 timestamp_part = "unknown"
                 filename_part = timestamp_and_filename

@@ -22,6 +22,21 @@ class S3StorageRepository:
     def __init__(self, s3_client: S3Client):
         self._client = s3_client
 
+    @staticmethod
+    def _to_file(object_name: str, content_type: str, size: int, metadata) -> File:
+        """Build a File from a stored object's name and what the store knows of it"""
+        parsed_info = FileParsingService.parse_storage_path(object_name)
+        return File(
+            object_name=object_name,
+            collection=parsed_info["collection"],
+            owner=parsed_info["owner"],
+            original_filename=parsed_info["original_filename"],
+            upload_time=parsed_info["timestamp"],
+            content_type=content_type,
+            size=size,
+            metadata=metadata or {},
+        )
+
     def store_file(self, file_content: BytesIO, file: File) -> bool:
         """Store a file with its metadata in S3"""
         try:
@@ -46,20 +61,7 @@ class S3StorageRepository:
                 object_name
             )
 
-            # Parse storage path using domain service
-            parsed_info = FileParsingService.parse_storage_path(object_name)
-
-            # Create File object from parsed information
-            file = File(
-                object_name=object_name,
-                collection=parsed_info["collection"],
-                owner=parsed_info["owner"],
-                original_filename=parsed_info["original_filename"],
-                upload_time=parsed_info["timestamp"],
-                content_type=content_type,
-                size=len(data),
-                metadata=storage_metadata or {},
-            )
+            file = self._to_file(object_name, content_type, len(data), storage_metadata)
 
             return BytesIO(data), file
 
@@ -68,6 +70,19 @@ class S3StorageRepository:
                 raise StorageFileNotFoundError(f"File not found: {object_name}")
             logger.error(f"Failed to retrieve file {object_name}: {e}")
             raise StorageError(f"Failed to retrieve file: {str(e)}")
+
+    def get_file_info(self, object_name: str) -> File:
+        """Read a file's stored metadata and content type, without its content"""
+        try:
+            info = self._client.head_object(object_name)
+            return self._to_file(
+                object_name, info["content_type"], info["size"], info["metadata"]
+            )
+        except Exception as e:
+            if is_not_found(e):
+                raise StorageFileNotFoundError(f"File not found: {object_name}")
+            logger.error(f"Failed to read file info {object_name}: {e}")
+            raise StorageError(f"Failed to read file info: {str(e)}")
 
     def list_files_in_collection(self, collection: str) -> List[File]:
         """List all files in a collection using S3 prefix listing"""
