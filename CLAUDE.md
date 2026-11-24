@@ -145,6 +145,7 @@ All services configured via environment variables with development defaults:
 - Use `@pytest.fixture` for auth tokens in tests
 - Integration tests mock JWT verification with Zitadel-shaped token payloads
 - E2E tests use real Zitadel; user tokens obtained via Playwright browser login
+- Device-flow tokens (`test_device_flow_e2e.py`) are approved without a browser, through Zitadel's session and device authorization APIs with the login UI's PAT from `/bootstrap`
 - Test both user and service account authentication flows
 - Service account tokens obtained via client credentials grant (`requests.post` to token endpoint)
 
