@@ -227,9 +227,9 @@ async def get_current_user(
     )
 
 
-    # Ensure this is a user token, not a service account
-    if not token_payload.get("preferred_username") and not token_payload.get(
-        "username"
+    # Ensure this is a user token, not a service account, unless idtyp says so
+    if token_payload.get("idtyp") != "user" and not (
+        token_payload.get("preferred_username") or token_payload.get("username")
     ):
         if token_payload.get("azp") or token_payload.get("client_id"):
             logger.error("Service account token used for user authentication")
@@ -350,16 +350,16 @@ async def get_current_principal(
 
     # The `idtyp` claim says what the subject is: "user" for a person, "app"
     # for a service account (Microsoft Entra's claim, set by stuf's Zitadel
-    # Action). Only when the IdP doesn't set it, fall back to profile claims,
+    # Action). When it is absent or anything else, fall back to profile claims,
     # which a person's token from the SPA carries and a machine user's doesn't.
     idtyp = token_payload.get("idtyp")
-    if idtyp is None:
+    if idtyp in ("user", "app"):
+        is_user = idtyp == "user"
+    else:
         is_user = any(
             token_payload.get(claim)
             for claim in ("email", "given_name", "family_name", "sid")
         )
-    else:
-        is_user = idtyp == "user"
 
     if is_user:
         logger.debug("Detected user token (idtyp=%s)", idtyp)

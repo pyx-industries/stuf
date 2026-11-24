@@ -24,6 +24,8 @@ def principal_for(payload):
         {**PERSON, "idtyp": "user", "email": "alice@example.com", "sid": "s"},
         # From another client, such as the device flow: idtyp, no profile claims
         {**PERSON, "idtyp": "user"},
+        # An unknown idtyp is ignored, as if absent
+        {**PERSON, "idtyp": "User", "email": "alice@example.com"},
         # From an IdP that doesn't set idtyp: profile claims only
         {**PERSON, "email": "alice@example.com"},
     ],
@@ -47,3 +49,9 @@ def test_person_is_recognised_by_preferred_username(payload):
 def test_service_account_is_recognised_by_client(payload):
     principal = principal_for(payload)
     assert principal.client_id == "backup-service"
+
+
+@pytest.mark.unit
+def test_person_without_username_is_recognised_by_sub():
+    payload = {"sub": "123", "azp": "cli", "idtyp": "user", "collections": {}}
+    assert principal_for(payload).username == "123"

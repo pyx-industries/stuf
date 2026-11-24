@@ -31,7 +31,8 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 # Fires for both authorization-code (human) and client_credentials (machine)
 # grants when the project's access-token type is JWT.
 # - preferred_username: not in Zitadel JWT access tokens by default; injected
-#   here so the STUF API middleware can use it for the username claim.
+#   here so the STUF API middleware can use it for the username claim, from
+#   getUser() (ctx.v1.user has only getMetadata() and grants).
 # - collections: user metadata stored as a JSON object; getMetadata() returns
 #   a wrapper {metadata: [...]} where each entry's value is already decoded
 #   from base64+JSON (no atob/JSON.parse needed).
@@ -40,9 +41,10 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 #   `machine` field for a machine user and a `human` field for a human.
 COLLECTIONS_ACTION_SCRIPT = """\
 function preAccessTokenCreation(ctx, api) {
-  api.v1.claims.setClaim("idtyp", ctx.v1.getUser().machine ? "app" : "user");
-  if (ctx.v1.user.preferredLoginName) {
-    api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
+  var user = ctx.v1.getUser();
+  if (user) {
+    api.v1.claims.setClaim("preferred_username", user.preferredLoginName);
+    api.v1.claims.setClaim("idtyp", user.machine ? "app" : "user");
   }
   var result = ctx.v1.user.getMetadata();
   if (!result || !result.metadata) { return; }

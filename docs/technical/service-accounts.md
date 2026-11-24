@@ -33,10 +33,12 @@ saying what the subject is (the claim and its values are Microsoft Entra's):
 | `app` | A service account | `azp` or `client_id` |
 
 In the dev and e2e environments, the `preAccessTokenCreation` Action that
-`docker/zitadel-init/provision.py` installs in Zitadel sets it. Microsoft Entra
-can be configured to emit it as an optional claim.
+`docker/zitadel-init/provision.py` installs in Zitadel sets it. A deployment
+that installs its own Zitadel Action instead needs to set it there too.
+Microsoft Entra can be configured to emit it as an optional claim.
 
-When a token has no `idtyp`, STUF falls back to guessing: a token carrying
+When a token has no `idtyp`, or a value other than these two, STUF falls back
+to guessing: a token carrying
 `email`, `given_name`, `family_name` or `sid` is a person's, and any other is a
 service account's. A person's token without those claims, such as one issued to
 a command-line client rather than the SPA, is then taken for a service
@@ -262,6 +264,8 @@ export STUF_API_URL="http://localhost:8000/api"
 3. **Token type detection fails**
    - Check the token's `idtyp` claim: `app` for a service account, `user` for a person
    - Ensure service account tokens have `azp` or `client_id` claims
+   - Without `idtyp`, verify service account tokens carry no user claims
+     (`email`, `given_name`, `family_name`, `sid`)
 
 ### Debug Endpoints
 
