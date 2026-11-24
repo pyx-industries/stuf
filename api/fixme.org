@@ -16,7 +16,7 @@ This task focuses on improving the reliability and maintainability of end-to-end
 
 *** Files to create/modify
 - `requirements-dev.txt`: Add `pytest-docker==2.0.0` (or latest stable version).
-- `api/tests/e2e/conftest.py`: Refactor fixtures to use `pytest-docker` for Keycloak and MinIO service management.
+- `api/tests/e2e/conftest.py`: Refactor fixtures to use `pytest-docker` for Keycloak and object store service management.
 
 *** Completion Criteria
 - [ ] `pytest-docker` is added to `requirements-dev.txt`.
@@ -81,16 +81,16 @@ This task replaces `print` statements in `api/storage/minio.py` with calls to Py
 - [X] All `print` statements in `api/storage/minio.py` are replaced with appropriate `logger` calls (`info`, `warning`, `error`).
 - [X] The application's MinIO operations continue to function as expected, with logs now being properly handled by the logging system.
 
-*** TODO Make `DEFAULT_BUCKET` configurable in `api/storage/minio.py`
-This task makes the default MinIO bucket name configurable via an environment variable. Hardcoding the bucket name limits flexibility for different deployment environments or test setups, making it harder to manage separate buckets for development, staging, and production.
+*** DONE Make `DEFAULT_BUCKET` configurable in `api/storage/s3.py`
+This task makes the default bucket name configurable via an environment variable. Hardcoding the bucket name limits flexibility for different deployment environments or test setups, making it harder to manage separate buckets for development, staging, and production.
 
 **** Files to create/modify
-- `api/storage/minio.py`: Update `DEFAULT_BUCKET` to use `os.environ.get('MINIO_BUCKET_NAME', 'stuf-uploads')`.
+- `api/storage/s3.py`: Read `S3_BUCKET_NAME` with `os.environ.get('S3_BUCKET_NAME', 'stuf-uploads')`.
 
 **** Completion Criteria
-- [ ] `DEFAULT_BUCKET` in `api/storage/minio.py` is configured to read from the `MINIO_BUCKET_NAME` environment variable.
-- [ ] The MinIO client can successfully connect to and use a bucket specified by `MINIO_BUCKET_NAME`.
-- [ ] Existing functionality using the default bucket name remains operational if `MINIO_BUCKET_NAME` is not set.
+- [X] The bucket in `api/storage/s3.py` is configured to read from the `S3_BUCKET_NAME` environment variable.
+- [X] The S3 client can successfully connect to and use a bucket specified by `S3_BUCKET_NAME`.
+- [X] Existing functionality using the default bucket name remains operational if `S3_BUCKET_NAME` is not set.
 
 ** TODO Finalize Test Suite Stabilization (P1)
 This is the final step after all other refactoring is complete. This task will address all remaining test failures across the unit, integration, and E2E suites to bring the test pipeline back to a stable, "green" state.

@@ -69,12 +69,13 @@ class FileMetadataService:
             raise ReservedMetadataError(
                 f"Metadata cannot set reserved fields: {', '.join(sorted(map(str, reserved)))}"
             )
+        # System keys come last, so user metadata cannot override them
         return {
+            **user_metadata,
             "uploader": uploader,
             "upload_time": upload_time,
             "collection": collection,
             "original_filename": original_filename,
-            **user_metadata,
         }
 
     @staticmethod

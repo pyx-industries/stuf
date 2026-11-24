@@ -4,15 +4,15 @@ from fastapi.testclient import TestClient
 from api.tests.fixtures.test_data import SAMPLE_FILES
 
 from api.main import app
-from api.storage.minio import MinioClient  # Import for type hinting
+from api.storage.s3 import S3Client  # Import for type hinting
 
 
 @pytest.fixture
-def mock_minio_client():
-    """Mock MinIO client for unit tests - uses dependency override"""
+def mock_s3_client():
+    """Mock S3 client for unit tests - uses dependency override"""
     original_overrides = app.dependency_overrides.copy()
 
-    mock = MagicMock(spec=MinioClient)
+    mock = MagicMock(spec=S3Client)
     # Configure default successful responses
     mock.upload_file.return_value = "test/user/file.txt"
     mock.list_objects.return_value = SAMPLE_FILES
@@ -21,10 +21,10 @@ def mock_minio_client():
         {"original_filename": "test.txt"},
         "text/plain",
     )
-    mock.get_presigned_url.return_value = "https://minio.example.com/presigned-url"
+    mock.get_presigned_url.return_value = "https://s3.example.com/presigned-url"
     mock.delete_object.return_value = True
 
-    app.dependency_overrides[MinioClient] = lambda: mock
+    app.dependency_overrides[S3Client] = lambda: mock
 
     yield mock
 
@@ -34,13 +34,13 @@ def mock_minio_client():
 
 
 @pytest.fixture
-def unit_client(mock_minio_client):
+def unit_client(mock_s3_client):
     """
     TestClient for unit tests - all external dependencies should be mocked.
     It depends on other fixtures to ensure app.dependency_overrides are set.
     """
     # The app instance will have its dependencies overridden by the
-    # mock_minio_client fixture.
+    # mock_s3_client fixture.
     with TestClient(app) as client:
         yield client
 

@@ -5,25 +5,25 @@ import logging
 from domain.models import File
 from domain.services import FileParsingService, FileMetadataService
 from domain.repositories import StorageError, StorageFileNotFoundError
-from .minio import MinioClient
+from .s3 import S3Client, is_not_found
 
 logger = logging.getLogger(__name__)
 
 
-class MinioStorageRepository:
+class S3StorageRepository:
     """
-    MinIO implementation of StorageRepository protocol.
+    S3 implementation of StorageRepository protocol.
 
-    This class adapts the MinioClient to conform to the StorageRepository
-    protocol, handling all MinIO-specific concerns and translating between
+    This class adapts the S3Client to conform to the StorageRepository
+    protocol, handling all S3-specific concerns and translating between
     infrastructure and domain layers.
     """
 
-    def __init__(self, minio_client: MinioClient):
-        self._client = minio_client
+    def __init__(self, s3_client: S3Client):
+        self._client = s3_client
 
     def store_file(self, file_content: BytesIO, file: File) -> bool:
-        """Store a file with its metadata using MinIO"""
+        """Store a file with its metadata in S3"""
         try:
             # Convert file metadata using domain service
             storage_metadata = FileMetadataService.to_storage_format(file.metadata)
@@ -40,7 +40,7 @@ class MinioStorageRepository:
             raise StorageError(f"Failed to store file: {str(e)}")
 
     def retrieve_file(self, object_name: str) -> Tuple[BytesIO, File]:
-        """Retrieve a file and reconstruct File domain object from MinIO metadata"""
+        """Retrieve a file and reconstruct File domain object from S3 metadata"""
         try:
             data, storage_metadata, content_type = self._client.download_file(
                 object_name
@@ -64,13 +64,13 @@ class MinioStorageRepository:
             return BytesIO(data), file
 
         except Exception as e:
-            if "NoSuchKey" in str(e) or "not found" in str(e).lower():
+            if is_not_found(e):
                 raise StorageFileNotFoundError(f"File not found: {object_name}")
             logger.error(f"Failed to retrieve file {object_name}: {e}")
             raise StorageError(f"Failed to retrieve file: {str(e)}")
 
     def list_files_in_collection(self, collection: str) -> List[File]:
-        """List all files in a collection using MinIO prefix listing"""
+        """List all files in a collection using S3 prefix listing"""
         try:
             prefix = f"{collection}/"
             storage_objects = self._client.list_objects(prefix=prefix)
@@ -89,7 +89,7 @@ class MinioStorageRepository:
                         owner=parsed_info["owner"],
                         original_filename=parsed_info["original_filename"],
                         upload_time=parsed_info["timestamp"],
-                        content_type="application/octet-stream",  # MinIO list doesn't include content type
+                        content_type="application/octet-stream",  # S3 listings don't include content type
                         size=storage_obj.get("size"),
                         metadata={
                             "last_modified": (
@@ -118,7 +118,7 @@ class MinioStorageRepository:
             raise StorageError(f"Failed to list files: {str(e)}")
 
     def delete_file(self, object_name: str) -> bool:
-        """Delete a file from MinIO storage"""
+        """Delete a file from S3 storage"""
         try:
             # First check if file exists to provide better error handling
             if not self.file_exists(object_name):
@@ -134,14 +134,5 @@ class MinioStorageRepository:
             raise StorageError(f"Failed to delete file: {str(e)}")
 
     def file_exists(self, object_name: str) -> bool:
-        """Check if a file exists in MinIO storage"""
-        from .minio import MINIO_BUCKET_NAME
-
-        try:
-            # Use stat_object to check existence
-            client = self._client._ensure_client()
-            client.stat_object(MINIO_BUCKET_NAME, object_name)
-            return True
-        except Exception:
-            # Any exception means file doesn't exist or isn't accessible
-            return False
+        """Check if a file exists in S3 storage"""
+        return self._client.object_exists(object_name)
