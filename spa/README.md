@@ -12,7 +12,7 @@ From the project root:
 make spa-dev
 ```
 
-This starts the full stack (Zitadel, MinIO, API, SPA) with hot reloading. OIDC configuration is read from `.zitadel-bootstrap/generated.env` after provisioning.
+This starts the full stack (Zitadel, RustFS, API, SPA) with hot reloading. OIDC configuration is read from `.zitadel-bootstrap/generated.env` after provisioning.
 
 ### Without Docker
 
