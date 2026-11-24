@@ -51,12 +51,13 @@ class FileMetadataService:
         user_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Create complete upload metadata combining system and user metadata"""
+        # System keys come last, so user metadata cannot override them
         return {
+            **user_metadata,
             "uploader": uploader,
             "upload_time": upload_time,
             "collection": collection,
             "original_filename": original_filename,
-            **user_metadata,
         }
 
     @staticmethod
