@@ -35,8 +35,12 @@ FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 # - collections: user metadata stored as a JSON object; getMetadata() returns
 #   a wrapper {metadata: [...]} where each entry's value is already decoded
 #   from base64+JSON (no atob/JSON.parse needed).
+# - idtyp: "app" for a machine user, "user" for a human, so the API can tell
+#   them apart (Microsoft Entra's claim). getUser() returns an object with a
+#   `machine` field for a machine user and a `human` field for a human.
 COLLECTIONS_ACTION_SCRIPT = """\
 function preAccessTokenCreation(ctx, api) {
+  api.v1.claims.setClaim("idtyp", ctx.v1.getUser().machine ? "app" : "user");
   if (ctx.v1.user.preferredLoginName) {
     api.v1.claims.setClaim("preferred_username", ctx.v1.user.preferredLoginName);
   }
@@ -214,7 +218,7 @@ def main():
         api_app_client_id = api_app["clientId"]
         print(f"  client_id={api_app_client_id}")
 
-        # ── Action: inject collections + preferred_username ───────────────────
+        # ── Action: inject collections, preferred_username, idtyp ─────────────
         print("Creating 'preAccessTokenCreation' action ...")
         action = api(client, "post", "/management/v1/actions", json={
             "name": "preAccessTokenCreation",

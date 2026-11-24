@@ -22,6 +22,26 @@ Service accounts provide a way for automated systems, scripts, and applications 
 | Token Claims | `email`, `name`, etc. | `scopes`, `description`, etc. |
 | Interactive | Yes (browser login) | No (API-only) |
 
+### How STUF tells them apart: the `idtyp` claim
+
+The IdP should put an `idtyp` claim in every access token it issues for STUF,
+saying what the subject is (the claim and its values are Microsoft Entra's):
+
+| `idtyp` | Subject | Identified by |
+|---------|---------|---------------|
+| `user` | A person, whichever client the token was issued to | `preferred_username` |
+| `app` | A service account | `azp` or `client_id` |
+
+In the dev and e2e environments, the `preAccessTokenCreation` Action that
+`docker/zitadel-init/provision.py` installs in Zitadel sets it. Microsoft Entra
+can be configured to emit it as an optional claim.
+
+When a token has no `idtyp`, STUF falls back to guessing: a token carrying
+`email`, `given_name`, `family_name` or `sid` is a person's, and any other is a
+service account's. A person's token without those claims, such as one issued to
+a command-line client rather than the SPA, is then taken for a service
+account's, and the client's ID recorded as the uploader, so set `idtyp`.
+
 ## Setting Up Service Accounts
 
 ### 1. Create Service Account in the IDP
@@ -240,8 +260,8 @@ export STUF_API_URL="http://localhost:8000/api"
    - Validate OAuth2 scopes
 
 3. **Token type detection fails**
+   - Check the token's `idtyp` claim: `app` for a service account, `user` for a person
    - Ensure service account tokens have `azp` or `client_id` claims
-   - Verify tokens don't have conflicting user claims
 
 ### Debug Endpoints
 

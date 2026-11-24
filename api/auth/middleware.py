@@ -30,11 +30,6 @@ OIDC_VALID_AUDIENCES = set(
     if a.strip()
 )
 
-# Client ID of the SPA OIDC application. Used to distinguish user tokens (where
-# azp matches the SPA client) from service-account tokens. Written to
-# /bootstrap/generated.env by zitadel-init.
-OIDC_SPA_CLIENT_ID = os.environ.get("OIDC_SPA_CLIENT_ID", "stuf-spa")
-
 bearer_scheme = HTTPBearer(auto_error=False)
 
 _discovery_doc: dict = {}
@@ -353,24 +348,24 @@ async def get_current_principal(
         logger.error("JWT verification failed - token_payload is None")
         raise credentials_exception
 
-    # Discriminate user vs service-account using identity claims.
-    # Human user tokens carry email / given_name / family_name in the access
-    # token; machine-user tokens do not.  This is simpler and more reliable
-    # than inspecting scope or azp, which can include "openid" even for
-    # machine users.
-    has_user_fields = bool(
-        token_payload.get("email")
-        or token_payload.get("given_name")
-        or token_payload.get("family_name")
-        or token_payload.get("sid")  # session ID — human sessions only
-    )
-
-    if has_user_fields:
-        logger.debug("Detected user token (has user identity fields)")
-        return await get_current_user(token)
+    # The `idtyp` claim says what the subject is: "user" for a person, "app"
+    # for a service account (Microsoft Entra's claim, set by stuf's Zitadel
+    # Action). Only when the IdP doesn't set it, fall back to profile claims,
+    # which a person's token from the SPA carries and a machine user's doesn't.
+    idtyp = token_payload.get("idtyp")
+    if idtyp is None:
+        is_user = any(
+            token_payload.get(claim)
+            for claim in ("email", "given_name", "family_name", "sid")
+        )
     else:
-        logger.debug("Detected service account token (no user identity fields)")
-        return await get_current_service_account(token)
+        is_user = idtyp == "user"
+
+    if is_user:
+        logger.debug("Detected user token (idtyp=%s)", idtyp)
+        return await get_current_user(token)
+    logger.debug("Detected service account token (idtyp=%s)", idtyp)
+    return await get_current_service_account(token)
 
 
 def require_role(required_role: str):

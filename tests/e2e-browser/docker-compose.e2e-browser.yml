@@ -203,7 +203,6 @@ services:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}
       - OIDC_BASE_URL=${OIDC_BASE_URL:-${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
-      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       # MinIO configuration (internal network)
       - MINIO_ENDPOINT=minio-e2e:9000
       - MINIO_ROOT_USER=minioadmin
@@ -272,7 +271,6 @@ services:
       # OIDC configuration (mirror of api-e2e vars above)
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://zitadel-e2e:8080}
       - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
-      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
       # Service-account credentials (from .zitadel-bootstrap/generated.env)
       - OIDC_SERVICE_ACCOUNT_CLIENT_ID=${OIDC_SERVICE_ACCOUNT_CLIENT_ID:-backup-service}
       - OIDC_SERVICE_ACCOUNT_CLIENT_SECRET=${OIDC_SERVICE_ACCOUNT_CLIENT_SECRET:-backup-service-secret}
