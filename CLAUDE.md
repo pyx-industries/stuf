@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 STUF (Secure Trusted Upload Facility) is a secure file upload system consisting of:
 - **FastAPI backend** (`api/`) for authentication and file management
 - **React SPA** (`spa/`) for user interface
-- **Docker Compose** setup with Zitadel OIDC authentication and MinIO object storage
+- **Docker Compose** setup with Zitadel OIDC authentication and S3-compatible object storage (RustFS in development)
 - **Comprehensive documentation** using MkDocs
 
 ## Development Commands
@@ -30,7 +30,7 @@ make test-cov          # Tests with coverage report
 # Start full development environment with hot reloading
 make spa-dev
 
-# Start Zitadel + MinIO only (without SPA dev)
+# Start Zitadel + RustFS only (without SPA dev)
 docker compose --profile zitadel up -d
 
 # Stop and clean up
@@ -151,7 +151,7 @@ All services configured via environment variables with development defaults:
 - API: http://localhost:8000
 - Zitadel Admin: http://localhost:8080/ui/console (admin@example.com / Password1!)
 - Zitadel Login UI: http://localhost:8090
-- MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
+- RustFS Console: http://localhost:9001 (minioadmin/minioadmin)
 
 ### API Endpoints
 - `GET /api/health`: Health check

@@ -139,7 +139,7 @@ test-e2e:
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --wait zitadel-postgres-e2e zitadel-bootstrap-init-e2e zitadel-e2e
 	@echo "Running Zitadel provisioning (foreground; container kept so depends_on tracking works)..."
 	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up --no-deps zitadel-init-e2e
-	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --no-deps --wait zitadel-login-e2e minio-e2e
+	@cd tests/e2e-browser && docker compose -f docker-compose.e2e-browser.yml --profile zitadel up -d --no-deps --wait zitadel-login-e2e rustfs-e2e
 	@echo "Reading generated Zitadel credentials..."
 	@test -f tests/e2e-browser/.zitadel-bootstrap/generated.env || (echo "ERROR: generated.env not found"; exit 1)
 	@echo "Starting API and SPA with Zitadel configuration..."
@@ -197,8 +197,8 @@ spa-dev:
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --wait --remove-orphans zitadel-postgres zitadel-bootstrap-init zitadel
 	@echo "Running Zitadel provisioning..."
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up --no-deps zitadel-init
-	@echo "Starting Zitadel login UI and MinIO..."
-	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --no-deps --wait zitadel-login minio
+	@echo "Starting Zitadel login UI and RustFS..."
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --no-deps --wait zitadel-login rustfs
 	@echo "Reading generated Zitadel credentials..."
 	@test -f .zitadel-bootstrap/generated.env || (echo "ERROR: .zitadel-bootstrap/generated.env not found"; exit 1)
 	@echo "Starting API and SPA with Zitadel configuration..."
