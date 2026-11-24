@@ -4,5 +4,5 @@ python-jose==3.3.0
 python-multipart==0.0.26
 httpx==0.24.1
 pydantic==2.3.0
-minio==7.1.15
+boto3==1.44.10
 requests==2.33.0

@@ -59,14 +59,14 @@ npm run build # Production build
 - **Zitadel OIDC authentication** via OIDC discovery and JWT signature verification
 - **Dual authentication support** for both user accounts and service accounts
 - **Attribute-based authorization** with collection-level permissions stored in JWT collections claim
-- **MinIO integration** for S3-compatible object storage
-- **Dependency injection pattern** for authentication (`get_current_user`, `get_current_service_account`, `get_current_principal`, `require_role`) and storage (`MinioClient`)
+- **S3 integration** (boto3) for any S3-compatible object store
+- **Dependency injection pattern** for authentication (`get_current_user`, `get_current_service_account`, `get_current_principal`, `require_role`) and storage (`get_storage_repository`)
 
 ### Key Files
 - `api/main.py`: FastAPI app setup, CORS, and main endpoints
 - `api/auth/middleware.py`: Authentication and authorization logic for users and service accounts
 - `api/routers/files.py`: File management endpoints with collection-based access control
-- `api/storage/minio.py`: S3-compatible storage abstraction
+- `api/storage/s3.py`: S3-compatible storage client (settings: `S3_*`, see README)
 - `api/domain/models.py`: User and ServiceAccount models with AuthenticatedPrincipal protocol
 - `spa/src/App.js`: React app with OIDC authentication flow
 
@@ -74,7 +74,7 @@ npm run build # Production build
 All services configured via environment variables with development defaults:
 - OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`
 - SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID`
-- MinIO credentials and endpoints
+- Object storage: `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_BUCKET_NAME`
 - API/SPA port configuration
 
 ### Testing Structure
@@ -113,7 +113,7 @@ All services configured via environment variables with development defaults:
 ### API Requirements
 - FastAPI >=0.104.0 with Uvicorn
 - OIDC integration via python-jose (JWT) and requests (discovery/JWKS)
-- MinIO client for S3-compatible storage
+- boto3 for S3-compatible storage
 - Pydantic 2.3.0 for data validation
 
 ### Frontend Dependencies
@@ -133,7 +133,7 @@ All services configured via environment variables with development defaults:
 ### File Upload Flow
 1. User authenticates via OIDC
 2. Frontend uploads files with metadata to API
-3. API validates permissions and stores in MinIO with user-specific paths
+3. API validates permissions and stores in the object store with user-specific paths
 4. Metadata and audit information stored with files
 
 ### Testing Authentication
@@ -150,7 +150,7 @@ All services configured via environment variables with development defaults:
 - API: http://localhost:8000
 - Zitadel Admin: http://localhost:8080/ui/console (admin@example.com / Password1!)
 - Zitadel Login UI: http://localhost:8090
-- RustFS Console: http://localhost:9001 (minioadmin/minioadmin)
+- RustFS Console: http://localhost:9001 (rustfsadmin/rustfsadmin)
 
 ### API Endpoints
 - `GET /api/health`: Health check
