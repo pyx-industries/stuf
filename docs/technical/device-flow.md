@@ -32,7 +32,8 @@ STUF does:
 In Zitadel this is a **Native** application in the STUF project, with the
 Device Code and Refresh Token grants, authentication method None, and JWT
 access tokens. A Native application without the Device Code grant is refused
-with `unauthorized_client`. Zitadel gives the tokens of any application in the
+with `unauthorized_client` (Zitadel says so when the client polls for the
+token). Zitadel gives the tokens of any application in the
 project the project's ID and its applications' client IDs as audiences, the
 `stuf-api` application's included, and the `preAccessTokenCreation` Action
 adds `collections` and `idtyp` to them as to any other token.
@@ -41,14 +42,20 @@ In the dev environment, `docker/zitadel-init/provision.py` creates this
 application as `stuf-cli` and writes its client ID to
 `.zitadel-bootstrap/generated.env` as `ZITADEL_CLI_CLIENT_ID`.
 
-!!! note "Where the user approves, in the dev environment"
-    Zitadel's device authorization response points the user at
-    `http://localhost:8080/device`, which is Zitadel's older hosted login.
-    The dev environment signs in with the newer login UI, so open its device
-    page instead: `http://localhost:8090/ui/v2/login/device`, entering the
-    same code. The older login asks the dev fixture's users to verify their
-    e-mail address first (`provision.py` leaves it unverified), and there is
-    no mail server to receive the code.
+### Running it locally
+
+Start the stack with `make spa-dev`. It provisions Zitadel, then starts the
+API with the OIDC settings taken from `generated.env`: in particular
+`OIDC_VALID_AUDIENCES`, set to the project's and applications' generated IDs,
+which the token's `aud` carries. A plain `docker compose up` does not: its
+API defaults to `OIDC_VALID_AUDIENCES=stuf-api,stuf-spa` (application names,
+not IDs), and without `OIDC_ISSUER_HOST` Zitadel answers its request for the
+discovery document with a 404, so it refuses every token. To run the API some other way, export what the `spa-dev` target does.
+
+The user approves at the address in the device authorization response,
+`http://localhost:8080/device`: sign in as one of the fixture's users (such as
+`testuser` / `Password1!`), skip the offer to set up a second factor if it is
+made, and allow the device.
 
 ## Getting a token
 
@@ -57,7 +64,8 @@ Everything the client needs is in the identity provider's discovery document,
 `device_authorization_endpoint` and the `token_endpoint`. Ask for the
 `offline_access` scope to get a refresh token.
 
-A minimal Python script, using only `requests`:
+A minimal Python script, taking the client ID as its argument and using only
+`requests`:
 
 ```python
 import sys
@@ -73,10 +81,13 @@ DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
 discovery = requests.get(f"{ISSUER}/.well-known/openid-configuration").json()
 
 # 1. Ask for a device code.
-device = requests.post(
+response = requests.post(
     discovery["device_authorization_endpoint"],
     data={"client_id": CLIENT_ID, "scope": "openid offline_access"},
-).json()
+)
+if not response.ok:  # invalid_client, say: an unknown client ID
+    sys.exit(f"Device authorization failed: {response.text}")
+device = response.json()
 
 # 2. Show the user where to approve it.
 print(f"Open {device['verification_uri']} and enter {device['user_code']}")
@@ -114,14 +125,17 @@ Keep the refresh token where only the user can read it, and use it for a new
 access token when the old one expires, rather than asking the user again:
 
 ```python
-tokens = requests.post(
+response = requests.post(
     discovery["token_endpoint"],
     data={
         "grant_type": "refresh_token",
         "refresh_token": tokens["refresh_token"],
         "client_id": CLIENT_ID,
     },
-).json()
+)
+if not response.ok:  # invalid_grant: expired or revoked
+    sys.exit("The sign-in has expired: run the device flow again")
+tokens = response.json()
 ```
 
 ## Checking a token

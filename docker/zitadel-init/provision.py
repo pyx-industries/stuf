@@ -28,8 +28,9 @@ BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
 FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
 # Fired on the PRE_ACCESS_TOKEN_CREATION trigger (flow 2, trigger type 5).
-# Fires for both authorization-code (human) and client_credentials (machine)
-# grants when the project's access-token type is JWT.
+# Fires for every JWT access token Zitadel issues: authorization-code (the
+# SPA), device-code (stuf-cli) and refresh-token grants for humans, and
+# client_credentials for machine users.
 # - preferred_username: not in Zitadel JWT access tokens by default; injected
 #   here so the STUF API middleware can use it for the username claim, from
 #   getUser() (ctx.v1.user has only getMetadata() and grants).
@@ -231,7 +232,6 @@ def main():
         cli_app = api(client, "post", f"/management/v1/projects/{project_id}/apps/oidc", json={
             "name": cli_cfg["name"],
             "redirectUris": [],
-            "responseTypes": ["OIDC_RESPONSE_TYPE_CODE"],
             "grantTypes": [
                 "OIDC_GRANT_TYPE_DEVICE_CODE",
                 "OIDC_GRANT_TYPE_REFRESH_TOKEN",
@@ -239,7 +239,6 @@ def main():
             "appType": "OIDC_APP_TYPE_NATIVE",
             "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
             "version": "OIDC_VERSION_1_0",
-            "devMode": True,
             "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
             "accessTokenRoleAssertion": True,
             "idTokenRoleAssertion": True,
@@ -285,10 +284,11 @@ def main():
                 user_id = results[0]["id"]
                 print(f"  (existing) {email} → {user_id}")
             else:
-                # The v2 API creates users in USER_STATE_ACTIVE when
-                # email.isAlreadyVerified=True. The Management v1 API always
-                # creates users in USER_STATE_INITIAL, which blocks login via
-                # Zitadel Login v2 ("Initial User not supported").
+                # The v2 API creates users in USER_STATE_ACTIVE. The Management
+                # v1 API always creates users in USER_STATE_INITIAL, which
+                # blocks login via Zitadel Login v2 ("Initial User not
+                # supported"). email.isVerified marks the address verified, so
+                # no login asks the user to confirm it by mail (dev has none).
                 u = api(client, "post", "/v2/users/human", json={
                     "username": user_def["username"],
                     "profile": {
@@ -299,7 +299,7 @@ def main():
                     },
                     "email": {
                         "email": user_def["email"],
-                        "isAlreadyVerified": True,
+                        "isVerified": True,
                     },
                     "password": {
                         "password": user_def["password"],
