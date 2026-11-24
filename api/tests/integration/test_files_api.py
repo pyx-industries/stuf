@@ -151,6 +151,20 @@ class TestFilesAPIIntegration:
         assert response.status_code == 400
         assert "Invalid metadata JSON format" in response.json()["detail"]
 
+    def test_reserved_metadata_field_rejected(
+        self, integration_client, authenticated_headers
+    ):
+        """Upload whose metadata names a system field is rejected with 422"""
+        response = integration_client.post(
+            "/api/files/test",
+            files={"file": ("test.txt", io.BytesIO(b"content"), "text/plain")},
+            data={"metadata": '{"uploader": "someone-else"}'},
+            headers=authenticated_headers,
+        )
+
+        assert response.status_code == 422
+        assert "uploader" in response.json()["detail"]
+
     @pytest.mark.parametrize("auth_fixture", AUTH_FIXTURES)
     def test_delete_file_with_valid_auth(
         self, integration_client, request, auth_fixture

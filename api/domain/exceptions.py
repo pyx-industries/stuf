@@ -19,6 +19,12 @@ class InvalidMetadataError(DomainError):
     pass
 
 
+class ReservedMetadataError(InvalidMetadataError):
+    """Raised when upload metadata names a field the system sets itself"""
+
+    pass
+
+
 class FileUploadError(DomainError):
     """Raised when file upload operation fails"""
 

@@ -4,6 +4,8 @@ from typing import Dict, Any
 from datetime import datetime
 import json
 
+from .exceptions import ReservedMetadataError
+
 
 class FilePathService:
     """Domain service for generating file storage paths according to business rules"""
@@ -34,6 +36,10 @@ class FilePathService:
 class FileMetadataService:
     """Domain service for handling file metadata transformations"""
 
+    RESERVED_FIELDS = frozenset(
+        {"uploader", "upload_time", "collection", "original_filename"}
+    )
+
     @staticmethod
     def parse_metadata_json(metadata_json: str) -> Dict[str, Any]:
         """Parse and validate metadata JSON string"""
@@ -51,6 +57,11 @@ class FileMetadataService:
         user_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Create complete upload metadata combining system and user metadata"""
+        reserved = FileMetadataService.RESERVED_FIELDS & user_metadata.keys()
+        if reserved:
+            raise ReservedMetadataError(
+                f"Metadata cannot set reserved fields: {', '.join(sorted(reserved))}"
+            )
         return {
             "uploader": uploader,
             "upload_time": upload_time,

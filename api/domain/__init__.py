@@ -10,6 +10,7 @@ from .exceptions import (
     FileUploadError,
     InsufficientPermissionsError,
     InvalidMetadataError,
+    ReservedMetadataError,
 )
 from .models import AuthenticatedPrincipal, File, ServiceAccount, User
 from .protocols import FileUpload
@@ -29,6 +30,7 @@ __all__ = [
     "DomainError",
     "InsufficientPermissionsError",
     "InvalidMetadataError",
+    "ReservedMetadataError",
     "FileUploadError",
     "FileListingError",
     "FileDownloadError",
