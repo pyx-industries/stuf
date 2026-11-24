@@ -69,6 +69,27 @@ class S3StorageRepository:
             logger.error(f"Failed to retrieve file {object_name}: {e}")
             raise StorageError(f"Failed to retrieve file: {str(e)}")
 
+    def get_file_info(self, object_name: str) -> File:
+        """Read a file's stored metadata and content type, without its content"""
+        try:
+            info = self._client.head_object(object_name)
+            parsed_info = FileParsingService.parse_storage_path(object_name)
+            return File(
+                object_name=object_name,
+                collection=parsed_info["collection"],
+                owner=parsed_info["owner"],
+                original_filename=parsed_info["original_filename"],
+                upload_time=parsed_info["timestamp"],
+                content_type=info["content_type"],
+                size=info["size"],
+                metadata=info["metadata"] or {},
+            )
+        except Exception as e:
+            if is_not_found(e):
+                raise StorageFileNotFoundError(f"File not found: {object_name}")
+            logger.error(f"Failed to read file info {object_name}: {e}")
+            raise StorageError(f"Failed to read file info: {str(e)}")
+
     def list_files_in_collection(self, collection: str) -> List[File]:
         """List all files in a collection using S3 prefix listing"""
         try:

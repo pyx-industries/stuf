@@ -65,6 +65,22 @@ class StorageRepository(Protocol):
         """
         ...
 
+    def get_file_info(self, object_name: str) -> "File":
+        """
+        Get a file's stored metadata and content type, without its content.
+
+        Args:
+            object_name: Storage path/key for the file
+
+        Returns:
+            File domain object with metadata and content type
+
+        Raises:
+            StorageFileNotFoundError: If file doesn't exist
+            StorageError: If the read fails
+        """
+        ...
+
     def list_files_in_collection(self, collection: str) -> List["File"]:
         """
         List all files in a collection.

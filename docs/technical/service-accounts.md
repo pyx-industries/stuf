@@ -106,6 +106,11 @@ curl -X POST "http://localhost:8000/api/files/docs" \
 curl "http://localhost:8000/api/files/docs" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 
+# Read back one file's stored metadata, system fields (such as uploader)
+# and content type, without downloading it
+curl "http://localhost:8000/api/files/docs/OBJECT_NAME/metadata" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
 # Get service account info
 curl "http://localhost:8000/api/me" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"

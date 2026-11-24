@@ -61,6 +61,23 @@ class TestS3Client:
         assert metadata == {"test": "value"}
         assert content_type == "text/plain"
 
+    def test_head_object(self, boto_client):
+        """Size, user metadata and content type come back without a download"""
+        boto_client.head_object.return_value = {
+            "ContentLength": 12,
+            "Metadata": {"uploader": "alice"},
+            "ContentType": "text/plain",
+        }
+
+        info = S3Client(ensure_bucket=False).head_object("test/alice/file.txt")
+
+        assert info == {
+            "size": 12,
+            "metadata": {"uploader": "alice"},
+            "content_type": "text/plain",
+        }
+        boto_client.get_object.assert_not_called()
+
     def test_object_exists(self, boto_client):
         """Not found is False; any other error is raised"""
         client = S3Client(ensure_bucket=False)

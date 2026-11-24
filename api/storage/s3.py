@@ -99,6 +99,17 @@ class S3Client:
         response = self._ensure_client().get_object(Bucket=bucket_name, Key=object_name)
         return response["Body"].read(), response["Metadata"], response["ContentType"]
 
+    def head_object(self, object_name: str, bucket_name: str = S3_BUCKET_NAME) -> dict:
+        """Read an object's size, user metadata and content type, without its data"""
+        response = self._ensure_client().head_object(
+            Bucket=bucket_name, Key=object_name
+        )
+        return {
+            "size": response["ContentLength"],
+            "metadata": response["Metadata"],
+            "content_type": response["ContentType"],
+        }
+
     def object_exists(
         self, object_name: str, bucket_name: str = S3_BUCKET_NAME
     ) -> bool:

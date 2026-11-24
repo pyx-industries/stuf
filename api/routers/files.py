@@ -34,6 +34,7 @@ from public_interfaces import (
 )
 from usecases.delete_file import DeleteFileUseCase
 from usecases.download_file import DownloadFileUseCase
+from usecases.get_file_metadata import GetFileMetadataUseCase
 from usecases.list_files import ListFilesUseCase
 from usecases.upload_file import UploadFileUseCase
 
@@ -110,6 +111,34 @@ async def list_files(
     except InsufficientPermissionsError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except FileListingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+# Declared before the download route, whose path would otherwise match this one
+@router.get("/{collection}/{object_name:path}/metadata")
+async def get_file_metadata(
+    collection: str,
+    object_name: str,
+    current_user: AuthenticatedPrincipal = Depends(get_current_principal),
+    storage_repo: StorageRepository = Depends(get_storage_repository),
+):
+    """
+    Get a file's stored metadata, system fields and content type, without its content
+
+    - **collection**: The collection the file belongs to (must have read access)
+    - **object_name**: The object name in storage
+    """
+    try:
+        use_case = GetFileMetadataUseCase(storage_repo)
+        request = DownloadFileRequest(collection=collection, object_name=object_name)
+        return use_case.execute(request, current_user).to_api_dict()
+    except InsufficientPermissionsError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except FileDownloadError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
