@@ -107,7 +107,7 @@ class S3Client:
         return {
             "size": response["ContentLength"],
             "metadata": response["Metadata"],
-            "content_type": response["ContentType"],
+            "content_type": response.get("ContentType", "application/octet-stream"),
         }
 
     def object_exists(

@@ -20,20 +20,26 @@ class DownloadFileUseCase:
     def __init__(self, storage: StorageRepository):
         self.storage = storage
 
-    def execute(
+    def resolve_object_name(
         self, request: DownloadFileRequest, user: AuthenticatedPrincipal
-    ) -> Tuple[BytesIO, File]:
+    ) -> str:
+        """Check read access, and return the full object name"""
         if not user.has_collection_permission(request.collection, "read"):
             raise InsufficientPermissionsError(
                 f"You don't have read access to collection: {request.collection}"
             )
 
         # Construct full object name with proper path handling
-        full_object_name = (
+        return (
             f"{request.collection}/{request.object_name}"
             if not request.object_name.startswith(f"{request.collection}/")
             else request.object_name
         )
+
+    def execute(
+        self, request: DownloadFileRequest, user: AuthenticatedPrincipal
+    ) -> Tuple[BytesIO, File]:
+        full_object_name = self.resolve_object_name(request, user)
 
         try:
             # Use repository protocol to get file content and metadata
