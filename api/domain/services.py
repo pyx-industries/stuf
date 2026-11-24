@@ -44,9 +44,10 @@ class FileMetadataService:
     def parse_metadata_json(metadata_json: str) -> Dict[str, Any]:
         """Parse and validate metadata JSON string"""
         try:
-            return json.loads(metadata_json)
+            parsed = json.loads(metadata_json)
         except json.JSONDecodeError:
             return {}
+        return parsed if isinstance(parsed, dict) else {}
 
     @staticmethod
     def create_upload_metadata(
@@ -57,10 +58,16 @@ class FileMetadataService:
         user_metadata: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Create complete upload metadata combining system and user metadata"""
-        reserved = FileMetadataService.RESERVED_FIELDS & user_metadata.keys()
+        # Storage treats keys case-insensitively, with or without this prefix
+        reserved = {
+            key
+            for key in user_metadata
+            if str(key).lower().removeprefix("x-amz-meta-")
+            in FileMetadataService.RESERVED_FIELDS
+        }
         if reserved:
             raise ReservedMetadataError(
-                f"Metadata cannot set reserved fields: {', '.join(sorted(reserved))}"
+                f"Metadata cannot set reserved fields: {', '.join(sorted(map(str, reserved)))}"
             )
         return {
             "uploader": uploader,

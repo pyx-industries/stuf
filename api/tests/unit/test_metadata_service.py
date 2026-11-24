@@ -24,3 +24,12 @@ class TestReservedMetadata:
 
     def test_other_fields_are_kept(self):
         assert _create({"description": "x"})["description"] == "x"
+
+    @pytest.mark.parametrize("key", ["Uploader", "x-amz-meta-uploader"])
+    def test_reserved_field_spelling_variants_are_rejected(self, key):
+        with pytest.raises(ReservedMetadataError):
+            _create({key: "spoofed"})
+
+    @pytest.mark.parametrize("value", ["[1]", '"text"', "5"])
+    def test_non_object_json_is_not_a_dict(self, value):
+        assert FileMetadataService.parse_metadata_json(value) == {}
