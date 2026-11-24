@@ -29,6 +29,10 @@ apps:
       - http://spa-e2e
   api:
     name: stuf-api
+  # Native app for clients without a browser of their own (a CLI, an agent
+  # skill): the device authorization grant, no client secret.
+  cli:
+    name: stuf-cli
 
 # Users with existing: true are created by ZITADEL_FIRSTINSTANCE_* env vars.
 # The script looks them up by email and applies roles + collections metadata

@@ -220,6 +220,35 @@ def main():
         api_app_client_id = api_app["clientId"]
         print(f"  client_id={api_app_client_id}")
 
+        # ── OIDC application: cli (device authorization grant) ────────────────
+        # For a client with no browser of its own, such as a CLI or an agent
+        # skill: it shows the user a code to approve in any browser and polls
+        # for the token (RFC 8628). No client secret, since one handed out with
+        # the client would be no secret. A Native app without the Device Code
+        # grant gets unauthorized_client.
+        cli_cfg = fixture["apps"]["cli"]
+        print(f"Creating OIDC app '{cli_cfg['name']}' ...")
+        cli_app = api(client, "post", f"/management/v1/projects/{project_id}/apps/oidc", json={
+            "name": cli_cfg["name"],
+            "redirectUris": [],
+            "responseTypes": ["OIDC_RESPONSE_TYPE_CODE"],
+            "grantTypes": [
+                "OIDC_GRANT_TYPE_DEVICE_CODE",
+                "OIDC_GRANT_TYPE_REFRESH_TOKEN",
+            ],
+            "appType": "OIDC_APP_TYPE_NATIVE",
+            "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
+            "version": "OIDC_VERSION_1_0",
+            "devMode": True,
+            "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
+            "accessTokenRoleAssertion": True,
+            "idTokenRoleAssertion": True,
+            "idTokenUserinfoAssertion": True,
+            "clockSkew": "0s",
+        })
+        cli_client_id = cli_app["clientId"]
+        print(f"  client_id={cli_client_id}")
+
         # ── Action: inject collections, preferred_username, idtyp ─────────────
         print("Creating 'preAccessTokenCreation' action ...")
         action = api(client, "post", "/management/v1/actions", json={
@@ -356,6 +385,7 @@ def main():
             "ZITADEL_STUF_PROJECT_ID": project_id,
             "ZITADEL_SPA_CLIENT_ID": spa_client_id,
             "ZITADEL_API_APP_CLIENT_ID": api_app_client_id,
+            "ZITADEL_CLI_CLIENT_ID": cli_client_id,
             "ZITADEL_BACKUP_SERVICE_CLIENT_ID": machine_client_id or "",
             "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": machine_client_secret or "",
         }
@@ -369,6 +399,7 @@ def main():
         print(f"  project_id:           {project_id}")
         print(f"  spa_client_id:        {spa_client_id}")
         print(f"  api_app_client_id:    {api_app_client_id}")
+        print(f"  cli_client_id:        {cli_client_id}")
         print(f"  backup client_id:     {machine_client_id}")
         print(f"  login-token written:  {token_file}")
         print(f"  generated.env:        {env_file}")
