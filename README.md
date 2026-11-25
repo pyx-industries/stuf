@@ -147,6 +147,9 @@ STUF can be run locally using Docker Compose for development and testing purpose
      - Web console: http://localhost:9001 (rustfsadmin/rustfsadmin)
 
 Use `make spa-dev` to start the full development environment (Zitadel + API + SPA with hot reloading).
+`docker compose --profile zitadel up` starts the same stack without hot reloading. Either way, the
+API and SPA take Zitadel's generated IDs from `.zitadel-bootstrap/generated.env` when they start, so
+nothing needs exporting by hand.
 
 ### Environment Components
 

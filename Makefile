@@ -184,8 +184,8 @@ test-cov: $(VENV_DIR)/dev-requirements.stamp
 .PHONY: spa-dev spa-prod spa-build spa-stop
 
 # Start SPA in development mode with Zitadel IdP and hot reloading.
-# Starts the Zitadel stack, runs provisioning, reads the generated OIDC
-# credentials, then starts api + spa with those vars.
+# Starts the Zitadel stack, runs provisioning, then starts api + spa, which
+# read the generated OIDC settings from .zitadel-bootstrap/generated.env.
 spa-dev:
 	@echo "Starting SPA in development mode (Zitadel IdP) with hot reloading..."
 	@echo "Cleaning up any previous run..."
@@ -200,21 +200,9 @@ spa-dev:
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up --no-deps zitadel-init
 	@echo "Starting Zitadel login UI and RustFS..."
 	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up -d --no-deps --wait zitadel-login rustfs
-	@echo "Reading generated Zitadel credentials..."
 	@test -f .zitadel-bootstrap/generated.env || (echo "ERROR: .zitadel-bootstrap/generated.env not found"; exit 1)
-	@echo "Starting API and SPA with Zitadel configuration..."
-	@( \
-		set -a; . .zitadel-bootstrap/generated.env; set +a; \
-		export OIDC_ISSUER_URL=http://localhost:8080; \
-		export OIDC_BASE_URL=http://zitadel:8080; \
-		export OIDC_ISSUER_HOST=localhost:8080; \
-		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
-		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
-		export OIDC_AUTHORITY=http://localhost:8080; \
-		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
-		export OIDC_SCOPE="openid profile email stuf:access"; \
-		docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up api spa \
-	)
+	@echo "Starting API and SPA..."
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile zitadel up --no-deps api spa
 
 # Start SPA in production mode
 spa-prod:

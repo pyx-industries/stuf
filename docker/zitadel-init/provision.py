@@ -5,7 +5,8 @@ Reads instance fixture from FIXTURE_PATH (default: /fixtures/dev/instance.yaml)
 and mirrors it into Zitadel via the Management API.
 
 Writes /bootstrap/login-token (PAT for zitadel-login) and
-/bootstrap/generated.env (generated client IDs for step 5 wiring).
+/bootstrap/generated.env: the generated client IDs, and the OIDC_* settings
+the api and spa services take from them (docker/with-generated-env.sh).
 """
 
 import base64
@@ -15,6 +16,7 @@ import sys
 import time
 import uuid
 from datetime import datetime, timezone, timedelta
+from urllib.parse import urlsplit
 
 import httpx
 import jwt
@@ -352,6 +354,14 @@ def main():
             "ZITADEL_API_APP_CLIENT_ID": api_app_client_id,
             "ZITADEL_BACKUP_SERVICE_CLIENT_ID": machine_client_id or "",
             "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": machine_client_secret or "",
+            # The api's and spa's settings for this Zitadel, read by their
+            # containers at start, so nothing need be exported in the shell.
+            "OIDC_VALID_AUDIENCES": f"{spa_client_id},{api_app_client_id},{project_id}",
+            "OIDC_SPA_CLIENT_ID": spa_client_id,
+            "OIDC_CLIENT_ID": spa_client_id,
+            # Zitadel answers only requests whose Host header is its external
+            # domain, which is the host this script reaches it on.
+            "OIDC_ISSUER_HOST": urlsplit(ZITADEL_DOMAIN).netloc,
         }
         env_file = os.path.join(BOOTSTRAP_DIR, "generated.env")
         with open(env_file, "w") as f:
