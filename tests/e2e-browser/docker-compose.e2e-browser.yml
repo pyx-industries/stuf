@@ -107,7 +107,7 @@ services:
   # login UI's server-side API calls carry Host: zitadel-e2e, matching
   # EXTERNALDOMAIN and avoiding "public domain not trusted" errors.
   zitadel-e2e:
-    image: nginx:alpine
+    image: nginx:1.31.10-alpine
     profiles:
       - zitadel
     volumes:

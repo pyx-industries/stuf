@@ -46,8 +46,10 @@ COPY public/ ./public/
 
 RUN npm run build
 
-# Deploy stage — nginx serving the built assets
-FROM nginx:alpine AS production
+# Deploy stage — nginx serving the built assets. Pinned to a release with
+# the fixes for CVE-2026-123007 and CVE-2026-123633 (1.31.9) and for
+# CVE-2026-132779 (1.31.10), so a cached older image can't be reused.
+FROM nginx:1.31.10-alpine AS production
 
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
