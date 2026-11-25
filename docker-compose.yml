@@ -22,11 +22,11 @@ services:
       target: production
     ports:
       - "${API_PORT:-8000}:8000"
-    # The OIDC keys that zitadel-init generates are passed bare below, so a
-    # value exported in the shell still wins. Otherwise they come from
+    # The OIDC keys that zitadel-init generates come from
     # .zitadel-bootstrap/generated.env, read when the container starts (compose
-    # reads env_file before zitadel-init has written it), and then from the
-    # defaults given here. See docker/with-generated-env.sh.
+    # reads env_file before zitadel-init has written it), which wins over the
+    # shell and .env. They are passed bare below, so the defaults given here
+    # only fill what neither sets. See docker/with-generated-env.sh.
     entrypoint:
       - sh
       - /stuf/with-generated-env.sh

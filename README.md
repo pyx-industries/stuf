@@ -126,8 +126,8 @@ STUF can be run locally using Docker Compose for development and testing purpose
    cp .env.example .env
    ```
 
-   Note: The `.env` file contains configuration for the OIDC provider, roles, and client IDs.
-   Edit this file to customize your local development environment.
+   Note: The `.env` file contains configuration for the OIDC provider and object store. The local
+   Zitadel's client IDs come from `.zitadel-bootstrap/generated.env`, not from `.env`.
 
 4. Start the Docker Compose environment:
 
@@ -149,7 +149,8 @@ STUF can be run locally using Docker Compose for development and testing purpose
 Use `make spa-dev` to start the full development environment (Zitadel + API + SPA with hot reloading).
 `docker compose --profile zitadel up` starts the same stack without hot reloading. Either way, the
 API and SPA take Zitadel's generated IDs from `.zitadel-bootstrap/generated.env` when they start, so
-nothing needs exporting by hand.
+nothing needs exporting by hand. While that file exists it wins over the shell and `.env`; `make
+spa-stop` deletes it, for running against another IdP.
 
 ### Environment Components
 
