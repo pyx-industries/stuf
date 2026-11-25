@@ -92,6 +92,10 @@ All services configured via environment variables with development defaults:
 2. FastAPI backend validates tokens via JWT signature verification using OIDC discovery (`OIDC_ISSUER_URL`)
 3. Users must have appropriate collection permissions in their JWT collections claim or admin role
 
+#### Clients Without a Browser
+1. A CLI or agent skill acting for a person gets that person's token by the device authorization grant (RFC 8628), through the `stuf-cli` Native app that `docker/zitadel-init/provision.py` creates (client ID `ZITADEL_CLI_CLIENT_ID` in `.zitadel-bootstrap/generated.env`)
+2. Its tokens carry `idtyp: user`, so the API treats them as the person's, not the client's (`docs/technical/device-flow.md`)
+
 #### Service Account Authentication
 1. External services use client credentials flow to obtain JWT tokens
 2. FastAPI backend validates service account tokens using same JWT verification

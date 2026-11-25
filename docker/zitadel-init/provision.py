@@ -28,8 +28,9 @@ BOOTSTRAP_DIR = os.environ.get("BOOTSTRAP_DIR", "/bootstrap")
 FIXTURE_PATH = os.environ.get("FIXTURE_PATH", "/fixtures/dev/instance.yaml")
 
 # Fired on the PRE_ACCESS_TOKEN_CREATION trigger (flow 2, trigger type 5).
-# Fires for both authorization-code (human) and client_credentials (machine)
-# grants when the project's access-token type is JWT.
+# Fires for every JWT access token Zitadel issues: authorization-code (the
+# SPA), device-code (stuf-cli) and refresh-token grants for humans, and
+# client_credentials for machine users.
 # - preferred_username: not in Zitadel JWT access tokens by default; injected
 #   here so the STUF API middleware can use it for the username claim, from
 #   getUser() (ctx.v1.user has only getMetadata() and grants).
@@ -220,6 +221,33 @@ def main():
         api_app_client_id = api_app["clientId"]
         print(f"  client_id={api_app_client_id}")
 
+        # ── OIDC application: cli (device authorization grant) ────────────────
+        # For a client with no browser of its own, such as a CLI or an agent
+        # skill: it shows the user a code to approve in any browser and polls
+        # for the token (RFC 8628). No client secret, since one handed out with
+        # the client would be no secret. A Native app without the Device Code
+        # grant gets unauthorized_client.
+        cli_cfg = fixture["apps"]["cli"]
+        print(f"Creating OIDC app '{cli_cfg['name']}' ...")
+        cli_app = api(client, "post", f"/management/v1/projects/{project_id}/apps/oidc", json={
+            "name": cli_cfg["name"],
+            "redirectUris": [],
+            "grantTypes": [
+                "OIDC_GRANT_TYPE_DEVICE_CODE",
+                "OIDC_GRANT_TYPE_REFRESH_TOKEN",
+            ],
+            "appType": "OIDC_APP_TYPE_NATIVE",
+            "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
+            "version": "OIDC_VERSION_1_0",
+            "accessTokenType": "OIDC_TOKEN_TYPE_JWT",
+            "accessTokenRoleAssertion": True,
+            "idTokenRoleAssertion": True,
+            "idTokenUserinfoAssertion": True,
+            "clockSkew": "0s",
+        })
+        cli_client_id = cli_app["clientId"]
+        print(f"  client_id={cli_client_id}")
+
         # ── Action: inject collections, preferred_username, idtyp ─────────────
         print("Creating 'preAccessTokenCreation' action ...")
         action = api(client, "post", "/management/v1/actions", json={
@@ -256,10 +284,11 @@ def main():
                 user_id = results[0]["id"]
                 print(f"  (existing) {email} → {user_id}")
             else:
-                # The v2 API creates users in USER_STATE_ACTIVE when
-                # email.isAlreadyVerified=True. The Management v1 API always
-                # creates users in USER_STATE_INITIAL, which blocks login via
-                # Zitadel Login v2 ("Initial User not supported").
+                # The v2 API creates users in USER_STATE_ACTIVE. The Management
+                # v1 API always creates users in USER_STATE_INITIAL, which
+                # blocks login via Zitadel Login v2 ("Initial User not
+                # supported"). email.isVerified marks the address verified, so
+                # no login asks the user to confirm it by mail (dev has none).
                 u = api(client, "post", "/v2/users/human", json={
                     "username": user_def["username"],
                     "profile": {
@@ -270,7 +299,7 @@ def main():
                     },
                     "email": {
                         "email": user_def["email"],
-                        "isAlreadyVerified": True,
+                        "isVerified": True,
                     },
                     "password": {
                         "password": user_def["password"],
@@ -356,6 +385,7 @@ def main():
             "ZITADEL_STUF_PROJECT_ID": project_id,
             "ZITADEL_SPA_CLIENT_ID": spa_client_id,
             "ZITADEL_API_APP_CLIENT_ID": api_app_client_id,
+            "ZITADEL_CLI_CLIENT_ID": cli_client_id,
             "ZITADEL_BACKUP_SERVICE_CLIENT_ID": machine_client_id or "",
             "ZITADEL_BACKUP_SERVICE_CLIENT_SECRET": machine_client_secret or "",
         }
@@ -369,6 +399,7 @@ def main():
         print(f"  project_id:           {project_id}")
         print(f"  spa_client_id:        {spa_client_id}")
         print(f"  api_app_client_id:    {api_app_client_id}")
+        print(f"  cli_client_id:        {cli_client_id}")
         print(f"  backup client_id:     {machine_client_id}")
         print(f"  login-token written:  {token_file}")
         print(f"  generated.env:        {env_file}")

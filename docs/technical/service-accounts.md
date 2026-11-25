@@ -44,6 +44,10 @@ service account's. A person's token without those claims, such as one issued to
 a command-line client rather than the SPA, is then taken for a service
 account's, and the client's ID recorded as the uploader, so set `idtyp`.
 
+A tool that acts for a person, such as a CLI or an agent skill, should sign in
+as that person with the device flow instead of using a service account: see
+[device-flow.md](device-flow.md).
+
 ## Setting Up Service Accounts
 
 ### 1. Create Service Account in the IDP

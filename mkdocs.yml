@@ -40,6 +40,7 @@ nav:
     - Operations Guide: operations_guide.md
   - Technical Details:
     - Configuration Persistence: technical/configuration_persistence.md
+    - Signing In Without a Browser: technical/device-flow.md
     - Advanced Metadata Configuration: future_sprints/advanced_metadata_configuration.md
     - Custom User Management: future_sprints/custom_user_management.md
     - Mobile OTP Authentication: future_sprints/mobile_otp_authentication.md
