@@ -30,6 +30,8 @@ class TestServiceAccountE2E:
         assert token_info is not None
         # Service account tokens should have client_id/azp
         assert "azp" in token_info or "client_id" in token_info
+        # stuf's Zitadel Action marks a machine user's token as an app's
+        assert token_info.get("idtyp") == "app"
         # Service accounts are identified by azp/sub, not by preferred_username prefix
         assert "iss" in token_info  # Issuer
         assert "exp" in token_info  # Expiration

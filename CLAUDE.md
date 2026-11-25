@@ -72,7 +72,7 @@ npm run build # Production build
 
 ### Environment Configuration
 All services configured via environment variables with development defaults:
-- OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`
+- OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`
 - SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID`
 - Object storage: `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_BUCKET_NAME`
 - API/SPA port configuration
@@ -96,7 +96,8 @@ All services configured via environment variables with development defaults:
 1. External services use client credentials flow to obtain JWT tokens
 2. FastAPI backend validates service account tokens using same JWT verification
 3. Service accounts identified by `client_id`/`azp` instead of username
-4. Service accounts follow same collection-based permission model
+4. The access token's `idtyp` claim (`user` or `app`, set by the Zitadel Action in `docker/zitadel-init/provision.py`) says which it is; only without it does `get_current_principal` fall back to looking for profile claims (`docs/technical/service-accounts.md`)
+5. Service accounts follow same collection-based permission model
 
 ### File Organization
 - Files organized by collections with attribute-based access

@@ -148,7 +148,6 @@ test-e2e:
 		export OIDC_ISSUER_URL=http://zitadel-e2e:8080; \
 		export OIDC_BASE_URL=http://zitadel-e2e:8080; \
 		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
-		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_AUTHORITY=http://zitadel-e2e:8080; \
 		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_SCOPE="openid profile email stuf:access"; \
@@ -209,7 +208,6 @@ spa-dev:
 		export OIDC_BASE_URL=http://zitadel:8080; \
 		export OIDC_ISSUER_HOST=localhost:8080; \
 		export OIDC_VALID_AUDIENCES="$${ZITADEL_SPA_CLIENT_ID},$${ZITADEL_API_APP_CLIENT_ID},$${ZITADEL_STUF_PROJECT_ID}"; \
-		export OIDC_SPA_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_AUTHORITY=http://localhost:8080; \
 		export OIDC_CLIENT_ID="$${ZITADEL_SPA_CLIENT_ID}"; \
 		export OIDC_SCOPE="openid profile email stuf:access"; \

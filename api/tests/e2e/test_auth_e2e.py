@@ -35,6 +35,8 @@ class TestAuthenticationE2E:
         assert "exp" in token_info  # Expiration is always present
         # For user tokens, preferred_username should be present
         assert "preferred_username" in token_info
+        # stuf's Zitadel Action marks a human's token as a person's
+        assert token_info.get("idtyp") == "user"
         # Collections should be present and parsed
         assert "collections" in token_info
 
