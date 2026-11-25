@@ -159,13 +159,21 @@ def main():
         # ── Project ───────────────────────────────────────────────────────────
         proj_cfg = fixture["project"]
         print(f"Creating project '{proj_cfg['name']}' ...")
-        project = api(client, "post", "/management/v1/projects", json={
-            "name": proj_cfg["name"],
-            "projectRoleAssertion": True,
-            "projectRoleCheck": False,
-            "hasProjectCheck": False,
-            "privateLabelingSetting": "PRIVATE_LABELING_SETTING_UNSPECIFIED",
-        })
+        try:
+            project = api(client, "post", "/management/v1/projects", json={
+                "name": proj_cfg["name"],
+                "projectRoleAssertion": True,
+                "projectRoleCheck": False,
+                "hasProjectCheck": False,
+                "privateLabelingSetting": "PRIVATE_LABELING_SETTING_UNSPECIFIED",
+            })
+        except httpx.HTTPStatusError as e:
+            # A restart (stop, then up) keeps Zitadel's database, which this
+            # script has already provisioned, and the files it wrote then.
+            if e.response.status_code == 409 and os.path.exists(os.path.join(BOOTSTRAP_DIR, "generated.env")):
+                print("  Already provisioned; keeping the existing generated.env")
+                return
+            raise
         project_id = project["id"]
         print(f"  project_id={project_id}")
 
@@ -359,9 +367,11 @@ def main():
             "OIDC_VALID_AUDIENCES": f"{spa_client_id},{api_app_client_id},{project_id}",
             "OIDC_SPA_CLIENT_ID": spa_client_id,
             "OIDC_CLIENT_ID": spa_client_id,
+            "OIDC_ISSUER_URL": issuer_url,
+            "OIDC_AUTHORITY": issuer_url,
             # Zitadel answers only requests whose Host header is its external
-            # domain, which is the host this script reaches it on.
-            "OIDC_ISSUER_HOST": urlsplit(ZITADEL_DOMAIN).netloc,
+            # domain, the issuer's host.
+            "OIDC_ISSUER_HOST": urlsplit(issuer_url).netloc,
         }
         env_file = os.path.join(BOOTSTRAP_DIR, "generated.env")
         with open(env_file, "w") as f:

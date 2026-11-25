@@ -3,25 +3,6 @@
 # Runs via /docker-entrypoint.d/ — nginx's own entrypoint calls scripts there.
 set -e
 
-# A local Zitadel's generated settings (OIDC_CLIENT_ID and the rest), when its
-# bootstrap directory is mounted. They fill only variables that are unset or empty, so
-# the container's own environment wins.
-if [ -f /bootstrap/generated.env ]; then
-  while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-      OIDC_*=*) ;;
-      *) continue ;;
-    esac
-    key="${line%%=*}"
-    case "$key" in
-      *[!A-Za-z0-9_]*) continue ;;
-    esac
-    if eval "[ -z \"\${$key:-}\" ]"; then
-      export "$key=${line#*=}"
-    fi
-  done < /bootstrap/generated.env
-fi
-
 API_BASE_URL="${API_URL:-http://localhost:8000}"
 OIDC_AUTHORITY="${OIDC_AUTHORITY:-http://localhost:8080}"
 OIDC_CLIENT_ID="${OIDC_CLIENT_ID:?OIDC_CLIENT_ID must be set}"

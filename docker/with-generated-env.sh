@@ -9,8 +9,10 @@
 # loads the project, before zitadel-init has run. So the file is read here,
 # when the container starts.
 #
-# A variable already set in the container (from the shell or .env, through
-# compose) wins. The file fills only variables that are still unset or empty,
+# Only the file's OIDC_* keys are taken; the ZITADEL_* IDs and the service
+# account's secret are left out. A variable already set in the container (from
+# the shell or .env, through compose) wins. The file fills only variables that
+# are still unset or empty,
 # and each KEY=default argument fills its key if neither set it, as compose's
 # ${KEY:-default} did.
 set -e
@@ -29,8 +31,7 @@ set_if_unset() {
 if [ -f "$GENERATED_ENV" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
-      "" | "#"*) continue ;;
-      *=*) ;;
+      OIDC_*=*) ;;
       *) continue ;;
     esac
     set_if_unset "${line%%=*}" "${line#*=}"
