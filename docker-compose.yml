@@ -22,20 +22,41 @@ services:
       target: production
     ports:
       - "${API_PORT:-8000}:8000"
+    # The OIDC keys that zitadel-init generates come from
+    # .zitadel-bootstrap/generated.env, read when the container starts (compose
+    # reads env_file before zitadel-init has written it), which wins over the
+    # shell and .env. They are passed bare below, so the defaults given here
+    # only fill what neither sets. See docker/with-generated-env.sh.
+    entrypoint:
+      - sh
+      - /stuf/with-generated-env.sh
+      - OIDC_ISSUER_URL=http://localhost:8080
+      - OIDC_ISSUER_HOST=
+      - OIDC_VALID_AUDIENCES=stuf-api,stuf-spa
+      - OIDC_SPA_CLIENT_ID=stuf-spa
+      - "--"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-http://localhost:8080}
+      - OIDC_ISSUER_URL
       - OIDC_BASE_URL=${OIDC_BASE_URL:-http://zitadel:8080}
-      - OIDC_ISSUER_HOST=${OIDC_ISSUER_HOST:-}
-      - OIDC_VALID_AUDIENCES=${OIDC_VALID_AUDIENCES:-stuf-api,stuf-spa}
-      - OIDC_SPA_CLIENT_ID=${OIDC_SPA_CLIENT_ID:-stuf-spa}
+      - OIDC_ISSUER_HOST
+      - OIDC_VALID_AUDIENCES
+      - OIDC_SPA_CLIENT_ID
       - S3_ENDPOINT_URL=http://rustfs:9000
       - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-rustfsadmin}
       - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-rustfsadmin}
       - S3_REGION=${S3_REGION:-}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME:-stuf-uploads}
+    volumes:
+      - ./docker/with-generated-env.sh:/stuf/with-generated-env.sh:ro
+      - ./.zitadel-bootstrap:/bootstrap:ro
     depends_on:
       rustfs:
         condition: service_healthy
+      # Only with the zitadel profile: start once generated.env is fresh.
+      zitadel-init:
+        condition: service_completed_successfully
+        required: false
 
   spa:
     build:
@@ -44,11 +65,23 @@ services:
       target: production
     ports:
       - "${SPA_PORT:-3000}:80"
+    # OIDC_AUTHORITY and OIDC_CLIENT_ID as the api's OIDC keys above. The
+    # command is the image's own entrypoint and command, run by the wrapper.
+    entrypoint:
+      - sh
+      - /stuf/with-generated-env.sh
+      - OIDC_AUTHORITY=http://localhost:8080
+      - OIDC_CLIENT_ID=stuf-spa
+      - "--"
+    command: ["/docker-entrypoint.sh", "nginx", "-g", "daemon off;"]
     environment:
       - API_URL=${API_URL:-http://localhost:8000}
-      - OIDC_AUTHORITY=${OIDC_AUTHORITY:-http://localhost:8080}
-      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-stuf-spa}
+      - OIDC_AUTHORITY
+      - OIDC_CLIENT_ID
       - OIDC_SCOPE=${OIDC_SCOPE:-openid profile email stuf:access}
+    volumes:
+      - ./docker/with-generated-env.sh:/stuf/with-generated-env.sh:ro
+      - ./.zitadel-bootstrap:/bootstrap:ro
     depends_on:
       - api
 
@@ -60,19 +93,24 @@ services:
       POSTGRES_USER: ${ZITADEL_DB_USER:-zitadel}
       POSTGRES_PASSWORD: ${ZITADEL_DB_PASSWORD:-zitadel}
       POSTGRES_DB: ${ZITADEL_DB_NAME:-zitadel}
+    # Fresh on every start, so zitadel-init always provisions from the fixture
+    # and writes a matching generated.env.
+    tmpfs:
+      - /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${ZITADEL_DB_USER:-zitadel} -d ${ZITADEL_DB_NAME:-zitadel}"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  # Makes the bootstrap volume world-writable/readable. Three containers with
+  # Makes the bootstrap volume world-writable/readable. Containers with
   # different users share it: zitadel (writes the machine key), zitadel-init
-  # root (writes login-token + generated.env), and zitadel-login nextjs user
-  # (reads login-token). A targeted chown is not feasible because busybox has
-  # no shared /etc/passwd with the other images, so their usernames ("zitadel",
-  # "nextjs") are unknown here — only hard-coding numeric UIDs would work, and
-  # those are internal image implementation details. World-writable is
+  # root (writes login-token + generated.env), zitadel-login nextjs user
+  # (reads login-token), and api and spa (read generated.env). A targeted
+  # chown is not feasible because busybox has no shared /etc/passwd with the
+  # other images, so their usernames ("zitadel", "nextjs") are unknown here —
+  # only hard-coding numeric UIDs would work, and those are internal image
+  # implementation details. World-writable is
   # acceptable for a dev-only volume that holds no production credentials.
   zitadel-bootstrap-init:
     image: busybox:1.37

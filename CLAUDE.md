@@ -30,7 +30,8 @@ make test-cov          # Tests with coverage report
 # Start full development environment with hot reloading
 make spa-dev
 
-# Start Zitadel + RustFS only (without SPA dev)
+# Start the whole stack (Zitadel, RustFS, API, SPA) without hot reloading;
+# add -f docker-compose.yml -f docker-compose.dev.yml for the dev targets
 docker compose --profile zitadel up -d
 
 # Stop and clean up
@@ -74,6 +75,7 @@ npm run build # Production build
 All services configured via environment variables with development defaults:
 - OIDC configuration: `OIDC_ISSUER_URL`, `OIDC_BASE_URL`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`
 - SPA OIDC: `OIDC_AUTHORITY`, `OIDC_CLIENT_ID`
+- With the `zitadel` profile, `OIDC_ISSUER_URL`, `OIDC_ISSUER_HOST`, `OIDC_VALID_AUDIENCES`, `OIDC_SPA_CLIENT_ID`, `OIDC_AUTHORITY` and `OIDC_CLIENT_ID` come from `.zitadel-bootstrap/generated.env`, which `zitadel-init` writes and `docker/with-generated-env.sh` reads when the `api` and `spa` containers start (compose's `env_file` can't: it is read before `zitadel-init` runs). While the file exists it wins over the shell and `.env`; `make spa-stop` deletes it, for running against another IdP.
 - Object storage: `S3_ENDPOINT_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_BUCKET_NAME`
 - API/SPA port configuration
 
@@ -124,7 +126,7 @@ All services configured via environment variables with development defaults:
 ## Development Workflow
 
 ### Authentication Setup
-1. Zitadel is provisioned by `docker/zitadel-init/` (run via `make spa-dev`)
+1. Zitadel is provisioned by `docker/zitadel-init/` (run by `make spa-dev` or `docker compose --profile zitadel up`)
 2. Default admin user: `admin@example.com` / `Password1!`
 3. Collection permissions stored in JWT collections claim as JSON: `{"collection-name": ["read", "write", "delete"]}`
 4. Service accounts: Zitadel machine users with JWT access tokens

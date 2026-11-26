@@ -37,8 +37,9 @@ Service accounts provide a way for automated systems, scripts, and applications 
 
 **Zitadel** (zitadel dev profile):
 1. Add a machine user entry under `machine_users:` in `docker/zitadel-init/dev/instance.yaml`
-2. Re-run `docker compose --profile zitadel up -d`; the `zitadel-init` container will
-   provision the machine user and write its credentials to `/bootstrap/generated.env`.
+2. Restart the stack (`make spa-dev`, or stop and start the `zitadel` profile); Zitadel
+   starts empty, and `zitadel-init` provisions the fixture, including the machine user, and
+   writes its credentials to `/bootstrap/generated.env`.
 
 ### 2. Configure Service Account Permissions
 
