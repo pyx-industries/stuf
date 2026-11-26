@@ -156,7 +156,7 @@ spa-stop` deletes it, for running against another IdP.
 
 - **Zitadel**: OIDC identity provider
   - Admin credentials: admin@example.com / Password1!
-  - Provisioned by `docker/zitadel-init/` from `docker/zitadel-init/dev/instance.yaml`
+  - Provisioned by `docker/zitadel-init/` from `docker/zitadel-init/dev/instance.yaml` on every start: its database is not kept, so sessions and users added by hand don't survive a restart
   - Login UI served at http://localhost:8090
   - Test users:
     - admin@example.com / password (admin role)

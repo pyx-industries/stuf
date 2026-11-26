@@ -159,21 +159,13 @@ def main():
         # ── Project ───────────────────────────────────────────────────────────
         proj_cfg = fixture["project"]
         print(f"Creating project '{proj_cfg['name']}' ...")
-        try:
-            project = api(client, "post", "/management/v1/projects", json={
-                "name": proj_cfg["name"],
-                "projectRoleAssertion": True,
-                "projectRoleCheck": False,
-                "hasProjectCheck": False,
-                "privateLabelingSetting": "PRIVATE_LABELING_SETTING_UNSPECIFIED",
-            })
-        except httpx.HTTPStatusError as e:
-            # A restart (stop, then up) keeps Zitadel's database, which this
-            # script has already provisioned, and the files it wrote then.
-            if e.response.status_code == 409 and os.path.exists(os.path.join(BOOTSTRAP_DIR, "generated.env")):
-                print("  Already provisioned; keeping the existing generated.env")
-                return
-            raise
+        project = api(client, "post", "/management/v1/projects", json={
+            "name": proj_cfg["name"],
+            "projectRoleAssertion": True,
+            "projectRoleCheck": False,
+            "hasProjectCheck": False,
+            "privateLabelingSetting": "PRIVATE_LABELING_SETTING_UNSPECIFIED",
+        })
         project_id = project["id"]
         print(f"  project_id={project_id}")
 

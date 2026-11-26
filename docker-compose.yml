@@ -93,6 +93,10 @@ services:
       POSTGRES_USER: ${ZITADEL_DB_USER:-zitadel}
       POSTGRES_PASSWORD: ${ZITADEL_DB_PASSWORD:-zitadel}
       POSTGRES_DB: ${ZITADEL_DB_NAME:-zitadel}
+    # Fresh on every start, so zitadel-init always provisions from the fixture
+    # and writes a matching generated.env.
+    tmpfs:
+      - /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${ZITADEL_DB_USER:-zitadel} -d ${ZITADEL_DB_NAME:-zitadel}"]
       interval: 5s
